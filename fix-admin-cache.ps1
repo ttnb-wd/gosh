@@ -3,28 +3,27 @@
 Write-Host "=== Fixing Admin Products 404 ===" -ForegroundColor Yellow
 Write-Host ""
 
-# Navigate to project directory
-$projectPath = "C:\Users\ACER\Desktop\gosh-main\gosh-main"
+$projectPath = "C:\Users\ACER\Desktop\gosh-main"
 Set-Location $projectPath
 
 Write-Host "1. Stopping any running dev servers..." -ForegroundColor Cyan
-# Kill any node processes (optional, comment out if you want to stop manually)
+# Kill any node processes if you want to stop them automatically:
 # Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
 
 Write-Host "2. Deleting .next cache folder..." -ForegroundColor Cyan
 if (Test-Path ".next") {
-    Remove-Item -Recurse -Force .next
-    Write-Host "   ✓ .next folder deleted" -ForegroundColor Green
+    Remove-Item -Recurse -Force ".next"
+    Write-Host "   .next folder deleted" -ForegroundColor Green
 } else {
-    Write-Host "   ℹ .next folder not found (already clean)" -ForegroundColor Gray
+    Write-Host "   .next folder not found (already clean)" -ForegroundColor Gray
 }
 
 Write-Host "3. Deleting node_modules cache..." -ForegroundColor Cyan
 if (Test-Path "node_modules/.cache") {
     Remove-Item -Recurse -Force "node_modules/.cache"
-    Write-Host "   ✓ node_modules/.cache deleted" -ForegroundColor Green
+    Write-Host "   node_modules/.cache deleted" -ForegroundColor Green
 } else {
-    Write-Host "   ℹ node_modules/.cache not found" -ForegroundColor Gray
+    Write-Host "   node_modules/.cache not found" -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -41,4 +40,4 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
 Write-Host ""
 Write-Host "Starting dev server..." -ForegroundColor Cyan
-npm run dev
+npm.cmd run dev
