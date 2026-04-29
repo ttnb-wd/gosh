@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, X, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, Package, X, Eye, EyeOff, CheckCircle, Upload, ImageIcon } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import PremiumSelect from "./PremiumSelect";
 
@@ -30,6 +30,49 @@ export default function ProductManager() {
   const [error, setError] = useState("");
   const [updatingProducts, setUpdatingProducts] = useState<Set<number>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Upload image to Supabase Storage
+  const uploadProductImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      console.error("Image upload error:", uploadError.message);
+      throw new Error(`Image upload failed: ${uploadError.message}`);
+    }
+
+    const { data } = supabase.storage.from("product-images").getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload a valid image file (PNG, JPG, WEBP).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5MB.");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    // Clear URL input when file is selected
+    setFormData((prev) => ({ ...prev, image: "" }));
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -97,6 +140,8 @@ export default function ProductManager() {
       decant20ml: "",
       decant30ml: "",
     });
+    setImageFile(null);
+    setImagePreview("");
     setShowProductForm(true);
   };
 
@@ -117,6 +162,8 @@ export default function ProductManager() {
       decant20ml: product.decants?.find(d => d.label === "20ml")?.price.toString() || "",
       decant30ml: product.decants?.find(d => d.label === "30ml")?.price.toString() || "",
     });
+    setImageFile(null);
+    setImagePreview("");
     setShowProductForm(true);
   };
 
@@ -124,6 +171,8 @@ export default function ProductManager() {
     setShowProductForm(false);
     setEditingProduct(null);
     setError("");
+    setImageFile(null);
+    setImagePreview("");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -161,12 +210,28 @@ export default function ProductManager() {
         { label: "30ml", price: Number(formData.decant30ml || 0) },
       ].filter((d) => d.price > 0);
 
+      // Upload image if a new file was selected
+      let imageUrl = formData.image?.trim() || "";
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          imageUrl = await uploadProductImage(imageFile);
+        } catch (uploadErr: any) {
+          setError(uploadErr.message || "Image upload failed. Please try again.");
+          setLoading(false);
+          setUploadingImage(false);
+          return;
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       // Build product payload matching actual Supabase schema
       const productPayload = {
         name: formData.name.trim(),
         brand: formData.brand?.trim() || null,
         description: formData.description?.trim() || null,
-        image: formData.image?.trim() || null,
+        image: imageUrl || null,
         category: formData.category || null,
         price: Number(formData.price || 0),
         stock: Number(formData.stock || 0),
@@ -226,6 +291,8 @@ export default function ProductManager() {
         decant20ml: "",
         decant30ml: "",
       });
+      setImageFile(null);
+      setImagePreview("");
 
       // Close modal and reload products
       closeProductForm();
@@ -338,7 +405,7 @@ export default function ProductManager() {
               {/* Product Image */}
               <div className="relative aspect-square overflow-hidden bg-zinc-50">
                 <img
-                  src={product.image || "/images/perfume-placeholder.png"}
+                  src={product.image || "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop"}
                   alt={product.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
@@ -358,7 +425,14 @@ export default function ProductManager() {
 
               {/* Product Info */}
               <div className="p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-yellow-600">{product.brand}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-yellow-600">{product.brand}</p>
+                  {product.category === "Accessories" && (
+                    <span className="rounded-full bg-purple-100 px-2 py-1 text-xs font-bold text-purple-700">
+                      Accessory
+                    </span>
+                  )}
+                </div>
                 <h3 className="mt-1 text-lg font-bold text-black">{product.name}</h3>
                 <p className="mt-1 text-sm text-zinc-600">{product.description}</p>
                 
@@ -564,6 +638,7 @@ export default function ProductManager() {
                       { label: "Floral", value: "Floral" },
                       { label: "Fresh", value: "Fresh" },
                       { label: "Citrus", value: "Citrus" },
+                      { label: "Accessories", value: "Accessories" },
                     ]}
                     onChange={(value) =>
                       setFormData((prev) => ({
@@ -594,17 +669,82 @@ export default function ProductManager() {
 
                 <div>
                   <label className="mb-2 block text-sm font-bold text-neutral-800">
-                    Image URL
+                    Product Image
                   </label>
+
+                  {/* Upload button */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-yellow-300 bg-yellow-50/50 px-4 py-5 transition hover:border-yellow-400 hover:bg-yellow-50"
+                  >
+                    <Upload className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <p className="text-sm font-bold text-neutral-800">
+                        {imageFile ? imageFile.name : "Click to upload image"}
+                      </p>
+                      <p className="text-xs text-neutral-500">PNG, JPG, WEBP — max 5MB</p>
+                    </div>
+                  </div>
                   <input
-                    type="url"
+                    ref={fileInputRef}
+                    id="product-image-upload"
+                    name="product_image_upload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+
+                  {/* OR divider */}
+                  <div className="my-3 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-yellow-200" />
+                    <span className="text-xs font-semibold text-neutral-400">OR paste URL</span>
+                    <div className="h-px flex-1 bg-yellow-200" />
+                  </div>
+
+                  {/* URL input */}
+                  <input
+                    type="text"
                     name="image"
                     value={formData.image}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      // Clear file when URL is typed
+                      if (e.target.value) {
+                        setImageFile(null);
+                        setImagePreview("");
+                      }
+                    }}
                     className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
                     placeholder="https://images.unsplash.com/..."
                   />
-                  <p className="mt-1 text-xs text-neutral-500">Leave empty for placeholder image</p>
+
+                  {/* Image preview */}
+                  {(imagePreview || formData.image) && (
+                    <div className="relative mt-3 overflow-hidden rounded-2xl border border-yellow-200 bg-white p-2">
+                      <img
+                        src={imagePreview || formData.image}
+                        alt="Product preview"
+                        className="h-48 w-full rounded-xl object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview("");
+                          setFormData((prev) => ({ ...prev, image: "" }));
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                        className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+                        aria-label="Remove image"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -695,10 +835,14 @@ export default function ProductManager() {
               <button
                 type="submit"
                 form="product-form"
-                disabled={loading}
+                disabled={loading || uploadingImage}
                 className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? (editingProduct ? "Saving..." : "Adding...") : (editingProduct ? "Save Changes" : "Add Product")}
+                {uploadingImage
+                  ? "Uploading image..."
+                  : loading
+                  ? (editingProduct ? "Saving..." : "Adding...")
+                  : (editingProduct ? "Save Changes" : "Add Product")}
               </button>
             </div>
           </div>

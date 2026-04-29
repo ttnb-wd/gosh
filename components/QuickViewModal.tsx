@@ -20,8 +20,8 @@ interface QuickViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToBag: (product: any, quantity: number) => void;
-  selectedDecants: Record<number, string>;
-  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  selectedDecants: Record<number, { label: string; price: number }>;
+  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<number, { label: string; price: number }>>>;
 }
 
 export default function QuickViewModal({ product, isOpen, onClose, onAddToBag, selectedDecants, setSelectedDecants }: QuickViewModalProps) {

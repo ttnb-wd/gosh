@@ -62,6 +62,7 @@ export default function CollectionPreview() {
                     <img
                       src={collection.image}
                       alt={collection.title}
+                      loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

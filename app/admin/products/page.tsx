@@ -5,7 +5,7 @@ import ProductManager from "@/components/admin/ProductManager";
 
 export default function AdminProductsPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-zinc-50">
       <AdminHeader title="Products" subtitle="Manage your product inventory" />
 
       <main className="p-6">

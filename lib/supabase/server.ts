@@ -33,6 +33,12 @@ export const createSupabaseServerClient = async () => {
           }
         },
       },
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
     }
   );
 };

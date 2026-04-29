@@ -15,6 +15,7 @@ interface Product {
   description: string;
   image: string;
   badge: string | null;
+  category?: string;
   decants: { label: string; price: number }[];
   is_active?: boolean;
   selectedSize?: string;
@@ -33,6 +34,16 @@ const container = {
 const item = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
   show: { opacity: 1, y: 0, scale: 1 },
+};
+
+// Normalize image URL helper
+const normalizeImageUrl = (url?: string | null): string => {
+  if (!url || url.trim() === "") return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+  const u = url.trim();
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  if (u.startsWith("/")) return u;
+  if (u.startsWith("photo-")) return `https://images.unsplash.com/${u}`;
+  return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
 };
 
 // Scroll reveal wrapper component
@@ -112,12 +123,32 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const padding = 12;
-    const width = rect.width;
-    const maxLeft = window.innerWidth - width - padding;
+    const viewportPadding = 12;
+    
+    // Close dropdown if trigger is outside viewport
+    if (
+      rect.bottom < 0 ||
+      rect.top > window.innerHeight ||
+      rect.right < 0 ||
+      rect.left > window.innerWidth
+    ) {
+      onClose();
+      return;
+    }
+    
+    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
+    const maxLeft = window.innerWidth - width - viewportPadding;
+    let top = rect.bottom + 10;
+    
+    // If dropdown would go below viewport, open upward
+    const estimatedMenuHeight = 240;
+    if (top + estimatedMenuHeight > window.innerHeight - viewportPadding) {
+      top = Math.max(viewportPadding, rect.top - estimatedMenuHeight - 10);
+    }
+    
     setPosition({
-      top: rect.bottom + 10,
-      left: Math.max(padding, Math.min(rect.left, maxLeft)),
+      top,
+      left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
       width,
     });
   };
@@ -126,12 +157,16 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
   useEffect(() => {
     if (!isOpen) return;
     updatePosition();
-    const handleUpdate = () => updatePosition();
+    const handleUpdate = () => {
+      requestAnimationFrame(updatePosition);
+    };
     window.addEventListener("scroll", handleUpdate, true);
     window.addEventListener("resize", handleUpdate);
+    window.addEventListener("orientationchange", handleUpdate);
     return () => {
       window.removeEventListener("scroll", handleUpdate, true);
       window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("orientationchange", handleUpdate);
     };
   }, [isOpen]);
 
@@ -247,13 +282,21 @@ interface ProductCardProps {
 function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
   const isDecantOpen = openDecantDropdown === product.id;
   const selectedDecant = selectedDecants[product.id];
+  const isAccessory = product.category === "Accessories";
+  const hasDecants = Array.isArray(product.decants) && product.decants.length > 0;
   
   const handleAddToBag = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
+    // For accessories, add directly without decant selection
+    if (isAccessory) {
+      onAddToBag({ ...product, selectedSize: "Accessory", price: product.price });
+      return;
+    }
+    
     // Check if product has decants and if one is selected
-    if (product.decants && product.decants.length > 0) {
+    if (hasDecants) {
       if (!selectedDecant || !selectedDecant.label) {
         alert("Please select a decant size");
         return;
@@ -298,17 +341,15 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
         
         {/* Image Container - Fixed Height */}
         <div className="relative z-0 h-64 w-full shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100 sm:h-72">
-          {product.image ? (
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm font-bold text-zinc-400">
-              No Image
-            </div>
-          )}
+          <img
+            src={normalizeImageUrl(product.image)}
+            alt={product.name}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+            }}
+          />
           
           {/* Badge */}
           {product.badge && (
@@ -338,30 +379,37 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
             {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
           </p>
           
-          {/* Decant Dropdown using Portal */}
-          <DecantDropdown
-            product={product}
-            selectedDecant={selectedDecant}
-            isOpen={isDecantOpen}
-            onToggle={() =>
-              setOpenDecantDropdown((prev: number | null) =>
-                prev === product.id ? null : product.id
-              )
-            }
-            onClose={() => setOpenDecantDropdown(null)}
-            onSelect={(decant) =>
-              setSelectedDecants((prev) => ({
-                ...prev,
-                [product.id]: decant,
-              }))
-            }
-          />
+          {/* Decant Dropdown using Portal - Only for non-accessories with decants */}
+          {!isAccessory && hasDecants && (
+            <DecantDropdown
+              product={product}
+              selectedDecant={selectedDecant}
+              isOpen={isDecantOpen}
+              onToggle={() =>
+                setOpenDecantDropdown((prev: number | null) =>
+                  prev === product.id ? null : product.id
+                )
+              }
+              onClose={() => setOpenDecantDropdown(null)}
+              onSelect={(decant) =>
+                setSelectedDecants((prev) => ({
+                  ...prev,
+                  [product.id]: decant,
+                }))
+              }
+            />
+          )}
+          
+          {/* Spacer for accessories to maintain card height */}
+          {(isAccessory || !hasDecants) && (
+            <div className="mt-4 min-h-[48px]" />
+          )}
           
           {/* Price and Buttons - Push to Bottom with mt-auto */}
           <div className="mt-auto space-y-3 pt-5">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-black text-yellow-600">
-                ${selectedDecant?.price || product.price}
+                ${isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price)}
               </span>
               
               <button 
@@ -528,12 +576,47 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       description: "Romantic rose, woody base",
       image: "https://images.unsplash.com/photo-1588405748880-12d1d2a59d75?q=80&w=1200&auto=format&fit=crop",
       badge: "Limited",
+      category: "Floral",
       decants: [
         { label: "5ml", price: 15 },
         { label: "10ml", price: 26 },
         { label: "20ml", price: 44 },
         { label: "30ml", price: 60 }
       ]
+    },
+    // Accessories
+    {
+      id: 101,
+      name: "Luxury Travel Atomizer",
+      brand: "GOSH PERFUME",
+      price: 15,
+      description: "Premium refillable travel atomizer for carrying your favorite scent anywhere",
+      image: "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?q=80&w=1200&auto=format&fit=crop",
+      badge: "New",
+      category: "Accessories",
+      decants: []
+    },
+    {
+      id: 102,
+      name: "Premium Gift Box",
+      brand: "GOSH PERFUME",
+      price: 8,
+      description: "Elegant luxury gift packaging for perfume and decant orders",
+      image: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=1200&auto=format&fit=crop",
+      badge: null,
+      category: "Accessories",
+      decants: []
+    },
+    {
+      id: 103,
+      name: "Discovery Sample Set",
+      brand: "GOSH PERFUME",
+      price: 20,
+      description: "Curated sample set for discovering your next signature scent",
+      image: "https://images.unsplash.com/photo-1615397349754-cfa2066a298e?q=80&w=1200&auto=format&fit=crop",
+      badge: "Best Seller",
+      category: "Accessories",
+      decants: []
     },
   ];
 
@@ -547,6 +630,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const [selectedDecants, setSelectedDecants] = useState<Record<number, { label: string; price: number }>>({});
   const [openDecantDropdown, setOpenDecantDropdown] = useState<number | null>(null);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const brandMenuRef = useRef<HTMLDivElement>(null);
   
   // Lock body scroll when mobile brand menu is open
@@ -564,7 +648,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   // Normalize Supabase product to match original product shape
   const normalizeProduct = (product: any): Product => {
     // Validate and fix image URL
-    let imageUrl = "/images/perfume-placeholder.png";
+    let imageUrl = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
     if (product.image && typeof product.image === "string" && product.image.trim() !== "") {
       const img = product.image.trim();
       // If it's a valid URL (starts with http/https), use it
@@ -708,9 +792,34 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
   };
 
-  const filteredProducts = selectedBrand === "All" 
-    ? products 
-    : products.filter((product) => product.brand === selectedBrand);
+  const filteredProducts = products.filter((product) => {
+    // Normalize category for comparison
+    const normalizedCategory = String(product.category || "").toLowerCase().trim();
+    const isAccessory = normalizedCategory === "accessories" || normalizedCategory === "accessory";
+    
+    // Filter by brand
+    const matchesBrand = selectedBrand === "All" || product.brand === selectedBrand;
+    
+    // Filter by category
+    let matchesCategory = true;
+    
+    if (selectedCategory === "All") {
+      // Show only perfumes, NOT accessories
+      matchesCategory = !isAccessory;
+    } else if (selectedCategory === "Perfumes") {
+      // Show only non-accessory products
+      matchesCategory = !isAccessory;
+    } else if (selectedCategory === "Accessories") {
+      // Show only accessory products
+      matchesCategory = isAccessory;
+    } else {
+      // Specific perfume category (Woody, Oriental, Floral, Fresh, Citrus)
+      // Should NOT show accessories
+      matchesCategory = !isAccessory && normalizedCategory === selectedCategory.toLowerCase();
+    }
+    
+    return matchesBrand && matchesCategory;
+  });
 
   const getBrandTitle = () => {
     return selectedBrand === "All" ? "All Perfumes" : `${selectedBrand} Collection`;
@@ -742,7 +851,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         </h2>
       </motion.div>
 
-      {/* Filter Bar with Product Count and Brand Filter */}
+      {/* Filter Bar with Product Count and Filters */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-neutral-500">
@@ -750,8 +859,27 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           </p>
         </div>
 
-        {/* Brand Filter Dropdown */}
-        {onBrandSelect && brands.length > 1 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Category Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+            {["All", "Perfumes", "Accessories"].map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 ${
+                  selectedCategory === category
+                    ? "bg-yellow-400 text-black shadow-[0_10px_25px_rgba(234,179,8,0.28)]"
+                    : "border border-yellow-300 bg-white text-neutral-700 hover:bg-yellow-50"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {/* Brand Filter Dropdown */}
+          {onBrandSelect && brands.length > 1 && (
           <motion.div
             ref={brandMenuRef}
             initial={{ opacity: 0, y: 10 }}
@@ -830,6 +958,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             </AnimatePresence>
           </motion.div>
         )}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">

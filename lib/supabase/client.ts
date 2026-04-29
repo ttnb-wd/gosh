@@ -10,7 +10,19 @@ export const createSupabaseClient = () => {
     throw new Error('Supabase configuration is missing. Please check your .env.local file.');
   }
 
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  return createBrowserClient(supabaseUrl, supabaseKey, {
+    auth: {
+      flowType: 'pkce',
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      persistSession: true,
+    },
+    global: {
+      headers: {
+        'x-client-info': 'gosh-perfume-client',
+      },
+    },
+  });
 };
 
 // Browser client for direct usage
@@ -21,7 +33,19 @@ try {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (supabaseUrl && supabaseKey) {
-    supabase = createBrowserClient(supabaseUrl, supabaseKey);
+    supabase = createBrowserClient(supabaseUrl, supabaseKey, {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true,
+      },
+      global: {
+        headers: {
+          'x-client-info': 'gosh-perfume-client',
+        },
+      },
+    });
   }
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
