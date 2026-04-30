@@ -32,7 +32,7 @@ export default function ScentQuiz() {
             Find Your Signature Scent
           </h2>
           <p className="mt-4 text-lg text-zinc-600 max-w-2xl mx-auto">
-            Tell us your preference and we'll recommend the perfect fragrance
+            Tell us your preference and we&apos;ll recommend the perfect fragrance
           </p>
         </motion.div>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
       const supabase = createSupabaseClient();
 
       // Sign in with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await getSupabaseUser(supabase);
 
       if (userError || !user) {
         throw new Error("Could not verify logged in user");
@@ -72,9 +72,9 @@ export default function AdminLoginPage() {
       // Redirect to admin dashboard
       router.push("/admin");
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
-      setError(err.message || "Invalid email or password");
+      setError(err instanceof Error ? err.message : "Invalid email or password");
     } finally {
       setLoading(false);
     }

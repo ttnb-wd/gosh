@@ -8,7 +8,7 @@ interface PromoSectionProps {
   onCartOpen: () => void;
 }
 
-export default function PromoSection({ onCartOpen }: PromoSectionProps) {
+export default function PromoSection({}: PromoSectionProps) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100 py-10 lg:py-16">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.15),transparent_50%)]" />

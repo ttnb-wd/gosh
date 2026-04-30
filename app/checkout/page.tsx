@@ -7,13 +7,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Check, CheckCircle, Banknote, Building2, Smartphone } from "lucide-react";
-import Image from "next/image";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 // Cart item type
 interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -21,6 +20,23 @@ interface CartItem {
   qty: number;
   selectedSize?: string;
 }
+
+interface SuccessOrder {
+  order_number: string;
+  phone: string;
+  order_items?: unknown;
+}
+
+type PaymentDetail = {
+  title: string;
+  message?: string;
+  accountName?: string;
+  phone?: string;
+  instruction?: string;
+  note?: string;
+  bankName?: string;
+  accountNumber?: string;
+};
 
 // Payment Icon Component with Fallback
 function PaymentIcon({
@@ -107,14 +123,13 @@ export default function CheckoutPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-  const [screenshot, setScreenshot] = useState<File | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [paymentScreenshots, setPaymentScreenshots] = useState<Record<string, File | null>>({});
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successOrder, setSuccessOrder] = useState<any>(null);
+  const [successOrder, setSuccessOrder] = useState<SuccessOrder | null>(null);
   const [customerForm, setCustomerForm] = useState({
     fullName: "",
     email: "",
@@ -215,7 +230,7 @@ export default function CheckoutPage() {
   }, [availablePaymentMethods, selectedPayment]);
 
   // Payment details data
-  const paymentDetails: Record<string, any> = {
+  const paymentDetails: Record<string, PaymentDetail> = {
     cod: {
       title: "Cash on Delivery",
       message: "Pay when you receive your order.",
@@ -247,44 +262,6 @@ export default function CheckoutPage() {
       accountName: settings.bank_account_name || "GOSH PERFUME",
       accountNumber: settings.bank_account_number || "XXXXXXXXXXXXX",
       instruction: "Please transfer to this bank account and keep your payment screenshot.",
-    },
-  };
-
-  const paymentInfo = {
-    cod: {
-      payment_method: "cod",
-      payment_status: "Unpaid",
-      payment_account_name: null,
-      payment_phone: null,
-      payment_account_number: null,
-    },
-    kbzpay: {
-      payment_method: "kbzpay",
-      payment_status: "Verifying",
-      payment_account_name: settings.kbzpay_account_name || "GOSH PERFUME",
-      payment_phone: settings.kbzpay_phone || "09XXXXXXXXX",
-      payment_account_number: null,
-    },
-    wavepay: {
-      payment_method: "wavepay",
-      payment_status: "Verifying",
-      payment_account_name: settings.wavepay_account_name || "GOSH PERFUME",
-      payment_phone: settings.wavepay_phone || "09XXXXXXXXX",
-      payment_account_number: null,
-    },
-    ayapay: {
-      payment_method: "ayapay",
-      payment_status: "Verifying",
-      payment_account_name: settings.ayapay_account_name || "GOSH PERFUME",
-      payment_phone: settings.ayapay_phone || "09XXXXXXXXX",
-      payment_account_number: null,
-    },
-    bank: {
-      payment_method: "bank",
-      payment_status: "Verifying",
-      payment_account_name: settings.bank_account_name || "GOSH PERFUME",
-      payment_phone: null,
-      payment_account_number: settings.bank_account_number || "XXXXXXXXXXXXX",
     },
   };
 
@@ -336,7 +313,7 @@ export default function CheckoutPage() {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await getSupabaseUser(supabase);
 
       if (userError || !user) {
         setSubmitError("Please login or create an account to place your order.");
@@ -391,30 +368,30 @@ export default function CheckoutPage() {
         kbzpay: {
           payment_method: "kbzpay",
           payment_status: "Verifying",
-          payment_account_name: "GOSH PERFUME",
-          payment_phone: "09XXXXXXXXX",
+          payment_account_name: settings.kbzpay_account_name || "GOSH PERFUME",
+          payment_phone: settings.kbzpay_phone || "09XXXXXXXXX",
           payment_account_number: null,
         },
         wavepay: {
           payment_method: "wavepay",
           payment_status: "Verifying",
-          payment_account_name: "GOSH PERFUME",
-          payment_phone: "09XXXXXXXXX",
+          payment_account_name: settings.wavepay_account_name || "GOSH PERFUME",
+          payment_phone: settings.wavepay_phone || "09XXXXXXXXX",
           payment_account_number: null,
         },
         ayapay: {
           payment_method: "ayapay",
           payment_status: "Verifying",
-          payment_account_name: "GOSH PERFUME",
-          payment_phone: "09XXXXXXXXX",
+          payment_account_name: settings.ayapay_account_name || "GOSH PERFUME",
+          payment_phone: settings.ayapay_phone || "09XXXXXXXXX",
           payment_account_number: null,
         },
         bank: {
           payment_method: "bank",
           payment_status: "Verifying",
-          payment_account_name: "GOSH PERFUME",
+          payment_account_name: settings.bank_account_name || "GOSH PERFUME",
           payment_phone: null,
-          payment_account_number: "XXXXXXXXXXXXX",
+          payment_account_number: settings.bank_account_number || "XXXXXXXXXXXXX",
         },
       } as const;
 
@@ -543,7 +520,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
     } else {
@@ -552,12 +529,6 @@ export default function CheckoutPage() {
           (item.id === id && item.selectedSize === selectedSize) ? { ...item, qty: newQuantity } : item
         )
       );
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setScreenshot(e.target.files[0]);
     }
   };
 
@@ -588,8 +559,6 @@ export default function CheckoutPage() {
       };
     }
   }, [showPaymentModal]);
-
-  const selectedMethod = paymentMethods.find(m => m.id === selectedPayment);
 
   return (
     <main className="min-h-screen bg-white text-black">
@@ -966,7 +935,7 @@ export default function CheckoutPage() {
                     Your order has been received and is being processed.
                   </p>
                   <p className="mb-6 text-sm text-zinc-600">
-                    We'll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> to confirm delivery.
+                    We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> to confirm delivery.
                   </p>
                   
                   <div className="mb-6 rounded-2xl border border-yellow-200 bg-white p-4 text-left">
@@ -1054,7 +1023,7 @@ export default function CheckoutPage() {
                           <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].phone}</span>
                           <button
                             type="button"
-                            onClick={() => handleCopy(paymentDetails[selectedPayment].phone, "phone")}
+                            onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
                             className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
                           >
                             {copiedField === "phone" ? "Copied!" : "Copy"}
@@ -1094,7 +1063,7 @@ export default function CheckoutPage() {
                           <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountNumber}</span>
                           <button
                             type="button"
-                            onClick={() => handleCopy(paymentDetails[selectedPayment].accountNumber, "accountNumber")}
+                            onClick={() => handleCopy(paymentDetails[selectedPayment].accountNumber ?? "", "accountNumber")}
                             className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
                           >
                             {copiedField === "accountNumber" ? "Copied!" : "Copy"}

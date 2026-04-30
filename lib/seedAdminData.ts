@@ -148,5 +148,5 @@ export function seedAdminData() {
 
 // Make it available globally for browser console
 if (typeof window !== "undefined") {
-  (window as any).seedAdminData = seedAdminData;
+  (window as unknown as Window & { seedAdminData: typeof seedAdminData }).seedAdminData = seedAdminData;
 }

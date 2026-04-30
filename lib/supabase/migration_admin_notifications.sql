@@ -1,8 +1,10 @@
 -- Create admin notifications table (order events only)
+create extension if not exists "pgcrypto";
+
 create table if not exists public.admin_notifications (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references public.orders(id) on delete cascade,
-  type text not null check (type in ('new_order', 'order_cancelled')),
+  type text not null check (type in ('new_order', 'order_cancelled', 'payment_uploaded', 'payment_verifying', 'order_status_changed')),
   title text not null,
   message text not null,
   is_read boolean not null default false,
@@ -53,7 +55,7 @@ create policy "admins_can_insert_notifications"
   on public.admin_notifications
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_admin());
 
 drop policy if exists "admins_can_update_notifications" on public.admin_notifications;
 create policy "admins_can_update_notifications"

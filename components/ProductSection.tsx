@@ -2,13 +2,14 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import QuickViewModal from "./QuickViewModal";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -21,6 +22,10 @@ interface Product {
   selectedSize?: string;
   sizes?: { label: string; price: number }[];
 }
+
+type SupabaseProduct = Partial<Omit<Product, "decants">> & {
+  decants?: unknown;
+};
 
 const container = {
   hidden: {},
@@ -85,7 +90,7 @@ function ProductRevealCard({
       style={{
         transitionDelay: `${Math.min(index * 80, 480)}ms`,
       }}
-      className={`transition-all duration-700 ease-out ${
+      className={`min-w-0 transition-all duration-700 ease-out ${
         visible
           ? "translate-y-0 opacity-100"
           : "translate-y-6 opacity-0"
@@ -270,18 +275,20 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
 
 interface ProductCardProps {
   product: Product;
-  index: number;
-  onAddToBag: (product: any) => void;
+  onAddToBag: (product: Product) => void;
   onQuickView: (product: Product) => void;
-  selectedDecants: Record<number, { label: string; price: number }>;
-  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<number, { label: string; price: number }>>>;
-  openDecantDropdown: number | null;
-  setOpenDecantDropdown: React.Dispatch<React.SetStateAction<number | null>>;
+  selectedDecants: Record<string, { label: string; price: number }>;
+  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<string, { label: string; price: number }>>>;
+  openDecantDropdown: string | null;
+  setOpenDecantDropdown: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
-  const isDecantOpen = openDecantDropdown === product.id;
-  const selectedDecant = selectedDecants[product.id];
+function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
+  const productKey = String(product.id);
+  const productImageUrl = normalizeImageUrl(product.image);
+  const useNextImage = productImageUrl.startsWith("https://images.unsplash.com/");
+  const isDecantOpen = openDecantDropdown === productKey;
+  const selectedDecant = selectedDecants[productKey];
   const isAccessory = product.category === "Accessories";
   const hasDecants = Array.isArray(product.decants) && product.decants.length > 0;
   
@@ -295,18 +302,12 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
       return;
     }
     
-    // Check if product has decants and if one is selected
+    // If a decant is selected, add that size; otherwise add the full-size product.
     if (hasDecants) {
-      if (!selectedDecant || !selectedDecant.label) {
-        alert("Please select a decant size");
-        return;
-      }
-      
-      // Add with selected decant
       onAddToBag({
         ...product,
-        selectedSize: selectedDecant.label,
-        price: selectedDecant.price
+        selectedSize: selectedDecant?.label || "Full Size",
+        price: selectedDecant?.price || product.price
       });
       return;
     }
@@ -333,23 +334,33 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
     <motion.div
       variants={item}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative h-full"
+      className="group relative h-full min-w-0"
     >
-      <div className="group flex h-full min-h-[540px] flex-col overflow-hidden rounded-[32px] border border-yellow-200/60 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300 hover:shadow-[0_26px_80px_rgba(234,179,8,0.16)] sm:min-h-[560px]">
+      <div className="group flex h-full min-h-[500px] min-w-0 flex-col overflow-hidden rounded-[26px] border border-yellow-200/60 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300 hover:shadow-[0_26px_80px_rgba(234,179,8,0.16)] sm:min-h-[560px] sm:rounded-[32px]">
         {/* Gold glow effect on hover */}
-        <div className="pointer-events-none absolute -inset-1 rounded-[32px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+        <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
         
         {/* Image Container - Fixed Height */}
-        <div className="relative z-0 h-64 w-full shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100 sm:h-72">
-          <img
-            src={normalizeImageUrl(product.image)}
-            alt={product.name}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
-            }}
-          />
+        <div className="relative z-0 h-56 w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100 sm:h-72">
+          {useNextImage ? (
+            <Image
+              src={productImageUrl}
+              alt={product.name}
+              fill
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <img
+              src={productImageUrl}
+              alt={product.name}
+              loading="lazy"
+              className="block h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+              }}
+            />
+          )}
           
           {/* Badge */}
           {product.badge && (
@@ -363,19 +374,19 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
         </div>
 
         {/* Content - Flex Column with Fixed Heights */}
-        <div className="flex flex-1 flex-col p-5">
+        <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
           {/* Brand - Truncate */}
           <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
             {product.brand || product.category || "GOSH PERFUME"}
           </p>
           
           {/* Product Name - Line Clamp 2 with Min Height */}
-          <h3 className="mt-2 line-clamp-2 min-h-[56px] text-xl font-black leading-tight text-black">
+          <h3 className="mt-2 line-clamp-2 min-h-[48px] text-lg font-black leading-tight text-black sm:min-h-[56px] sm:text-xl">
             {product.name}
           </h3>
           
           {/* Description - Line Clamp 3 with Min Height */}
-          <p className="mt-3 line-clamp-3 min-h-[72px] text-sm leading-6 text-zinc-600">
+          <p className="mt-3 line-clamp-3 min-h-[66px] text-sm leading-6 text-zinc-600 sm:min-h-[72px]">
             {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
           </p>
           
@@ -386,15 +397,15 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
               selectedDecant={selectedDecant}
               isOpen={isDecantOpen}
               onToggle={() =>
-                setOpenDecantDropdown((prev: number | null) =>
-                  prev === product.id ? null : product.id
+                setOpenDecantDropdown((prev: string | null) =>
+                  prev === productKey ? null : productKey
                 )
               }
               onClose={() => setOpenDecantDropdown(null)}
               onSelect={(decant) =>
                 setSelectedDecants((prev) => ({
                   ...prev,
-                  [product.id]: decant,
+                  [productKey]: decant,
                 }))
               }
             />
@@ -407,15 +418,15 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
           
           {/* Price and Buttons - Push to Bottom with mt-auto */}
           <div className="mt-auto space-y-3 pt-5">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-black text-yellow-600">
+            <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
+              <span className="shrink-0 text-2xl font-black text-yellow-600">
                 ${isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price)}
               </span>
               
               <button 
                 type="button"
                 onClick={handleQuickView}
-                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 min-[380px]:w-auto"
               >
                 <Eye className="h-4 w-4" />
                 Quick View
@@ -425,7 +436,7 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
             <button 
               type="button"
               onClick={handleAddToBag}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
             >
               <ShoppingBag className="h-4 w-4" />
               Add to Bag
@@ -440,7 +451,7 @@ function ProductCard({ product, index, onAddToBag, onQuickView, selectedDecants,
 interface ProductSectionProps {
   selectedBrand?: string;
   onBrandSelect?: (brand: string) => void;
-  onAddToBag: (product: any) => void;
+  onAddToBag: (product: Product) => void;
 }
 
 export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
@@ -624,29 +635,17 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const fallbackBrands = ["All", "Dior", "Chanel", "Gucci", "YSL", "Versace", "Tom Ford", "Jo Malone", "Armani", "Valentino"];
 
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [selectedDecants, setSelectedDecants] = useState<Record<number, { label: string; price: number }>>({});
-  const [openDecantDropdown, setOpenDecantDropdown] = useState<number | null>(null);
+  const [selectedDecants, setSelectedDecants] = useState<Record<string, { label: string; price: number }>>({});
+  const [openDecantDropdown, setOpenDecantDropdown] = useState<string | null>(null);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const brandMenuRef = useRef<HTMLDivElement>(null);
   
-  // Lock body scroll when mobile brand menu is open
-  useEffect(() => {
-    if (!isBrandMenuOpen) return;
-    
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [isBrandMenuOpen]);
-  
   // Normalize Supabase product to match original product shape
-  const normalizeProduct = (product: any): Product => {
+  const normalizeProduct = (product: SupabaseProduct): Product => {
     // Validate and fix image URL
     let imageUrl = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
     if (product.image && typeof product.image === "string" && product.image.trim() !== "") {
@@ -833,7 +832,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   return (
     <section
       id="products"
-      className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16"
+      className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-16"
     >
       {/* Section Header */}
       <motion.div
@@ -841,39 +840,39 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8 text-center"
+        className="mb-6 text-center sm:mb-8"
       >
-        <p className="text-sm uppercase tracking-[0.35em] text-yellow-600">
+        <p className="text-xs uppercase tracking-[0.32em] text-yellow-600 sm:text-sm sm:tracking-[0.35em]">
           Our Collection
         </p>
-        <h2 className="mt-4 text-3xl font-black text-black sm:text-5xl">
+        <h2 className="mt-3 text-3xl font-black text-black sm:mt-4 sm:text-5xl">
           {getBrandTitle()}
         </h2>
       </motion.div>
 
       {/* Filter Bar with Product Count and Filters */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <p className="text-sm font-semibold text-neutral-500">
             {getProductCount()}
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 rounded-[26px] border border-yellow-100 bg-white/85 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           {/* Category Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+          <div className="grid grid-cols-[0.7fr_1fr_1.35fr] gap-2 sm:flex sm:overflow-x-auto sm:pb-0">
             {["All", "Perfumes", "Accessories"].map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setSelectedCategory(category)}
-                className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 ${
+                className={`min-w-0 rounded-full px-2 py-2.5 text-[13px] font-bold transition-all duration-300 min-[390px]:px-3 min-[390px]:text-sm sm:shrink-0 sm:px-5 ${
                   selectedCategory === category
                     ? "bg-yellow-400 text-black shadow-[0_10px_25px_rgba(234,179,8,0.28)]"
                     : "border border-yellow-300 bg-white text-neutral-700 hover:bg-yellow-50"
                 }`}
               >
-                {category}
+                <span className="block whitespace-nowrap">{category}</span>
               </button>
             ))}
           </div>
@@ -885,15 +884,16 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative z-30 w-full sm:w-auto"
+            className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
           >
             <button
               type="button"
               onClick={() => {
-                console.log("Brands menu clicked, current state:", isBrandMenuOpen);
                 setIsBrandMenuOpen((prev) => !prev);
               }}
-              className="group flex w-full items-center justify-between rounded-full border border-yellow-300 bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 sm:w-auto sm:min-w-[170px]"
+              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-yellow-300 bg-yellow-400 px-6 text-sm font-black text-black shadow-[0_16px_40px_rgba(234,179,8,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(234,179,8,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-yellow-300"
+              aria-haspopup="listbox"
+              aria-expanded={isBrandMenuOpen}
             >
               <span className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />
@@ -907,9 +907,67 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             </button>
 
             <AnimatePresence>
+              {/* Mobile dropdown - floating panel */}
+              {isBrandMenuOpen && (
+                <motion.div
+                  key="mobile-brand-dropdown"
+                  role="listbox"
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute left-1/2 top-[calc(100%+12px)] z-40 w-[92vw] max-w-[360px] -translate-x-1/2 overflow-hidden rounded-[28px] border border-yellow-200 bg-[#fffdf6]/95 p-3 shadow-[0_28px_80px_rgba(0,0,0,0.20),0_0_35px_rgba(234,179,8,0.16)] backdrop-blur-xl sm:hidden"
+                >
+                  <div className="mb-3 px-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-yellow-600">
+                      Filter by brand
+                    </p>
+                    <h3 className="mt-1 text-base font-black text-neutral-950">
+                      Choose Brand
+                    </h3>
+                  </div>
+
+                  <div className="scrollbar-auto-hide grid max-h-[65vh] gap-2 overflow-y-auto pr-1">
+                    {brands.map((brand, index) => {
+                      const active = selectedBrand === brand;
+                      const label = brand || "Unbranded";
+
+                      return (
+                        <motion.button
+                          key={`mobile-dropdown-${brand || "empty"}-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.22,
+                            delay: Math.min(index * 0.025, 0.18),
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          onClick={() => {
+                            onBrandSelect?.(brand);
+                            setIsBrandMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-left text-sm font-black transition-all duration-300 ${
+                            active
+                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
+                              : "bg-white text-neutral-700 active:bg-yellow-50"
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          {active && <Check className="h-4 w-4 shrink-0" />}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Desktop dropdown - compact */}
               {isBrandMenuOpen && (
                 <motion.div
+                  key="desktop-brand-dropdown"
                   initial={{ opacity: 0, x: 22 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 22 }}
@@ -929,7 +987,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                   <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
                     {brands.map((brand, index) => (
                       <motion.button
-                        key={`desktop-${isBrandMenuOpen}-${brand}`}
+                        key={`desktop-${isBrandMenuOpen}-${brand || "empty"}-${index}`}
                         type="button"
                         initial={{ opacity: 0, x: 22 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -948,7 +1006,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                             : "bg-neutral-50 text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
                         }`}
                       >
-                        <span className="truncate">{brand}</span>
+                        <span className="truncate">{brand || "Unbranded"}</span>
                         {selectedBrand === brand && <Check className="h-3.5 w-3.5 shrink-0" />}
                       </motion.button>
                     ))}
@@ -969,13 +1027,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             initial="hidden"
             animate="show"
             exit="hidden"
-            className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 xl:grid-cols-4"
           >
             {filteredProducts.map((product, index) => (
               <ProductRevealCard key={`${selectedBrand}-${product.id}`} index={index}>
                 <ProductCard 
                   product={product} 
-                  index={index} 
                   onAddToBag={onAddToBag}
                   onQuickView={handleQuickView}
                   selectedDecants={selectedDecants}
@@ -1021,70 +1078,6 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         setSelectedDecants={setSelectedDecants}
       />
 
-      {/* Mobile Brands Bottom Sheet - Fixed Overlay */}
-      <AnimatePresence>
-        {isBrandMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9999] bg-black/45 backdrop-blur-sm sm:hidden"
-            onClick={() => setIsBrandMenuOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 28 }}
-              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed bottom-0 left-0 right-0 max-h-[62vh] overflow-hidden rounded-t-[28px] border-t border-yellow-200 bg-[#fffdf6] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-22px_70px_rgba(0,0,0,0.24)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-yellow-600">Brands</p>
-                  <h3 className="text-xl font-black leading-tight text-neutral-950">Choose Brand</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsBrandMenuOpen(false)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_10px_25px_rgba(234,179,8,0.30)] transition hover:bg-yellow-300"
-                  aria-label="Close brands menu"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="scrollbar-auto-hide grid max-h-[42vh] gap-2 overflow-y-auto pr-1">
-                {brands.map((brand, index) => (
-                  <motion.button
-                    key={`mobile-${isBrandMenuOpen}-${brand}`}
-                    type="button"
-                    initial={{ opacity: 0, x: 22 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      duration: 0.52,
-                      delay: index * 0.07,
-                      ease: [0.22, 1, 0.36, 1]
-                    }}
-                    onClick={() => {
-                      onBrandSelect?.(brand);
-                      setIsBrandMenuOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-bold transition-all duration-300 ${
-                      selectedBrand === brand
-                        ? "bg-yellow-400 text-black shadow-[0_10px_24px_rgba(234,179,8,0.22)]"
-                        : "bg-white text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
-                    }`}
-                  >
-                    <span className="truncate">{brand}</span>
-                    {selectedBrand === brand && <Check className="h-4 w-4 shrink-0" />}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }

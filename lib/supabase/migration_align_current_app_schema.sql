@@ -1,10 +1,10 @@
--- GOSH PERFUME Database Schema
--- Run this in your Supabase SQL Editor for a fresh project.
+-- Migration: Align existing Supabase projects with the current app code.
+-- Run this after the older migrations if your project was created before schema.sql was updated.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Profiles Table
+-- Profiles used by auth, admin checks, and customer management.
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
@@ -15,33 +15,95 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Orders Table
-CREATE TABLE IF NOT EXISTS public.orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_number TEXT NOT NULL UNIQUE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  customer_name TEXT NOT NULL,
-  customer_email TEXT,
-  phone TEXT NOT NULL,
-  address TEXT NOT NULL,
-  city TEXT NOT NULL,
-  payment_method TEXT NOT NULL,
-  payment_status TEXT NOT NULL DEFAULT 'Unpaid',
-  payment_account_name TEXT,
-  payment_phone TEXT,
-  payment_account_number TEXT,
-  payment_screenshot_url TEXT,
-  subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
-  delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
-  discount DECIMAL(10,2) NOT NULL DEFAULT 0,
-  total DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
-  status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Confirmed', 'Processing', 'Delivered', 'Cancelled')),
-  admin_note TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = auth.uid()
+      AND role = 'admin'
+  );
+$$;
 
--- Order Items Table
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data ->> 'full_name',
+    'customer'
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET
+    email = EXCLUDED.email,
+    full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name),
+    updated_at = NOW();
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Orders and order items expected by checkout and admin notifications.
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS order_number TEXT,
+  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS customer_email TEXT,
+  ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Unpaid',
+  ADD COLUMN IF NOT EXISTS payment_account_name TEXT,
+  ADD COLUMN IF NOT EXISTS payment_phone TEXT,
+  ADD COLUMN IF NOT EXISTS payment_account_number TEXT,
+  ADD COLUMN IF NOT EXISTS subtotal DECIMAL(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS delivery_fee DECIMAL(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS discount DECIMAL(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS admin_note TEXT;
+
+DO $$
+DECLARE
+  orders_id_type TEXT;
+BEGIN
+  SELECT udt_name INTO orders_id_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'orders'
+    AND column_name = 'id';
+
+  IF orders_id_type = 'uuid' THEN
+    ALTER TABLE public.orders ALTER COLUMN id SET DEFAULT gen_random_uuid();
+  ELSE
+    RAISE NOTICE 'orders.id is %, not uuid. Fresh installs now use uuid ids. Existing text-id projects need a manual id migration before UUID notifications/order_items can be enforced.', orders_id_type;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_order_number ON public.orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON public.orders(payment_status);
+
 CREATE TABLE IF NOT EXISTS public.order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -56,25 +118,18 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Products Table
-CREATE TABLE IF NOT EXISTS public.products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  brand TEXT,
-  price DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (price >= 0),
-  description TEXT,
-  image TEXT,
-  stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
-  category TEXT,
-  decants JSONB NOT NULL DEFAULT '[]'::jsonb,
-  notes JSONB NOT NULL DEFAULT '{}'::jsonb,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  is_featured BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
 
--- Site Settings Table
+-- Product columns used by the admin product manager.
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS notes JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+ALTER TABLE public.products
+  ALTER COLUMN decants SET DEFAULT '[]'::jsonb;
+
+-- Site settings used by checkout, contact, and admin settings.
 CREATE TABLE IF NOT EXISTS public.site_settings (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   store_name TEXT NOT NULL DEFAULT 'GOSH PERFUME',
@@ -117,7 +172,11 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Contact Messages Table
+INSERT INTO public.site_settings (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
+-- Contact form messages shown in the admin Messages page.
 CREATE TABLE IF NOT EXISTS public.contact_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name TEXT NOT NULL,
@@ -130,7 +189,11 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Admin Notifications Table
+CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON public.contact_messages(status);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_email ON public.contact_messages(email);
+
+-- Admin notifications with UUID order ids.
 CREATE TABLE IF NOT EXISTS public.admin_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -141,69 +204,38 @@ CREATE TABLE IF NOT EXISTS public.admin_notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
-CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON public.orders(payment_status);
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_products_brand ON public.products(brand);
-CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
-CREATE INDEX IF NOT EXISTS idx_products_is_active ON public.products(is_active);
-CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON public.contact_messages(status);
-CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_contact_messages_email ON public.contact_messages(email);
-CREATE INDEX IF NOT EXISTS idx_admin_notifications_created_at ON public.admin_notifications(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_admin_notifications_is_read ON public.admin_notifications(is_read);
+-- Updated-at triggers.
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
--- Helper Functions
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN
-LANGUAGE SQL
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.profiles
-    WHERE id = auth.uid()
-      AND role = 'admin'
-  );
-$$;
+DROP TRIGGER IF EXISTS update_orders_updated_at ON public.orders;
+CREATE TRIGGER update_orders_updated_at
+  BEFORE UPDATE ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS update_products_updated_at ON public.products;
+CREATE TRIGGER update_products_updated_at
+  BEFORE UPDATE ON public.products
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    NEW.raw_user_meta_data ->> 'full_name',
-    'customer'
-  )
-  ON CONFLICT (id) DO UPDATE
-  SET
-    email = EXCLUDED.email,
-    full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name),
-    updated_at = NOW();
+DROP TRIGGER IF EXISTS update_site_settings_updated_at ON public.site_settings;
+CREATE TRIGGER update_site_settings_updated_at
+  BEFORE UPDATE ON public.site_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
-  RETURN NEW;
-END;
-$$;
+DROP TRIGGER IF EXISTS update_contact_messages_updated_at ON public.contact_messages;
+CREATE TRIGGER update_contact_messages_updated_at
+  BEFORE UPDATE ON public.contact_messages
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
+-- Notification triggers.
 CREATE OR REPLACE FUNCTION public.create_new_order_notification()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -246,45 +278,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
-
--- Triggers
-DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_orders_updated_at ON public.orders;
-CREATE TRIGGER update_orders_updated_at
-  BEFORE UPDATE ON public.orders
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_products_updated_at ON public.products;
-CREATE TRIGGER update_products_updated_at
-  BEFORE UPDATE ON public.products
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_site_settings_updated_at ON public.site_settings;
-CREATE TRIGGER update_site_settings_updated_at
-  BEFORE UPDATE ON public.site_settings
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_contact_messages_updated_at ON public.contact_messages;
-CREATE TRIGGER update_contact_messages_updated_at
-  BEFORE UPDATE ON public.contact_messages
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
-
 DROP TRIGGER IF EXISTS trg_create_new_order_notification ON public.orders;
 CREATE TRIGGER trg_create_new_order_notification
   AFTER INSERT ON public.orders
@@ -297,7 +290,7 @@ CREATE TRIGGER trg_create_order_cancel_notification
   FOR EACH ROW
   EXECUTE FUNCTION public.create_order_cancel_notification();
 
--- Row Level Security
+-- RLS.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
@@ -318,7 +311,18 @@ END $$;
 GRANT INSERT ON public.contact_messages TO anon, authenticated;
 GRANT SELECT, UPDATE, DELETE ON public.contact_messages TO authenticated;
 
--- Profiles Policies
+-- Drop older policy names that used legacy admin checks.
+DROP POLICY IF EXISTS "Allow public to insert orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow admin to view orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow admin to update orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow public to view products" ON public.products;
+DROP POLICY IF EXISTS "Allow admin to insert products" ON public.products;
+DROP POLICY IF EXISTS "Allow admin to update products" ON public.products;
+DROP POLICY IF EXISTS "Allow admin to delete products" ON public.products;
+DROP POLICY IF EXISTS "Allow public to insert order items" ON public.order_items;
+DROP POLICY IF EXISTS "Allow admin to view order items" ON public.order_items;
+
+-- Profiles.
 DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
 CREATE POLICY "profiles_select_own_or_admin"
   ON public.profiles FOR SELECT
@@ -338,7 +342,7 @@ CREATE POLICY "profiles_update_own_or_admin"
   USING (id = auth.uid() OR public.is_admin())
   WITH CHECK (id = auth.uid() OR public.is_admin());
 
--- Orders Policies
+-- Orders.
 DROP POLICY IF EXISTS "orders_insert_own" ON public.orders;
 CREATE POLICY "orders_insert_own"
   ON public.orders FOR INSERT
@@ -358,13 +362,7 @@ CREATE POLICY "orders_update_admin"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "orders_delete_admin" ON public.orders;
-CREATE POLICY "orders_delete_admin"
-  ON public.orders FOR DELETE
-  TO authenticated
-  USING (public.is_admin());
-
--- Order Items Policies
+-- Order items.
 DROP POLICY IF EXISTS "order_items_insert_for_own_order" ON public.order_items;
 CREATE POLICY "order_items_insert_for_own_order"
   ON public.order_items FOR INSERT
@@ -389,7 +387,7 @@ CREATE POLICY "order_items_select_own_or_admin"
     )
   );
 
--- Products Policies
+-- Products.
 DROP POLICY IF EXISTS "products_public_select_active" ON public.products;
 CREATE POLICY "products_public_select_active"
   ON public.products FOR SELECT
@@ -421,7 +419,7 @@ CREATE POLICY "products_delete_admin"
   TO authenticated
   USING (public.is_admin());
 
--- Site Settings Policies
+-- Site settings.
 DROP POLICY IF EXISTS "site_settings_public_select" ON public.site_settings;
 CREATE POLICY "site_settings_public_select"
   ON public.site_settings FOR SELECT
@@ -441,7 +439,7 @@ CREATE POLICY "site_settings_update_admin"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- Contact Messages Policies
+-- Contact messages.
 DROP POLICY IF EXISTS "contact_messages_public_insert" ON public.contact_messages;
 CREATE POLICY "contact_messages_public_insert"
   ON public.contact_messages FOR INSERT
@@ -467,7 +465,7 @@ CREATE POLICY "contact_messages_admin_delete"
   TO authenticated
   USING (public.is_admin());
 
--- Admin Notifications Policies
+-- Admin notifications.
 DROP POLICY IF EXISTS "admin_notifications_admin_select" ON public.admin_notifications;
 CREATE POLICY "admin_notifications_admin_select"
   ON public.admin_notifications FOR SELECT
@@ -480,27 +478,3 @@ CREATE POLICY "admin_notifications_admin_update"
   TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
-
-DROP POLICY IF EXISTS "admin_notifications_admin_delete" ON public.admin_notifications;
-CREATE POLICY "admin_notifications_admin_delete"
-  ON public.admin_notifications FOR DELETE
-  TO authenticated
-  USING (public.is_admin());
-
--- Default singleton settings row
-INSERT INTO public.site_settings (id)
-VALUES (1)
-ON CONFLICT (id) DO NOTHING;
-
--- Seed sample products (optional)
-INSERT INTO public.products (name, brand, price, description, image, stock, category, decants, is_active) VALUES
-('Golden Noir', 'Dior', 89, 'Warm amber, vanilla, dark wood', 'https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1200&auto=format&fit=crop', 45, 'Woody', '[{"label":"5ml","price":12},{"label":"10ml","price":20},{"label":"20ml","price":35},{"label":"30ml","price":48}]'::jsonb, true),
-('Velvet Oud', 'Chanel', 110, 'Deep oud, soft floral sweetness', 'https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=1200&auto=format&fit=crop', 32, 'Oriental', '[{"label":"5ml","price":15},{"label":"10ml","price":25},{"label":"20ml","price":42},{"label":"30ml","price":58}]'::jsonb, true),
-('Midnight Amber', 'Gucci', 96, 'Elegant spicy amber evening', 'https://images.unsplash.com/photo-1588405748880-12d1d2a59d75?q=80&w=1200&auto=format&fit=crop', 28, 'Oriental', '[{"label":"5ml","price":13},{"label":"10ml","price":22},{"label":"20ml","price":38},{"label":"30ml","price":52}]'::jsonb, true),
-('Sunlit Bloom', 'YSL', 78, 'Fresh citrus, soft floral finish', 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?q=80&w=1200&auto=format&fit=crop', 38, 'Floral', '[{"label":"5ml","price":10},{"label":"10ml","price":18},{"label":"20ml","price":30},{"label":"30ml","price":42}]'::jsonb, true),
-('Royal Musk', 'Versace', 120, 'Luxury musk, powdery warmth', 'https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=1200&auto=format&fit=crop', 25, 'Oriental', '[{"label":"5ml","price":16},{"label":"10ml","price":28},{"label":"20ml","price":48},{"label":"30ml","price":65}]'::jsonb, true),
-('Night Elixir', 'Tom Ford', 99, 'Bold, rich statement scent', 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=1200&auto=format&fit=crop', 30, 'Woody', '[{"label":"5ml","price":14},{"label":"10ml","price":23},{"label":"20ml","price":39},{"label":"30ml","price":54}]'::jsonb, true),
-('Ocean Breeze', 'Jo Malone', 85, 'Fresh marine, subtle citrus', 'https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1200&auto=format&fit=crop', 40, 'Fresh', '[{"label":"5ml","price":12},{"label":"10ml","price":19},{"label":"20ml","price":33},{"label":"30ml","price":46}]'::jsonb, true),
-('Silk Essence', 'Armani', 105, 'Sophisticated floral blend', 'https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=1200&auto=format&fit=crop', 22, 'Floral', '[{"label":"5ml","price":14},{"label":"10ml","price":24},{"label":"20ml","price":41},{"label":"30ml","price":56}]'::jsonb, true),
-('Rose Garden', 'Valentino', 115, 'Romantic rose, woody base', 'https://images.unsplash.com/photo-1588405748880-12d1d2a59d75?q=80&w=1200&auto=format&fit=crop', 18, 'Floral', '[{"label":"5ml","price":15},{"label":"10ml","price":26},{"label":"20ml","price":44},{"label":"30ml","price":60}]'::jsonb, true)
-ON CONFLICT DO NOTHING;

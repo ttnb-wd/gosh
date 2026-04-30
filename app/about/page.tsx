@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Sparkles, Heart, Award, Leaf, Users, ArrowRight, Star } from "lucide-react";
+import { Sparkles, Heart, Award, Leaf, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
 // Cart item type definition
 interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -23,7 +23,7 @@ export default function AboutPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
     } else {
@@ -125,15 +125,15 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-zinc-600 leading-relaxed">
                 <p>
-                  Founded in the heart of Beverly Hills, GOSH PERFUME began as a dream to create 
-                  fragrances that transcend the ordinary. Our founder, inspired by travels across 
-                  the world's most exotic locations, sought to capture the essence of luxury in 
+                  Founded in the heart of Beverly Hills, GOSH PERFUME began as a dream to create
+                  fragrances that transcend the ordinary. Our founder, inspired by travels across
+                  the world&apos;s most exotic locations, sought to capture the essence of luxury in
                   every bottle.
                 </p>
                 <p>
-                  What started as a small boutique has grown into a globally recognized luxury 
-                  brand, yet we've never lost sight of our core values: quality, craftsmanship, 
-                  and the belief that the right fragrance can transform not just how you smell, 
+                  What started as a small boutique has grown into a globally recognized luxury
+                  brand, yet we&apos;ve never lost sight of our core values: quality, craftsmanship,
+                  and the belief that the right fragrance can transform not just how you smell,
                   but how you feel.
                 </p>
                 <p>
@@ -184,7 +184,7 @@ export default function AboutPage() {
               <span className="block text-yellow-600">GOSH PERFUME</span>
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-zinc-600">
-              We don't just create perfumes; we craft experiences that become part of your identity.
+              We don&apos;t just create perfumes; we craft experiences that become part of your identity.
             </p>
           </motion.div>
 

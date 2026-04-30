@@ -2,6 +2,9 @@
 
 import { motion } from "framer-motion";
 
+const fallbackIngredientImage =
+  "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+
 const ingredients = [
   {
     name: "Jasmine",
@@ -47,17 +50,17 @@ export default function IngredientShowcase() {
           </p>
         </motion.div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {ingredients.map((ingredient, index) => (
             <motion.div
               key={ingredient.name}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
-              className="group relative"
+              className="group relative w-full"
             >
-              <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-lg transition-all duration-500 hover:shadow-2xl">
+              <div className="relative h-full overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-lg transition-all duration-500 hover:shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 
                 <div className="relative">
@@ -66,6 +69,12 @@ export default function IngredientShowcase() {
                       src={ingredient.image}
                       alt={ingredient.name}
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => {
+                        const image = e.currentTarget;
+                        if (image.src !== fallbackIngredientImage) {
+                          image.src = fallbackIngredientImage;
+                        }
+                      }}
                     />
                   </div>
                   

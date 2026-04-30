@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, Package, X, Eye, EyeOff, CheckCircle, Upload, ImageIcon } from "lucide-react";
+import { Plus, Edit, Trash2, Package, X, EyeOff, CheckCircle, Upload } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import PremiumSelect from "./PremiumSelect";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   brand: string;
   price: number;
@@ -19,6 +19,37 @@ interface Product {
   decants: { label: string; price: number }[];
 }
 
+const FALLBACK_PRODUCT_IMAGE =
+  "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+
+const getSafeProductImage = (image?: string | null) => {
+  const value = image?.trim();
+  if (!value) return FALLBACK_PRODUCT_IMAGE;
+  if (value.startsWith("/") || value.startsWith("blob:")) return value;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? value
+      : FALLBACK_PRODUCT_IMAGE;
+  } catch {
+    return FALLBACK_PRODUCT_IMAGE;
+  }
+};
+
+const getStorableProductImage = (image?: string | null) => {
+  const value = image?.trim();
+  if (!value || value.startsWith("blob:")) return "";
+  if (value.startsWith("/")) return value;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? value : "";
+  } catch {
+    return "";
+  }
+};
+
 export default function ProductManager() {
   const supabase = createSupabaseClient();
   const [products, setProducts] = useState<Product[]>([]);
@@ -28,8 +59,9 @@ export default function ProductManager() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [updatingProducts, setUpdatingProducts] = useState<Set<number>>(new Set());
+  const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const formatPrice = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
 
   // Image upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -211,13 +243,13 @@ export default function ProductManager() {
       ].filter((d) => d.price > 0);
 
       // Upload image if a new file was selected
-      let imageUrl = formData.image?.trim() || "";
+      let imageUrl = getStorableProductImage(formData.image);
       if (imageFile) {
         setUploadingImage(true);
         try {
           imageUrl = await uploadProductImage(imageFile);
-        } catch (uploadErr: any) {
-          setError(uploadErr.message || "Image upload failed. Please try again.");
+        } catch (uploadErr: unknown) {
+          setError(uploadErr instanceof Error ? uploadErr.message : "Image upload failed. Please try again.");
           setLoading(false);
           setUploadingImage(false);
           return;
@@ -305,7 +337,7 @@ export default function ProductManager() {
     }
   };
 
-  const toggleProductStatus = async (productId: number, currentStatus: boolean) => {
+  const toggleProductStatus = async (productId: string, currentStatus: boolean) => {
     // Add to updating set
     setUpdatingProducts(prev => new Set(prev).add(productId));
 
@@ -405,9 +437,15 @@ export default function ProductManager() {
               {/* Product Image */}
               <div className="relative aspect-square overflow-hidden bg-zinc-50">
                 <img
-                  src={product.image || "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop"}
+                  src={getSafeProductImage(product.image)}
                   alt={product.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  onError={(e) => {
+                    const image = e.currentTarget;
+                    if (image.src !== FALLBACK_PRODUCT_IMAGE) {
+                      image.src = FALLBACK_PRODUCT_IMAGE;
+                    }
+                  }}
                 />
                 {product.badge && (
                   <span className="absolute left-3 top-3 rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold uppercase text-black">
@@ -437,7 +475,7 @@ export default function ProductManager() {
                 <p className="mt-1 text-sm text-zinc-600">{product.description}</p>
                 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-xl font-black text-yellow-600">${product.price}</span>
+                  <span className="text-xl font-black text-yellow-600">{formatPrice(product.price)}</span>
                   <span className="text-sm font-semibold text-zinc-600">Stock: {product.stock}</span>
                 </div>
 
@@ -451,7 +489,7 @@ export default function ProductManager() {
                           key={decant.label}
                           className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700"
                         >
-                          {decant.label} - ${decant.price}
+                          {decant.label} - {formatPrice(decant.price)}
                         </span>
                       ))}
                     </div>
@@ -596,7 +634,7 @@ export default function ProductManager() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-bold text-neutral-800">
-                      Price ($) *
+                      Price (MMK) *
                     </label>
                     <input
                       type="number"
@@ -723,11 +761,14 @@ export default function ProductManager() {
                   {(imagePreview || formData.image) && (
                     <div className="relative mt-3 overflow-hidden rounded-2xl border border-yellow-200 bg-white p-2">
                       <img
-                        src={imagePreview || formData.image}
+                        src={imagePreview || getSafeProductImage(formData.image)}
                         alt="Product preview"
                         className="h-48 w-full rounded-xl object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
+                          const image = e.currentTarget;
+                          if (image.src !== FALLBACK_PRODUCT_IMAGE) {
+                            image.src = FALLBACK_PRODUCT_IMAGE;
+                          }
                         }}
                       />
                       <button
@@ -749,7 +790,7 @@ export default function ProductManager() {
 
                 <div>
                   <label className="mb-2 block text-sm font-bold text-neutral-800">
-                    Decant Sizes (Price in $)
+                    Decant Sizes (Price in MMK)
                   </label>
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <div>
@@ -857,7 +898,7 @@ export default function ProductManager() {
             <div className="border-b border-red-200/70 px-6 py-5">
               <h2 className="text-xl font-black text-neutral-950">Delete Product?</h2>
               <p className="mt-2 text-sm text-neutral-600">
-                This action permanently removes "{productToDelete.name}" and cannot be undone.
+                This action permanently removes &quot;{productToDelete.name}&quot; and cannot be undone.
               </p>
             </div>
 

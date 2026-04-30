@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface AdminAuthContextType {
@@ -24,12 +24,20 @@ export default function AdminAuthProvider({ children }: { children: React.ReactN
 
   useEffect(() => {
     const supabase = createSupabaseClient();
+    let isMounted = true;
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Get initial user
+    getSupabaseUser(supabase)
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        setUser(error ? null : data.user);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setUser(null);
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const {
@@ -39,7 +47,10 @@ export default function AdminAuthProvider({ children }: { children: React.ReactN
       router.refresh();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   return (

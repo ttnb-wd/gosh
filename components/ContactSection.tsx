@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
 export default function ContactSection() {
   const { settings } = useSiteSettings();
@@ -13,6 +14,8 @@ export default function ContactSection() {
     subject: "",
     message: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [formStatus, setFormStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Fallback values
   const storeName = settings.store_name || "GOSH PERFUME";
@@ -31,17 +34,35 @@ export default function ContactSection() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to Supabase later
-    console.log("Form submitted:", formData);
-    // Reset form after submission
-    setFormData({
-      fullName: "",
-      email: "",
-      subject: "",
-      message: "",
-    });
+    setSubmitting(true);
+    setFormStatus(null);
+
+    try {
+      const supabase = createSupabaseClient();
+      const { error } = await supabase.from("contact_messages").insert({
+        full_name: formData.fullName.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      });
+
+      if (error) throw error;
+
+      setFormData({
+        fullName: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+      setFormStatus({ type: "success", text: "Message sent. Our team will reply soon." });
+    } catch (error) {
+      console.error("Contact form submit error:", error);
+      setFormStatus({ type: "error", text: "Could not send your message. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const cardVariants = {
@@ -192,6 +213,18 @@ export default function ContactSection() {
               <h2 className="text-2xl font-bold text-black mb-6">Send us a Message</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
+                {formStatus && (
+                  <div
+                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                      formStatus.type === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-red-200 bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {formStatus.text}
+                  </div>
+                )}
+
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-semibold text-black mb-2">
                     Full Name *
@@ -258,12 +291,13 @@ export default function ContactSection() {
 
                 <motion.button
                   type="submit"
+                  disabled={submitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-8 py-4 font-semibold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-8 py-4 font-semibold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Send className="h-5 w-5 transition group-hover:translate-x-1" />
-                  Send Message
+                  {submitting ? "Sending..." : "Send Message"}
                 </motion.button>
               </form>
             </div>

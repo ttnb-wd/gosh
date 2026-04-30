@@ -7,7 +7,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import PremiumStatusSelect from "@/components/admin/PremiumStatusSelect";
 
 interface OrderItem {
-  id: number;
+  id: string;
   product_name: string;
   product_brand: string | null;
   product_image: string | null;
@@ -40,24 +40,40 @@ interface Order {
   order_items?: OrderItem[];
 }
 
+const statusFilters = ["All", "Pending", "Confirmed", "Processing", "Delivered", "Cancelled"] as const;
+const paymentFilters = ["All", "Unpaid", "Paid", "Verifying", "Failed", "Refunded"] as const;
+
 export default function OrdersTable() {
   const supabase = createSupabaseClient();
   const searchParams = useSearchParams();
   const orderIdFromNotification = searchParams.get("orderId");
+  const statusFromUrl = searchParams.get("status");
+  const paymentFromUrl = searchParams.get("payment");
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<string>("All");
+  const [paymentFilter, setPaymentFilter] = useState<string>("All");
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState<string | null>(null);
   const [paymentScreenshotError, setPaymentScreenshotError] = useState(false);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [, setExpandedOrderId] = useState<string | null>(null);
   const [openedNotificationOrderId, setOpenedNotificationOrderId] = useState<string | null>(null);
   const [notificationOrderNotFound, setNotificationOrderNotFound] = useState(false);
 
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    if (statusFromUrl && statusFilters.includes(statusFromUrl as typeof statusFilters[number])) {
+      setFilter(statusFromUrl);
+    }
+
+    if (paymentFromUrl && paymentFilters.includes(paymentFromUrl as typeof paymentFilters[number])) {
+      setPaymentFilter(paymentFromUrl);
+    }
+  }, [paymentFromUrl, statusFromUrl]);
 
   // Auto-expand order from notification
   useEffect(() => {
@@ -225,23 +241,6 @@ export default function OrdersTable() {
     return "bg-yellow-100 text-yellow-700 border-yellow-200";
   };
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case "Unpaid":
-        return "bg-zinc-100 text-zinc-700 border-zinc-200";
-      case "Verifying":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "Paid":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "Failed":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "Refunded":
-        return "bg-purple-100 text-purple-700 border-purple-200";
-      default:
-        return "bg-zinc-100 text-zinc-700 border-zinc-200";
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Pending":
@@ -276,7 +275,12 @@ export default function OrdersTable() {
     }
   };
 
-  const filteredOrders = filter === "All" ? orders : orders.filter((order) => order.status === filter);
+  const filteredOrders = orders.filter((order) => {
+    const matchesStatus = filter === "All" || order.status === filter;
+    const matchesPayment = paymentFilter === "All" || order.payment_status === paymentFilter;
+
+    return matchesStatus && matchesPayment;
+  });
 
   if (loading) {
     return (
@@ -290,20 +294,38 @@ export default function OrdersTable() {
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {["All", "Pending", "Confirmed", "Processing", "Delivered", "Cancelled"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-              filter === status
-                ? "bg-yellow-400 text-black shadow-md"
-                : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
-            }`}
-          >
-            {status}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {statusFilters.map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                filter === status
+                  ? "bg-yellow-400 text-black shadow-md"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {paymentFilters.map((status) => (
+            <button
+              key={status}
+              onClick={() => setPaymentFilter(status)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                paymentFilter === status
+                  ? "bg-black text-white shadow-md"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+              }`}
+            >
+              {status === "All" ? "All Payments" : status}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Notification Order Not Found Message */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function BrandStory() {
   return (
@@ -25,10 +26,10 @@ export default function BrandStory() {
                 Since 2018, GOSH PERFUME has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.
               </p>
               <p>
-                Our master perfumers blend tradition with innovation, using only the finest ingredients sourced from the world's most prestigious suppliers. Every fragrance is a masterpiece, designed to become your signature.
+                Our master perfumers blend tradition with innovation, using only the finest ingredients sourced from the world&apos;s most prestigious suppliers. Every fragrance is a masterpiece, designed to become your signature.
               </p>
               <p>
-                We believe that perfume is more than just a scent—it's an expression of who you are, a memory in the making, and a statement of elegance that lingers long after you've left the room.
+                We believe that perfume is more than just a scent—it&apos;s an expression of who you are, a memory in the making, and a statement of elegance that lingers long after you&apos;ve left the room.
               </p>
             </div>
           </motion.div>
@@ -41,11 +42,13 @@ export default function BrandStory() {
             className="relative"
           >
             <div className="absolute -inset-4 rounded-3xl bg-yellow-400/20 blur-3xl" />
-            <div className="relative overflow-hidden rounded-3xl border border-zinc-200 shadow-2xl">
-              <img
+            <div className="relative h-[500px] overflow-hidden rounded-3xl border border-zinc-200 shadow-2xl">
+              <Image
                 src="https://images.unsplash.com/photo-1594735982593-1b0f3e4e5e5e?q=80&w=1200&auto=format&fit=crop"
                 alt="Perfume craftsmanship"
-                className="h-[500px] w-full object-cover"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
               />
             </div>
           </motion.div>

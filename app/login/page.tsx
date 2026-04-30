@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
 
 function LoginForm() {
@@ -87,7 +87,7 @@ function LoginForm() {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await getSupabaseUser(supabase);
 
       if (userError || !user) {
         setError("Could not verify logged in user.");

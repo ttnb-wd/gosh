@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User, LogOut, ShoppingBag, XCircle } from "lucide-react";
+import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -14,11 +14,22 @@ interface AdminHeaderProps {
 
 interface AdminNotification {
   id: string;
-  order_id: string;
+  source: "order" | "contact";
+  order_id: string | null;
   type: string;
   title: string;
   message: string;
   is_read: boolean;
+  created_at: string;
+}
+
+interface ContactMessageNotification {
+  id: string;
+  full_name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: string;
   created_at: string;
 }
 
@@ -33,28 +44,57 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const toContactNotification = (message: ContactMessageNotification): AdminNotification => ({
+    id: message.id,
+    source: "contact",
+    order_id: null,
+    type: "contact_message",
+    title: "New Contact Message",
+    message: `${message.full_name}: ${message.subject}`,
+    is_read: message.status !== "unread",
+    created_at: message.created_at,
+  });
+
   const fetchNotifications = async () => {
     try {
       const supabase = createSupabaseClient();
-      const { data, error } = await supabase
-        .from("admin_notifications")
-        .select("*")
-        .in("type", ["new_order", "order_cancelled"])
-        .order("created_at", { ascending: false })
-        .limit(10);
+      const [orderNotifications, contactMessages] = await Promise.all([
+        supabase
+          .from("admin_notifications")
+          .select("*")
+          .in("type", ["new_order", "order_cancelled", "payment_uploaded", "payment_verifying", "order_status_changed"])
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("contact_messages")
+          .select("id, full_name, email, subject, message, status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
 
-      if (error) {
-        console.error("Notification fetch error:", error);
-        return;
+      if (orderNotifications.error) {
+        console.error("Notification fetch error:", orderNotifications.error);
       }
 
-      console.log("Fetched notifications:", data?.length || 0);
-      
-      // Deduplicate by id
+      if (contactMessages.error) {
+        console.error("Contact notification fetch error:", contactMessages.error);
+      }
+
+      const mappedOrderNotifications = (orderNotifications.data || []).map((item) => ({
+        ...item,
+        source: "order" as const,
+        order_id: item.order_id || null,
+      }));
+      const mappedContactMessages = ((contactMessages.data || []) as ContactMessageNotification[]).map(toContactNotification);
+
       const uniqueNotifications = Array.from(
-        new Map((data || []).map((item) => [item.id, item])).values()
-      );
-      
+        new Map(
+          [...mappedOrderNotifications, ...mappedContactMessages]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .map((item) => [`${item.source}-${item.id}`, item])
+        ).values()
+      ).slice(0, 12);
+
       setNotifications(uniqueNotifications);
     } catch (error) {
       console.error("Notification fetch error:", error);
@@ -79,14 +119,39 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           
           // Prevent duplicate notifications
           setNotifications((prev) => {
-            const next = payload.new as AdminNotification;
+            const next = {
+              ...(payload.new as Omit<AdminNotification, "source">),
+              source: "order" as const,
+              order_id: (payload.new as { order_id?: string | null }).order_id || null,
+            };
             
             // Check if notification already exists
-            if (prev.some((item) => item.id === next.id)) {
+            if (prev.some((item) => item.source === next.source && item.id === next.id)) {
               console.log("Duplicate notification prevented:", next.id);
               return prev;
             }
             
+            return [next, ...prev];
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "contact_messages",
+        },
+        (payload) => {
+          console.log("Realtime contact notification received:", payload.new);
+
+          setNotifications((prev) => {
+            const next = toContactNotification(payload.new as ContactMessageNotification);
+
+            if (prev.some((item) => item.source === next.source && item.id === next.id)) {
+              return prev;
+            }
+
             return [next, ...prev];
           });
         }
@@ -118,13 +183,22 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     };
   }, [notiOpen]);
 
-  const markNotificationRead = async (id: string) => {
+  const markNotificationRead = async (notification: AdminNotification) => {
     try {
       const supabase = createSupabaseClient();
-      await supabase.from("admin_notifications").update({ is_read: true }).eq("id", id);
+
+      if (notification.source === "contact") {
+        await supabase.from("contact_messages").update({ status: "read" }).eq("id", notification.id);
+      } else {
+        await supabase.from("admin_notifications").update({ is_read: true }).eq("id", notification.id);
+      }
 
       setNotifications((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, is_read: true } : item))
+        prev.map((item) =>
+          item.source === notification.source && item.id === notification.id
+            ? { ...item, is_read: true }
+            : item
+        )
       );
     } catch (error) {
       console.error("Mark read error:", error);
@@ -134,7 +208,10 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const markAllNotificationsRead = async () => {
     try {
       const supabase = createSupabaseClient();
-      await supabase.from("admin_notifications").update({ is_read: true }).eq("is_read", false);
+      await Promise.all([
+        supabase.from("admin_notifications").update({ is_read: true }).eq("is_read", false),
+        supabase.from("contact_messages").update({ status: "read" }).eq("status", "unread"),
+      ]);
 
       setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error) {
@@ -144,10 +221,16 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case "contact_message":
+        return <MessageSquare className="h-4 w-4" />;
       case "new_order":
         return <ShoppingBag className="h-4 w-4" />;
       case "order_cancelled":
         return <XCircle className="h-4 w-4" />;
+      case "payment_uploaded":
+      case "payment_verifying":
+      case "order_status_changed":
+        return <Bell className="h-4 w-4" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
@@ -227,7 +310,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     ) : (
                       notifications.map((notification, index) => (
                         <motion.button
-                          key={notification.id}
+                          key={`${notification.source}-${notification.id}`}
                           initial={{ opacity: 0, x: 10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{
@@ -237,11 +320,12 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           }}
                           type="button"
                           onClick={async () => {
-                            await markNotificationRead(notification.id);
+                            await markNotificationRead(notification);
                             setNotiOpen(false);
                             
-                            // Navigate to orders page with order_id to open details
-                            if (notification.order_id) {
+                            if (notification.source === "contact") {
+                              router.push("/admin/messages");
+                            } else if (notification.order_id) {
                               router.push(`/admin/orders?orderId=${notification.order_id}`);
                             } else {
                               router.push("/admin/orders");
@@ -273,16 +357,28 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   </div>
 
                   <div className="border-t border-yellow-100 bg-white p-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        router.push("/admin/orders");
-                        setNotiOpen(false);
-                      }}
-                      className="w-full rounded-full bg-yellow-400 px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-300"
-                    >
-                      View Orders
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          router.push("/admin/orders");
+                          setNotiOpen(false);
+                        }}
+                        className="rounded-full bg-yellow-400 px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-300"
+                      >
+                        Orders
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          router.push("/admin/messages");
+                          setNotiOpen(false);
+                        }}
+                        className="rounded-full border border-yellow-200 bg-white px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-50"
+                      >
+                        Messages
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}

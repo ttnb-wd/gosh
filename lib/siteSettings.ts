@@ -152,9 +152,12 @@ export async function updateSiteSettings(
     }
 
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Unexpected error updating site settings:", err);
-    return { success: false, error: err.message || "Failed to update settings" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update settings",
+    };
   }
 }
 

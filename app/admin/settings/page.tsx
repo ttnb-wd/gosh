@@ -15,9 +15,6 @@ import {
   AlertCircle,
   Store,
   CreditCard,
-  Megaphone,
-  Share2,
-  Settings as SettingsIcon,
 } from "lucide-react";
 
 export default function AdminSettingsPage() {

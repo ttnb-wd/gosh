@@ -8,7 +8,7 @@ import CartDrawer from "@/components/CartDrawer";
 
 // Cart item type definition
 interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -21,7 +21,7 @@ export default function ContactPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
     } else {

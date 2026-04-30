@@ -1,30 +1,30 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
   description: string;
   image: string;
   badge: string | null;
-  decants?: { label: string; price: number }[];
+  decants: { label: string; price: number }[];
 }
 
 interface QuickViewModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToBag: (product: any, quantity: number) => void;
-  selectedDecants: Record<number, { label: string; price: number }>;
-  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<number, { label: string; price: number }>>>;
+  onAddToBag: (product: Product, quantity: number) => void;
+  selectedDecants: Record<string, { label: string; price: number }>;
+  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<string, { label: string; price: number }>>>;
 }
 
-export default function QuickViewModal({ product, isOpen, onClose, onAddToBag, selectedDecants, setSelectedDecants }: QuickViewModalProps) {
+export default function QuickViewModal(props: QuickViewModalProps) {
+  const { product, isOpen, onClose } = props;
   const [activeTab, setActiveTab] = useState<"top" | "heart" | "base">("top");
 
   useEffect(() => {

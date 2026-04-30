@@ -9,7 +9,7 @@ import CartDrawer from "@/components/CartDrawer";
 
 // Cart item type definition
 interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -20,7 +20,7 @@ interface CartItem {
 
 // Product type (from ProductSection)
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -35,7 +35,7 @@ export default function ProductsPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedBrand, setSelectedBrand] = useState("All");
-  const lastAddedRef = useRef<{ id: number; timestamp: number } | null>(null);
+  const lastAddedRef = useRef<{ id: string | number; timestamp: number } | null>(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -69,7 +69,6 @@ export default function ProductsPage() {
   const handleAddToBag = (product: Product) => {
     // Prevent duplicate adds within 300ms
     const now = Date.now();
-    const cartKey = `${product.id}-${product.selectedSize || 'default'}`;
     if (lastAddedRef.current?.id === product.id && now - lastAddedRef.current.timestamp < 300) {
       return;
     }
@@ -110,7 +109,7 @@ export default function ProductsPage() {
     // Do NOT open cart drawer - just add to cart silently
   };
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       // Remove item from cart
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));

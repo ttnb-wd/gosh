@@ -66,7 +66,7 @@ export default function Testimonials() {
                   ))}
                 </div>
                 
-                <p className="mb-6 text-zinc-600 leading-relaxed">"{testimonial.content}"</p>
+                <p className="mb-6 text-zinc-600 leading-relaxed">&quot;{testimonial.content}&quot;</p>
                 
                 <div className="flex items-center gap-4">
                   <img

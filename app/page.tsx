@@ -16,7 +16,7 @@ import CartDrawer from "@/components/CartDrawer";
 
 // Cart item type definition
 export interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -32,7 +32,7 @@ export default function Page() {
   // Calculate cart count from cartItems
   const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       // Remove item from cart
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));

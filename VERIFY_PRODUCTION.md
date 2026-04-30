@@ -129,7 +129,7 @@ In Vercel Project Settings → Environment Variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL
-Value: https://wfiejzhiuuegfxjbdupq.supabase.co
+Value: your Supabase project URL
 
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 Value: eyJhbGci... (your anon key)

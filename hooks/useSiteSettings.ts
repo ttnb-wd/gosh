@@ -18,9 +18,9 @@ export function useSiteSettings() {
       setError(null);
       const data = await getSiteSettings();
       setSettings(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("useSiteSettings error:", err);
-      setError(err?.message || "Failed to load site settings");
+      setError(err instanceof Error ? err.message : "Failed to load site settings");
       setSettings(getDefaultSettings());
     } finally {
       setLoading(false);

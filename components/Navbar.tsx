@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, X, Sparkles, ShoppingBag, LogIn, CircleUserRound, LogOut } from "lucide-react";
+import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut } from "lucide-react";
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface NavbarProps {
@@ -23,12 +23,20 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
       return;
     }
 
-    const supabase = createSupabaseClient();
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", currentUser.id)
-      .maybeSingle();
+    let profile: { full_name?: string | null; email?: string | null } | null = null;
+
+    try {
+      const supabase = createSupabaseClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      profile = data;
+    } catch {
+      profile = null;
+    }
 
     const displayName =
       profile?.full_name ||
@@ -44,10 +52,16 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
     const supabase = createSupabaseClient();
     
     // Get initial user
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      loadUserProfile(data.user);
-    });
+    getSupabaseUser(supabase)
+      .then(({ data, error }) => {
+        const currentUser = error ? null : data.user;
+        setUser(currentUser);
+        loadUserProfile(currentUser);
+      })
+      .catch(() => {
+        setUser(null);
+        loadUserProfile(null);
+      });
 
     // Listen to auth state changes
     const {
@@ -86,17 +100,21 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-500 shadow-sm">
-            <Sparkles className="h-5 w-5" />
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+        <Link href="/" className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-3">
+          <div className="group/logo relative flex h-16 w-16 shrink-0 items-center justify-center overflow-visible rounded-full shadow-[0_14px_34px_rgba(234,179,8,0.20)] transition-all duration-500 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_20px_48px_rgba(234,179,8,0.30)] sm:h-20 sm:w-20">
+            <img
+              src="/images/gosh-circle-logo.png"
+              alt="GOSH Perfume Studio"
+              className="relative h-full w-full object-contain object-center drop-shadow-[0_6px_14px_rgba(92,54,5,0.35)] transition-all duration-500 group-hover/logo:drop-shadow-[0_9px_20px_rgba(161,98,7,0.45)]"
+            />
           </div>
 
-          <div>
-            <h1 className="text-lg font-bold tracking-wide text-black">
+          <div className="min-w-0">
+            <h1 className="truncate text-[15px] font-black tracking-wide text-black sm:text-lg">
               GOSH PERFUME
             </h1>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-yellow-500">
+            <p className="truncate text-[9px] uppercase tracking-[0.2em] text-yellow-500 sm:text-[11px] sm:tracking-[0.3em]">
               Luxury Perfume
             </p>
           </div>
@@ -204,13 +222,32 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="rounded-xl border border-yellow-400/30 bg-white p-2 text-yellow-500 md:hidden"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+          <button
+            type="button"
+            onClick={onCartOpen}
+            className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95"
+            aria-label="Open shopping bag"
+            title="Open shopping bag"
+          >
+            <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
+            <ShoppingBag className="relative h-[18px] w-[18px]" />
+            {cartCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-400 px-1 text-[10px] font-black text-black shadow-sm">
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition active:scale-95"
+            aria-label="Open navigation menu"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {open && (

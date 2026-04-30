@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
@@ -23,6 +23,16 @@ interface Order {
   created_at: string;
 }
 
+interface CartItem {
+  id: string | number;
+  name: string;
+  brand: string;
+  price: number;
+  image: string;
+  qty: number;
+  selectedSize?: string;
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -30,7 +40,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -60,7 +70,7 @@ export default function OrdersPage() {
   // Check authentication and load orders
   useEffect(() => {
     const checkAuthAndLoadOrders = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getSupabaseUser(supabase);
       
       if (!user) {
         router.push("/login?redirect=/orders");
@@ -140,7 +150,7 @@ export default function OrdersPage() {
     setLoading(false);
   };
 
-  const updateCartItemQuantity = (id: number, selectedSize: string | undefined, newQuantity: number) => {
+  const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
       const updatedItems = cartItems.filter(item => !(item.id === id && item.selectedSize === selectedSize));
       setCartItems(updatedItems);

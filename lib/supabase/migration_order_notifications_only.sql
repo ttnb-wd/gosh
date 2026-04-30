@@ -19,10 +19,10 @@ BEGIN
   END IF;
 END $$;
 
--- Add new constraint with only order event types
+-- Add current notification type constraint
 ALTER TABLE public.admin_notifications
 ADD CONSTRAINT admin_notifications_type_check
-CHECK (type IN ('new_order', 'order_cancelled'));
+CHECK (type IN ('new_order', 'order_cancelled', 'payment_uploaded', 'payment_verifying', 'order_status_changed'));
 
 -- Step 2: Create/Replace New Order Notification Trigger
 CREATE OR REPLACE FUNCTION public.create_new_order_notification()

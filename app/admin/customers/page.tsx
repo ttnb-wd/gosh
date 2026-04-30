@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { Search, User, Mail, Phone, ShoppingBag, DollarSign, Calendar, X, Crown } from "lucide-react";
+import { Search, User, Mail, Phone, ShoppingBag, DollarSign, X, Crown } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -82,7 +82,6 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     applyFiltersAndSort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, searchQuery, filterType, sortType]);
 
   const fetchCustomers = async () => {
@@ -152,8 +151,8 @@ export default function AdminCustomersPage() {
       });
 
       setCustomers(customersData);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch customers");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch customers");
     } finally {
       setLoading(false);
     }

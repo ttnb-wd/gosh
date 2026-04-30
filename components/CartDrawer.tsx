@@ -5,7 +5,7 @@ import { X, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface CartItem {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;
@@ -18,7 +18,7 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems?: CartItem[];
-  onUpdateQuantity?: (id: number, selectedSize: string | undefined, newQuantity: number) => void;
+  onUpdateQuantity?: (id: string | number, selectedSize: string | undefined, newQuantity: number) => void;
 }
 
 export default function CartDrawer({ 
