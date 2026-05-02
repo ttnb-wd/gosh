@@ -2,16 +2,55 @@
 
 import { motion } from "framer-motion";
 import { Mail, Gift } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle newsletter signup
-    console.log("Newsletter signup:", email);
-    setEmail("");
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      if (!turnstileToken) {
+        setStatus({ type: "error", text: "Please complete the security check." });
+        return;
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          token: turnstileToken,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not subscribe right now.");
+
+      setEmail("");
+      setStatus({ type: "success", text: "You are subscribed to the VIP club." });
+      resetTurnstile();
+    } catch (error) {
+      console.error("Newsletter signup error:", error);
+      setStatus({ type: "error", text: "Could not subscribe right now. Please try again." });
+      resetTurnstile();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -57,12 +96,31 @@ export default function Newsletter() {
                 </div>
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="rounded-full bg-black px-8 py-4 font-semibold text-white transition hover:bg-black/90 hover:scale-105"
                 >
-                  Subscribe
+                  {submitting ? "Subscribing..." : "Subscribe"}
                 </button>
               </div>
+              <div className="mt-4">
+                <TurnstileWidget
+                  action="newsletter"
+                  resetKey={turnstileResetKey}
+                  onVerify={setTurnstileToken}
+                  onExpire={resetTurnstile}
+                />
+              </div>
             </form>
+
+            {status && (
+              <p
+                className={`mt-4 text-sm font-semibold ${
+                  status.type === "success" ? "text-black" : "text-red-800"
+                }`}
+              >
+                {status.text}
+              </p>
+            )}
 
             <p className="mt-4 text-sm text-black/70">
               No spam, unsubscribe anytime. Your privacy is protected.

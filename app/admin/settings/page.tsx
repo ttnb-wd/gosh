@@ -25,6 +25,7 @@ export default function AdminSettingsPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -73,15 +74,16 @@ export default function AdminSettingsPage() {
   };
 
   const handleReset = () => {
-    if (
-      confirm("Are you sure you want to reset all settings to defaults?")
-    ) {
-      setSettings(getDefaultSettings());
-      setMessage({
-        type: "success",
-        text: "Settings reset to defaults. Click Save to apply.",
-      });
-    }
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = () => {
+    setSettings(getDefaultSettings());
+    setMessage({
+      type: "success",
+      text: "Settings reset to defaults. Click Save to apply.",
+    });
+    setShowResetConfirm(false);
   };
 
   const updateSetting = <K extends keyof SiteSettings>(
@@ -471,6 +473,41 @@ export default function AdminSettingsPage() {
             </button>
           </div>
         </div>
+
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-md">
+            <div className="w-full max-w-md overflow-hidden rounded-[24px] border border-yellow-200 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.28),0_0_45px_rgba(234,179,8,0.18)]">
+              <div className="border-b border-yellow-100 px-6 py-5">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
+                  Reset Settings
+                </p>
+                <h2 className="mt-1 text-xl font-black text-black">
+                  Restore defaults?
+                </h2>
+                <p className="mt-2 text-sm font-medium text-zinc-600">
+                  This will replace the form values with default store settings. You still need to click Save Settings to apply them.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="rounded-full border border-zinc-300 bg-white px-5 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmReset}
+                  className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.30)] transition hover:bg-yellow-300"
+                >
+                  Reset Defaults
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

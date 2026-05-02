@@ -17,6 +17,16 @@ interface Product {
   category: string;
   is_active: boolean;
   decants: { label: string; price: number }[];
+  notes?: ProductQuickViewNotes | null;
+}
+
+interface ProductQuickViewNotes {
+  story?: string;
+  top?: string[];
+  heart?: string[];
+  base?: string[];
+  madeWith?: string;
+  bestFor?: string;
 }
 
 const FALLBACK_PRODUCT_IMAGE =
@@ -50,6 +60,24 @@ const getStorableProductImage = (image?: string | null) => {
   }
 };
 
+const parseCommaSeparatedNotes = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const stringifyNotes = (value?: string[]) => (Array.isArray(value) ? value.join(", ") : "");
+
+const hasQuickViewNotes = (notes: ProductQuickViewNotes) =>
+  Boolean(
+    notes.story ||
+      notes.top?.length ||
+      notes.heart?.length ||
+      notes.base?.length ||
+      notes.madeWith ||
+      notes.bestFor
+  );
+
 export default function ProductManager() {
   const supabase = createSupabaseClient();
   const [products, setProducts] = useState<Product[]>([]);
@@ -61,6 +89,7 @@ export default function ProductManager() {
   const [error, setError] = useState("");
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const formatPrice = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
 
   // Image upload state
@@ -121,6 +150,12 @@ export default function ProductManager() {
     decant10ml: "",
     decant20ml: "",
     decant30ml: "",
+    quickStory: "",
+    topNotes: "",
+    heartNotes: "",
+    baseNotes: "",
+    madeWith: "",
+    bestFor: "",
   });
 
   useEffect(() => {
@@ -171,6 +206,12 @@ export default function ProductManager() {
       decant10ml: "",
       decant20ml: "",
       decant30ml: "",
+      quickStory: "",
+      topNotes: "",
+      heartNotes: "",
+      baseNotes: "",
+      madeWith: "",
+      bestFor: "",
     });
     setImageFile(null);
     setImagePreview("");
@@ -193,6 +234,12 @@ export default function ProductManager() {
       decant10ml: product.decants?.find(d => d.label === "10ml")?.price.toString() || "",
       decant20ml: product.decants?.find(d => d.label === "20ml")?.price.toString() || "",
       decant30ml: product.decants?.find(d => d.label === "30ml")?.price.toString() || "",
+      quickStory: product.notes?.story || "",
+      topNotes: stringifyNotes(product.notes?.top),
+      heartNotes: stringifyNotes(product.notes?.heart),
+      baseNotes: stringifyNotes(product.notes?.base),
+      madeWith: product.notes?.madeWith || "",
+      bestFor: product.notes?.bestFor || "",
     });
     setImageFile(null);
     setImagePreview("");
@@ -242,6 +289,15 @@ export default function ProductManager() {
         { label: "30ml", price: Number(formData.decant30ml || 0) },
       ].filter((d) => d.price > 0);
 
+      const quickViewNotes: ProductQuickViewNotes = {
+        story: formData.quickStory.trim(),
+        top: parseCommaSeparatedNotes(formData.topNotes),
+        heart: parseCommaSeparatedNotes(formData.heartNotes),
+        base: parseCommaSeparatedNotes(formData.baseNotes),
+        madeWith: formData.madeWith.trim(),
+        bestFor: formData.bestFor.trim(),
+      };
+
       // Upload image if a new file was selected
       let imageUrl = getStorableProductImage(formData.image);
       if (imageFile) {
@@ -270,7 +326,7 @@ export default function ProductManager() {
         is_active: Boolean(formData.is_active),
         is_featured: false,
         decants: decants.length > 0 ? decants : [],
-        notes: {},
+        notes: hasQuickViewNotes(quickViewNotes) ? quickViewNotes : {},
       };
 
       console.log("Product payload:", productPayload);
@@ -322,6 +378,12 @@ export default function ProductManager() {
         decant10ml: "",
         decant20ml: "",
         decant30ml: "",
+        quickStory: "",
+        topNotes: "",
+        heartNotes: "",
+        baseNotes: "",
+        madeWith: "",
+        bestFor: "",
       });
       setImageFile(null);
       setImagePreview("");
@@ -367,6 +429,7 @@ export default function ProductManager() {
   };
 
   const openDeleteModal = (product: Product) => {
+    setDeleteError("");
     setProductToDelete(product);
     setShowDeleteModal(true);
   };
@@ -374,6 +437,7 @@ export default function ProductManager() {
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
     setProductToDelete(null);
+    setDeleteError("");
   };
 
   const confirmDeleteProduct = async () => {
@@ -388,7 +452,7 @@ export default function ProductManager() {
 
       if (error) {
         console.error("Error deleting product:", error);
-        alert("Failed to delete product");
+        setDeleteError("Failed to delete product. Please try again.");
         return;
       }
 
@@ -397,7 +461,7 @@ export default function ProductManager() {
       loadProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
-      alert("Failed to delete product");
+      setDeleteError("Failed to delete product. Please try again.");
     } finally {
       setDeletingProduct(false);
     }
@@ -788,6 +852,101 @@ export default function ProductManager() {
                   )}
                 </div>
 
+                <div className="rounded-[24px] border border-yellow-200 bg-white/70 p-4">
+                  <div className="mb-4">
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">
+                      Quick View Details
+                    </p>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      Optional content shown inside product quick view.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        The Story
+                      </label>
+                      <textarea
+                        name="quickStory"
+                        value={formData.quickStory}
+                        onChange={handleInputChange}
+                        className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                        placeholder="A short realistic story about the fragrance, mood, and character."
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                          Top Notes
+                        </label>
+                        <input
+                          type="text"
+                          name="topNotes"
+                          value={formData.topNotes}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="Bergamot, Citrus"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                          Heart Notes
+                        </label>
+                        <input
+                          type="text"
+                          name="heartNotes"
+                          value={formData.heartNotes}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="Jasmine, Rose"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                          Base Notes
+                        </label>
+                        <input
+                          type="text"
+                          name="baseNotes"
+                          value={formData.baseNotes}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="Amber, Vanilla"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                          Made With
+                        </label>
+                        <textarea
+                          name="madeWith"
+                          value={formData.madeWith}
+                          onChange={handleInputChange}
+                          className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="Premium oils, clean alcohol base, and carefully balanced aroma compounds."
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                          Best For
+                        </label>
+                        <textarea
+                          name="bestFor"
+                          value={formData.bestFor}
+                          onChange={handleInputChange}
+                          className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="Daily wear, evening events, office, dates, or special occasions."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="mb-2 block text-sm font-bold text-neutral-800">
                     Decant Sizes (Price in MMK)
@@ -900,6 +1059,11 @@ export default function ProductManager() {
               <p className="mt-2 text-sm text-neutral-600">
                 This action permanently removes &quot;{productToDelete.name}&quot; and cannot be undone.
               </p>
+              {deleteError && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  {deleteError}
+                </div>
+              )}
             </div>
 
             {/* Footer */}

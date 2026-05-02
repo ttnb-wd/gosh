@@ -21,10 +21,46 @@ interface Product {
   is_active?: boolean;
   selectedSize?: string;
   sizes?: { label: string; price: number }[];
+  notes?: ProductQuickViewNotes;
 }
 
 type SupabaseProduct = Partial<Omit<Product, "decants">> & {
   decants?: unknown;
+  notes?: unknown;
+};
+
+interface ProductQuickViewNotes {
+  story?: string;
+  top?: string[];
+  heart?: string[];
+  base?: string[];
+  madeWith?: string;
+  bestFor?: string;
+}
+
+const normalizeNotesArray = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const notes = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return notes.length > 0 ? notes : undefined;
+};
+
+const normalizeQuickViewNotes = (value: unknown): ProductQuickViewNotes | undefined => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const notes = value as Record<string, unknown>;
+
+  const normalized = {
+    story: typeof notes.story === "string" ? notes.story.trim() : undefined,
+    top: normalizeNotesArray(notes.top),
+    heart: normalizeNotesArray(notes.heart),
+    base: normalizeNotesArray(notes.base),
+    madeWith: typeof notes.madeWith === "string" ? notes.madeWith.trim() : undefined,
+    bestFor: typeof notes.bestFor === "string" ? notes.bestFor.trim() : undefined,
+  };
+
+  return Object.values(normalized).some(Boolean) ? normalized : undefined;
 };
 
 const container = {
@@ -286,11 +322,15 @@ interface ProductCardProps {
 function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
   const productKey = String(product.id);
   const productImageUrl = normalizeImageUrl(product.image);
-  const useNextImage = productImageUrl.startsWith("https://images.unsplash.com/");
+  const [imageSrc, setImageSrc] = useState(productImageUrl);
   const isDecantOpen = openDecantDropdown === productKey;
   const selectedDecant = selectedDecants[productKey];
   const isAccessory = product.category === "Accessories";
   const hasDecants = Array.isArray(product.decants) && product.decants.length > 0;
+
+  useEffect(() => {
+    setImageSrc(productImageUrl);
+  }, [productImageUrl]);
   
   const handleAddToBag = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -340,27 +380,19 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         {/* Gold glow effect on hover */}
         <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
         
-        {/* Image Container - Fixed Height */}
-        <div className="relative z-0 h-56 w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100 sm:h-72">
-          {useNextImage ? (
-            <Image
-              src={productImageUrl}
-              alt={product.name}
-              fill
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-              className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <img
-              src={productImageUrl}
-              alt={product.name}
-              loading="lazy"
-              className="block h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
-              }}
-            />
-          )}
+        {/* Image Container - Fixed Square Ratio */}
+        <div className="relative z-0 aspect-square w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100">
+          <Image
+            src={imageSrc}
+            alt={product.name}
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+            className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            onError={() => {
+              setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
+            }}
+          />
           
           {/* Badge */}
           {product.badge && (
@@ -426,10 +458,11 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
               <button 
                 type="button"
                 onClick={handleQuickView}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 min-[380px]:w-auto"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                aria-label="Quick view"
+                title="Quick view"
               >
                 <Eye className="h-4 w-4" />
-                Quick View
               </button>
             </div>
             
@@ -669,6 +702,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       description: product.description || "",
       image: imageUrl,
       badge: product.badge || null,
+      notes: normalizeQuickViewNotes(product.notes),
       decants: Array.isArray(product.decants) && product.decants.length > 0
         ? product.decants
         : [
@@ -689,10 +723,10 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     try {
       setLoading(true);
       
-      // Start with fallback products (always show these)
-      let mergedProducts = [...fallbackProducts];
+      let loadedProducts = [...fallbackProducts];
       
-      // Try to fetch from Supabase and add as additional products
+      // Use Supabase as the production source of truth.
+      // Fallback products are only for empty/failing Supabase projects.
       try {
         const { data, error } = await supabase
           .from("products")
@@ -701,23 +735,13 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           .order("created_at", { ascending: false });
 
         if (!error && data && data.length > 0) {
-          // Normalize Supabase products
-          const supabaseProducts = data.map(normalizeProduct);
-          
-          // Filter out duplicates (if Supabase has same ID as fallback)
-          const uniqueSupabaseProducts = supabaseProducts.filter(
-            (sp) => !fallbackProducts.some((fp) => String(fp.id) === String(sp.id))
-          );
-          
-          // Add Supabase products after fallback products
-          mergedProducts = [...fallbackProducts, ...uniqueSupabaseProducts];
+          loadedProducts = data.map(normalizeProduct);
         }
       } catch (supabaseError) {
         console.warn("Supabase products failed, using only fallback products:", supabaseError);
-        // Keep only fallback products if Supabase fails
       }
       
-      setProducts(mergedProducts);
+      setProducts(loadedProducts);
     } catch (error) {
       console.warn("Error loading products, using fallback products:", error);
       setProducts(fallbackProducts);

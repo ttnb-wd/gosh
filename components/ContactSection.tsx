@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 export default function ContactSection() {
   const { settings } = useSiteSettings();
@@ -16,6 +16,13 @@ export default function ContactSection() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formStatus, setFormStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }, []);
 
   // Fallback values
   const storeName = settings.store_name || "GOSH PERFUME";
@@ -40,15 +47,25 @@ export default function ContactSection() {
     setFormStatus(null);
 
     try {
-      const supabase = createSupabaseClient();
-      const { error } = await supabase.from("contact_messages").insert({
-        full_name: formData.fullName.trim(),
-        email: formData.email.trim(),
-        subject: formData.subject.trim(),
-        message: formData.message.trim(),
+      if (!turnstileToken) {
+        setFormStatus({ type: "error", text: "Please complete the security check." });
+        return;
+      }
+
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim(),
+          message: formData.message.trim(),
+          token: turnstileToken,
+        }),
       });
 
-      if (error) throw error;
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not send your message.");
 
       setFormData({
         fullName: "",
@@ -57,9 +74,11 @@ export default function ContactSection() {
         message: "",
       });
       setFormStatus({ type: "success", text: "Message sent. Our team will reply soon." });
+      resetTurnstile();
     } catch (error) {
       console.error("Contact form submit error:", error);
       setFormStatus({ type: "error", text: "Could not send your message. Please try again." });
+      resetTurnstile();
     } finally {
       setSubmitting(false);
     }
@@ -288,6 +307,13 @@ export default function ContactSection() {
                     placeholder="Tell us more about your inquiry..."
                   />
                 </div>
+
+                <TurnstileWidget
+                  action="contact"
+                  resetKey={turnstileResetKey}
+                  onVerify={setTurnstileToken}
+                  onExpire={resetTurnstile}
+                />
 
                 <motion.button
                   type="submit"

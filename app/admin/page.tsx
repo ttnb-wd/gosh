@@ -21,17 +21,6 @@ import {
   Users,
 } from "lucide-react";
 
-interface Order {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  payment_method: string;
-  payment_status: string;
-  status: string;
-  total: number;
-  created_at: string;
-}
-
 interface Product {
   id: string;
   name: string;
@@ -65,7 +54,6 @@ interface BreakdownItem {
 
 interface DashboardData {
   stats: DashboardStats;
-  recentOrders: Order[];
   lowStockList: Product[];
   categoryBreakdown: BreakdownItem[];
   paymentBreakdown: BreakdownItem[];
@@ -89,15 +77,9 @@ const emptyStats: DashboardStats = {
   unreadMessages: 0,
 };
 
-const statusStyles: Record<string, string> = {
-  Pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  Confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-  Processing: "bg-purple-50 text-purple-700 border-purple-200",
-  Delivered: "bg-green-50 text-green-700 border-green-200",
-  Cancelled: "bg-red-50 text-red-700 border-red-200",
-};
-
 const formatMoney = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
+const orderStatuses = ["Pending", "Confirmed", "Processing", "Delivered", "Cancelled"] as const;
+const paymentStatuses = ["Unpaid", "Paid", "Verifying", "Failed", "Refunded"] as const;
 
 const getStartOfToday = () => {
   const date = new Date();
@@ -120,10 +102,10 @@ const toBreakdown = <T,>(items: T[], getLabel: (item: T) => string | null | unde
 
 function DashboardPanel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <h2 className="text-lg font-black text-black">{title}</h2>
-        {action}
+    <section className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="mb-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-black leading-tight text-black">{title}</h2>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
     </section>
@@ -161,7 +143,7 @@ function ActionLink({ href, icon: Icon, label }: { href: string; icon: LucideIco
   return (
     <Link
       href={href}
-      className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-black transition hover:border-yellow-300 hover:bg-yellow-50"
+      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-black transition hover:border-yellow-300 hover:bg-yellow-50"
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -199,7 +181,7 @@ function OperationalFlag({
   return (
     <Link
       href={href}
-      className={`group flex items-center justify-between gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm ${styles[tone]}`}
+      className={`group flex min-w-0 flex-col items-start gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between ${styles[tone]}`}
     >
       <div className="flex min-w-0 items-center gap-3">
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyles[tone]}`}>
@@ -207,11 +189,11 @@ function OperationalFlag({
         </div>
         <div className="min-w-0">
           <p className="font-black text-black">{title}</p>
-          <p className="mt-1 truncate text-xs font-semibold text-zinc-500">{detail}</p>
+          <p className="mt-1 text-xs font-semibold leading-snug text-zinc-500 sm:truncate">{detail}</p>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
         <span className="text-xl font-black text-black">{value}</span>
         <ArrowRight className="h-4 w-4 text-zinc-400 transition group-hover:translate-x-1 group-hover:text-yellow-700" />
       </div>
@@ -222,7 +204,6 @@ function OperationalFlag({
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     stats: emptyStats,
-    recentOrders: [],
     lowStockList: [],
     categoryBreakdown: [],
     paymentBreakdown: [],
@@ -241,60 +222,102 @@ export default function AdminDashboard() {
 
     try {
       const supabase = createSupabaseClient();
+      const todayStart = getStartOfToday().toISOString();
       const [
-        ordersResult,
-        productsResult,
+        totalOrdersResult,
+        todayOrdersResult,
+        paidOrdersResult,
+        totalProductsResult,
+        activeProductsResult,
+        lowStockCountResult,
+        lowStockListResult,
+        productCategoriesResult,
         customersResult,
         messagesResult,
+        ...breakdownResults
       ] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", todayStart),
+        supabase.from("orders").select("total").eq("payment_status", "Paid"),
+        supabase.from("products").select("id", { count: "exact", head: true }),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase
-          .from("orders")
-          .select("id, order_number, customer_name, payment_method, payment_status, status, total, created_at")
-          .order("created_at", { ascending: false }),
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .lte("stock", 5),
         supabase
           .from("products")
           .select("id, name, brand, category, stock, is_active")
-          .order("stock", { ascending: true }),
+          .eq("is_active", true)
+          .lte("stock", 5)
+          .order("stock", { ascending: true })
+          .limit(6),
+        supabase.from("products").select("category"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "unread"),
+        ...orderStatuses.map((status) =>
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", status)
+        ),
+        ...paymentStatuses.map((status) =>
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("payment_status", status)
+        ),
       ]);
 
-      if (ordersResult.error) throw ordersResult.error;
-      if (productsResult.error) throw productsResult.error;
+      const requiredResults = [
+        totalOrdersResult,
+        todayOrdersResult,
+        paidOrdersResult,
+        totalProductsResult,
+        activeProductsResult,
+        lowStockCountResult,
+        lowStockListResult,
+        productCategoriesResult,
+        customersResult,
+        ...breakdownResults,
+      ];
+
+      const firstError = requiredResults.find((result) => result.error)?.error;
+      if (firstError) throw firstError;
       if (customersResult.error) throw customersResult.error;
 
       if (messagesResult.error) {
         console.error("Unread messages count error:", messagesResult.error);
       }
 
-      const orders = (ordersResult.data || []) as Order[];
-      const products = (productsResult.data || []) as Product[];
-      const todayStart = getStartOfToday();
-      const paidOrders = orders.filter((order) => order.payment_status === "Paid");
-      const lowStockList = products.filter((product) => product.is_active && Number(product.stock || 0) <= 5);
+      const paidOrders = (paidOrdersResult.data || []) as { total: number | string | null }[];
+      const lowStockList = (lowStockListResult.data || []) as Product[];
+      const productCategories = (productCategoriesResult.data || []) as { category: string | null }[];
+      const statusResults = breakdownResults.slice(0, orderStatuses.length);
+      const paymentResults = breakdownResults.slice(orderStatuses.length);
+      const statusBreakdown = orderStatuses
+        .map((status, index) => ({ label: status, value: statusResults[index]?.count || 0 }))
+        .filter((item) => item.value > 0);
+      const paymentBreakdown = paymentStatuses
+        .map((status, index) => ({ label: status, value: paymentResults[index]?.count || 0 }))
+        .filter((item) => item.value > 0);
 
       setDashboardData({
         stats: {
-          totalOrders: orders.length,
-          pendingOrders: orders.filter((order) => order.status === "Pending").length,
-          processingOrders: orders.filter((order) => order.status === "Processing").length,
-          deliveredOrders: orders.filter((order) => order.status === "Delivered").length,
-          cancelledOrders: orders.filter((order) => order.status === "Cancelled").length,
-          todayOrders: orders.filter((order) => new Date(order.created_at) >= todayStart).length,
+          totalOrders: totalOrdersResult.count || 0,
+          pendingOrders: statusBreakdown.find((item) => item.label === "Pending")?.value || 0,
+          processingOrders: statusBreakdown.find((item) => item.label === "Processing")?.value || 0,
+          deliveredOrders: statusBreakdown.find((item) => item.label === "Delivered")?.value || 0,
+          cancelledOrders: statusBreakdown.find((item) => item.label === "Cancelled")?.value || 0,
+          todayOrders: todayOrdersResult.count || 0,
           totalRevenue: paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
-          unpaidOrders: orders.filter((order) => order.payment_status === "Unpaid").length,
-          verifyingPayments: orders.filter((order) => order.payment_status === "Verifying").length,
-          totalProducts: products.length,
-          activeProducts: products.filter((product) => product.is_active).length,
-          lowStockProducts: lowStockList.length,
+          unpaidOrders: paymentBreakdown.find((item) => item.label === "Unpaid")?.value || 0,
+          verifyingPayments: paymentBreakdown.find((item) => item.label === "Verifying")?.value || 0,
+          totalProducts: totalProductsResult.count || 0,
+          activeProducts: activeProductsResult.count || 0,
+          lowStockProducts: lowStockCountResult.count || 0,
           totalCustomers: customersResult.count || 0,
           unreadMessages: messagesResult.error ? 0 : messagesResult.count || 0,
         },
-        recentOrders: orders.slice(0, 6),
-        lowStockList: lowStockList.slice(0, 6),
-        categoryBreakdown: toBreakdown(products, (product) => product.category),
-        paymentBreakdown: toBreakdown(orders, (order) => order.payment_status),
-        statusBreakdown: toBreakdown(orders, (order) => order.status),
+        lowStockList,
+        categoryBreakdown: toBreakdown(productCategories, (product) => product.category),
+        paymentBreakdown,
+        statusBreakdown,
       });
     } catch (loadError) {
       console.error("Error loading dashboard:", loadError);
@@ -323,7 +346,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen">
       <AdminHeader title="Dashboard" subtitle="Store operations overview" />
 
-      <main className="p-6">
+      <main className="overflow-hidden p-4 sm:p-6">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-600">Live Summary</p>
@@ -364,55 +387,7 @@ export default function AdminDashboard() {
           <StatCard title="Fulfillment Rate" value={`${fulfillmentRate}%`} icon={CheckCircle2} trend={`${dashboardData.stats.deliveredOrders} delivered`} trendUp />
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-          <DashboardPanel
-            title="Recent Orders"
-            action={<ActionLink href="/admin/orders" icon={ShoppingBag} label="View Orders" />}
-          >
-            {dashboardData.recentOrders.length === 0 ? (
-              <p className="text-sm font-semibold text-zinc-500">No orders yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left">
-                  <thead>
-                    <tr className="border-b border-zinc-100 text-xs font-black uppercase tracking-[0.12em] text-zinc-400">
-                      <th className="pb-3">Order</th>
-                      <th className="pb-3">Customer</th>
-                      <th className="pb-3">Payment</th>
-                      <th className="pb-3">Status</th>
-                      <th className="pb-3 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {dashboardData.recentOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td className="py-4">
-                          <Link href={`/admin/orders?orderId=${order.id}`} className="font-black text-black hover:text-yellow-700">
-                            {order.order_number}
-                          </Link>
-                          <p className="mt-1 text-xs font-semibold text-zinc-400">
-                            {new Date(order.created_at).toLocaleString()}
-                          </p>
-                        </td>
-                        <td className="py-4 text-sm font-bold text-zinc-700">{order.customer_name}</td>
-                        <td className="py-4">
-                          <p className="text-sm font-bold text-zinc-700">{order.payment_method}</p>
-                          <p className="text-xs font-semibold text-zinc-400">{order.payment_status}</p>
-                        </td>
-                        <td className="py-4">
-                          <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusStyles[order.status] || "border-zinc-200 bg-zinc-50 text-zinc-600"}`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right text-sm font-black text-black">{formatMoney(Number(order.total || 0))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </DashboardPanel>
-
+        <div className="mt-6 grid gap-6">
           <DashboardPanel
             title="Quick Actions"
             action={<BarChart3 className="h-5 w-5 text-yellow-600" />}
@@ -453,7 +428,7 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-3">
                 {dashboardData.lowStockList.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-100 p-4">
+                  <div key={product.id} className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border border-zinc-100 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate font-black text-black">{product.name}</p>
                       <p className="text-sm font-semibold text-zinc-500">

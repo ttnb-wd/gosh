@@ -145,13 +145,11 @@ export default function CheckoutPage() {
       try {
         const savedCart = localStorage.getItem("gosh_cart");
         if (!savedCart) {
-          console.log("No cart found in localStorage");
           setCartItems([]);
           return;
         }
         const parsed = JSON.parse(savedCart);
         const items = Array.isArray(parsed) ? parsed : [];
-        console.log("Checkout loaded cart items:", items);
         setCartItems(items);
       } catch (error) {
         console.error("Failed to load checkout cart:", error);
@@ -274,7 +272,6 @@ export default function CheckoutPage() {
   const uploadPaymentScreenshot = async () => {
     const selectedFile = selectedPayment ? paymentScreenshots[selectedPayment] : null;
     if (!selectedFile) {
-      console.log("No payment screenshot selected");
       return null;
     }
 
@@ -304,7 +301,6 @@ export default function CheckoutPage() {
   };
 
   const submitGuestOrder = async () => {
-    console.log("submitGuestOrder START");
     setSubmitError("");
     setSubmittingOrder(true);
 
@@ -322,24 +318,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      console.log("Authenticated user:", user.id);
-
-      // Debug: Log form state before validation
-      console.log("Customer form before validation:", customerForm);
-      console.log("Selected payment:", selectedPayment);
-      console.log("Cart items count:", cartItems.length);
-
-      console.log("Checkout state:", {
-        customerForm,
-        selectedPayment,
-        cartItems,
-        subtotal,
-        deliveryFee,
-        discount,
-        total,
-        paymentScreenshots,
-      });
-
       const nextErrors: Record<string, string> = {};
       if (!customerForm.fullName?.trim()) nextErrors.fullName = "Name is required";
       if (!customerForm.phone?.trim()) nextErrors.phone = "Phone is required";
@@ -348,10 +326,8 @@ export default function CheckoutPage() {
       if (!selectedPayment) nextErrors.payment = "Please select a payment method";
       if (!cartItems || cartItems.length === 0) nextErrors.cart = "Your bag is empty";
 
-      console.log("Validation errors:", nextErrors);
       setErrors(nextErrors);
       if (Object.keys(nextErrors).length > 0) {
-        console.log("Validation failed with errors:", nextErrors);
         setSubmitError("Please complete the required checkout information.");
         setSubmittingOrder(false);
         return;
@@ -396,7 +372,6 @@ export default function CheckoutPage() {
       } as const;
 
       const selectedPaymentInfo = paymentInfo[selectedPayment as keyof typeof paymentInfo];
-      console.log("Selected payment info:", selectedPaymentInfo);
 
       if (!selectedPaymentInfo) {
         setSubmitError("Invalid payment method.");
@@ -405,10 +380,8 @@ export default function CheckoutPage() {
       }
 
       const paymentScreenshotUrl = await uploadPaymentScreenshot();
-      console.log("Payment screenshot URL:", paymentScreenshotUrl);
 
       const orderNumber = `GOSH-${Date.now()}`;
-      console.log("Inserting order with order_number:", orderNumber);
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -447,13 +420,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      console.log("Order inserted successfully:", {
-        id: order.id,
-        order_number: order.order_number,
-        customer_name: order.customer_name,
-        total: order.total,
-      });
-
       const orderItemsPayload = cartItems.map((item) => ({
         order_id: order.id,
         product_id: String(item.id),
@@ -464,9 +430,6 @@ export default function CheckoutPage() {
         price: Number(item.price || 0),
         quantity: Number(item.qty || 1),
       }));
-
-      console.log("Inserting order items with order_id (UUID):", order.id);
-      console.log("Order items count:", orderItemsPayload.length);
 
       const { error: itemsError } = await supabase
         .from("order_items")
@@ -483,8 +446,6 @@ export default function CheckoutPage() {
         setSubmittingOrder(false);
         return;
       }
-
-      console.log("Order items inserted successfully");
 
       // NOTE: Admin notifications are now created by Supabase database triggers
       // This prevents duplicate notifications from frontend + backend sources
@@ -510,7 +471,6 @@ export default function CheckoutPage() {
       setShowSuccessModal(true);
       clearCart();
 
-      console.log("submitGuestOrder SUCCESS");
     } catch (error) {
       console.error("Checkout submit unexpected error:", error);
       setSubmitError("Could not place order. Please try again.");
@@ -1221,7 +1181,6 @@ export default function CheckoutPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("CONFIRM PAYMENT BUTTON CLICKED");
 
                         if (!isPaymentReady) {
                           const nextErrors: Record<string, string> = {};

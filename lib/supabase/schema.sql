@@ -130,6 +130,19 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Newsletter Subscribers Table
+CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'subscribed' CHECK (status IN ('subscribed', 'unsubscribed')),
+  source TEXT NOT NULL DEFAULT 'vip_club',
+  subscribed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  unsubscribed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  CONSTRAINT newsletter_subscribers_email_not_blank CHECK (length(trim(email)) > 3)
+);
+
 -- Admin Notifications Table
 CREATE TABLE IF NOT EXISTS public.admin_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -154,6 +167,8 @@ CREATE INDEX IF NOT EXISTS idx_products_is_active ON public.products(is_active);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON public.contact_messages(status);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_email ON public.contact_messages(email);
+CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_status ON public.newsletter_subscribers(status);
+CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at ON public.newsletter_subscribers(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_created_at ON public.admin_notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_is_read ON public.admin_notifications(is_read);
 
@@ -279,6 +294,12 @@ CREATE TRIGGER update_contact_messages_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_newsletter_subscribers_updated_at ON public.newsletter_subscribers;
+CREATE TRIGGER update_newsletter_subscribers_updated_at
+  BEFORE UPDATE ON public.newsletter_subscribers
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -304,6 +325,7 @@ ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -315,8 +337,11 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-GRANT INSERT ON public.contact_messages TO anon, authenticated;
+REVOKE INSERT ON public.contact_messages FROM anon;
+GRANT INSERT ON public.contact_messages TO authenticated;
 GRANT SELECT, UPDATE, DELETE ON public.contact_messages TO authenticated;
+REVOKE INSERT, UPDATE ON public.newsletter_subscribers FROM anon;
+GRANT SELECT, UPDATE, DELETE ON public.newsletter_subscribers TO authenticated;
 
 -- Profiles Policies
 DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
@@ -442,11 +467,78 @@ CREATE POLICY "site_settings_update_admin"
   WITH CHECK (public.is_admin());
 
 -- Contact Messages Policies
+CREATE OR REPLACE FUNCTION public.submit_contact_message(
+  p_full_name TEXT,
+  p_email TEXT,
+  p_subject TEXT,
+  p_message TEXT
+)
+RETURNS public.contact_messages
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  normalized_email TEXT;
+  clean_full_name TEXT;
+  clean_subject TEXT;
+  clean_message TEXT;
+  recent_count INTEGER;
+  saved_message public.contact_messages;
+BEGIN
+  normalized_email := lower(trim(p_email));
+  clean_full_name := trim(p_full_name);
+  clean_subject := trim(p_subject);
+  clean_message := trim(p_message);
+
+  IF length(clean_full_name) < 2 OR length(clean_full_name) > 120 THEN
+    RAISE EXCEPTION 'Please enter a valid name.' USING ERRCODE = '22000';
+  END IF;
+
+  IF normalized_email !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$' THEN
+    RAISE EXCEPTION 'Please enter a valid email address.' USING ERRCODE = '22000';
+  END IF;
+
+  IF length(clean_subject) < 2 OR length(clean_subject) > 160 THEN
+    RAISE EXCEPTION 'Please enter a valid subject.' USING ERRCODE = '22000';
+  END IF;
+
+  IF length(clean_message) < 10 OR length(clean_message) > 3000 THEN
+    RAISE EXCEPTION 'Message must be between 10 and 3000 characters.' USING ERRCODE = '22000';
+  END IF;
+
+  SELECT COUNT(*) INTO recent_count
+  FROM public.contact_messages
+  WHERE lower(email) = normalized_email
+    AND created_at > NOW() - INTERVAL '1 hour';
+
+  IF recent_count >= 3 THEN
+    RAISE EXCEPTION 'Too many messages sent recently. Please try again later.' USING ERRCODE = '42900';
+  END IF;
+
+  INSERT INTO public.contact_messages (
+    full_name,
+    email,
+    subject,
+    message,
+    status
+  )
+  VALUES (
+    clean_full_name,
+    normalized_email,
+    clean_subject,
+    clean_message,
+    'unread'
+  )
+  RETURNING * INTO saved_message;
+
+  RETURN saved_message;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.submit_contact_message(TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+
 DROP POLICY IF EXISTS "contact_messages_public_insert" ON public.contact_messages;
-CREATE POLICY "contact_messages_public_insert"
-  ON public.contact_messages FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
 
 DROP POLICY IF EXISTS "contact_messages_admin_select" ON public.contact_messages;
 CREATE POLICY "contact_messages_admin_select"
@@ -464,6 +556,77 @@ CREATE POLICY "contact_messages_admin_update"
 DROP POLICY IF EXISTS "contact_messages_admin_delete" ON public.contact_messages;
 CREATE POLICY "contact_messages_admin_delete"
   ON public.contact_messages FOR DELETE
+  TO authenticated
+  USING (public.is_admin());
+
+CREATE OR REPLACE FUNCTION public.subscribe_newsletter(
+  p_email TEXT,
+  p_source TEXT DEFAULT 'vip_club'
+)
+RETURNS public.newsletter_subscribers
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  normalized_email TEXT;
+  subscriber public.newsletter_subscribers;
+BEGIN
+  normalized_email := lower(trim(p_email));
+
+  IF normalized_email !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$' THEN
+    RAISE EXCEPTION 'Invalid email address' USING ERRCODE = '22000';
+  END IF;
+
+  INSERT INTO public.newsletter_subscribers (
+    email,
+    status,
+    source,
+    subscribed_at,
+    unsubscribed_at
+  )
+  VALUES (
+    normalized_email,
+    'subscribed',
+    COALESCE(NULLIF(trim(p_source), ''), 'vip_club'),
+    NOW(),
+    NULL
+  )
+  ON CONFLICT (email) DO UPDATE
+  SET
+    status = 'subscribed',
+    source = EXCLUDED.source,
+    subscribed_at = NOW(),
+    unsubscribed_at = NULL,
+    updated_at = NOW()
+  RETURNING * INTO subscriber;
+
+  RETURN subscriber;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.subscribe_newsletter(TEXT, TEXT) TO anon, authenticated;
+
+-- Newsletter Subscribers Policies
+DROP POLICY IF EXISTS "newsletter_subscribers_public_insert" ON public.newsletter_subscribers;
+DROP POLICY IF EXISTS "newsletter_subscribers_public_resubscribe" ON public.newsletter_subscribers;
+
+DROP POLICY IF EXISTS "newsletter_subscribers_admin_select" ON public.newsletter_subscribers;
+CREATE POLICY "newsletter_subscribers_admin_select"
+  ON public.newsletter_subscribers FOR SELECT
+  TO authenticated
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "newsletter_subscribers_admin_update" ON public.newsletter_subscribers;
+CREATE POLICY "newsletter_subscribers_admin_update"
+  ON public.newsletter_subscribers FOR UPDATE
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "newsletter_subscribers_admin_delete" ON public.newsletter_subscribers;
+CREATE POLICY "newsletter_subscribers_admin_delete"
+  ON public.newsletter_subscribers FOR DELETE
   TO authenticated
   USING (public.is_admin());
 

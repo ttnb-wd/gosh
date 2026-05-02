@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 interface Product {
@@ -12,6 +13,16 @@ interface Product {
   image: string;
   badge: string | null;
   decants: { label: string; price: number }[];
+  notes?: ProductQuickViewNotes;
+}
+
+interface ProductQuickViewNotes {
+  story?: string;
+  top?: string[];
+  heart?: string[];
+  base?: string[];
+  madeWith?: string;
+  bestFor?: string;
 }
 
 interface QuickViewModalProps {
@@ -23,9 +34,30 @@ interface QuickViewModalProps {
   setSelectedDecants: React.Dispatch<React.SetStateAction<Record<string, { label: string; price: number }>>>;
 }
 
+const fallbackQuickViewImage =
+  "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+
 export default function QuickViewModal(props: QuickViewModalProps) {
   const { product, isOpen, onClose } = props;
   const [activeTab, setActiveTab] = useState<"top" | "heart" | "base">("top");
+  const [showDesktopImage, setShowDesktopImage] = useState(false);
+  const [imageSrc, setImageSrc] = useState(fallbackQuickViewImage);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const updateImageVisibility = () => setShowDesktopImage(mediaQuery.matches);
+
+    updateImageVisibility();
+    mediaQuery.addEventListener("change", updateImageVisibility);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateImageVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    setImageSrc(product?.image || fallbackQuickViewImage);
+  }, [product?.image]);
 
   useEffect(() => {
     if (isOpen && product) {
@@ -52,10 +84,11 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
   if (!product) return null;
 
+  const quickViewNotes = product.notes || {};
   const scentNotes = {
-    top: ["Bergamot", "Citrus", "Fresh Herbs"],
-    heart: ["Jasmine", "Rose", "Lavender"],
-    base: ["Sandalwood", "Vanilla", "Amber"]
+    top: quickViewNotes.top?.length ? quickViewNotes.top : ["Bergamot", "Citrus", "Fresh Herbs"],
+    heart: quickViewNotes.heart?.length ? quickViewNotes.heart : ["Jasmine", "Rose", "Lavender"],
+    base: quickViewNotes.base?.length ? quickViewNotes.base : ["Sandalwood", "Vanilla", "Amber"],
   };
 
   return (
@@ -73,14 +106,14 @@ export default function QuickViewModal(props: QuickViewModalProps) {
           />
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto overscroll-contain p-2 sm:p-4 md:items-center md:p-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative mx-auto grid max-h-[88vh] w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:rounded-[28px] md:max-w-5xl md:grid-cols-2"
+              className="relative mx-auto my-2 grid w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-4 sm:rounded-[28px] lg:my-0 lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
             >
               {/* Close Button */}
               <button
@@ -92,23 +125,31 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                 ×
               </button>
 
-              {/* LEFT IMAGE SECTION - NOT SCROLLABLE */}
-              <div className="relative min-h-[320px] overflow-hidden bg-[#fffdf6] md:h-[86vh] md:max-h-[86vh] md:min-h-0">
-                {product.badge && (
-                  <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
-                    {product.badge}
-                  </div>
-                )}
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/10" />
-              </div>
+              {/* LEFT IMAGE SECTION - DESKTOP ONLY */}
+              {showDesktopImage && (
+                <div className="relative hidden overflow-hidden bg-[#fffdf6] lg:block lg:h-[86vh] lg:max-h-[86vh] lg:min-h-0">
+                  {product.badge && (
+                    <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
+                      {product.badge}
+                    </div>
+                  )}
+                  <Image
+                    src={imageSrc}
+                    alt={product.name}
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+                    className="object-cover object-center"
+                    onError={() => {
+                      setImageSrc(fallbackQuickViewImage);
+                    }}
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/10" />
+                </div>
+              )}
 
               {/* RIGHT DETAILS SECTION - ONLY THIS SCROLLS */}
-              <div className="scrollbar-auto-hide max-h-[86vh] overflow-y-auto overflow-x-visible overscroll-contain p-6 sm:p-8 md:p-10">
+              <div className="scrollbar-auto-hide overflow-visible p-6 sm:p-8 md:max-h-[86vh] md:overflow-y-auto md:overflow-x-visible md:overscroll-contain md:p-10">
                   {/* Brand & Name */}
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-yellow-600">
                     {product.brand}
@@ -126,7 +167,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   <div className="mb-6">
                     <h3 className="mb-3 text-lg font-bold text-black">The Story</h3>
                     <p className="text-sm text-zinc-600 leading-relaxed">
-                      Crafted by master perfumers, this exquisite fragrance captures the essence of luxury and sophistication. Each note is carefully selected to create a harmonious blend that evolves beautifully throughout the day.
+                      {quickViewNotes.story || "Crafted by master perfumers, this exquisite fragrance captures the essence of luxury and sophistication. Each note is carefully selected to create a harmonious blend that evolves beautifully throughout the day."}
                     </p>
                   </div>
 
@@ -168,7 +209,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   <div className="mb-6">
                     <h3 className="mb-3 text-lg font-bold text-black">Made With</h3>
                     <p className="text-sm text-zinc-600">
-                      Premium natural ingredients, ethically sourced from around the world. Cruelty-free and vegan-friendly.
+                      {quickViewNotes.madeWith || "Premium natural ingredients, ethically sourced from around the world. Cruelty-free and vegan-friendly."}
                     </p>
                   </div>
 
@@ -176,7 +217,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   <div className="mb-6">
                     <h3 className="mb-3 text-lg font-bold text-black">Best For</h3>
                     <p className="text-sm text-zinc-600">
-                      Evening wear, special occasions, romantic dinners, and making a lasting impression.
+                      {quickViewNotes.bestFor || "Evening wear, special occasions, romantic dinners, and making a lasting impression."}
                     </p>
                   </div>
 

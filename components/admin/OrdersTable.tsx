@@ -60,6 +60,7 @@ export default function OrdersTable() {
   const [, setExpandedOrderId] = useState<string | null>(null);
   const [openedNotificationOrderId, setOpenedNotificationOrderId] = useState<string | null>(null);
   const [notificationOrderNotFound, setNotificationOrderNotFound] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -173,7 +174,7 @@ export default function OrdersTable() {
 
       if (error) {
         console.error("Error updating order status:", error);
-        alert("Failed to update order status");
+        setActionMessage({ type: "error", text: "Failed to update order status." });
         return;
       }
 
@@ -181,9 +182,10 @@ export default function OrdersTable() {
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
+      setActionMessage({ type: "success", text: "Order status updated." });
     } catch (error) {
       console.error("Error updating order status:", error);
-      alert("Failed to update order status");
+      setActionMessage({ type: "error", text: "Failed to update order status." });
     } finally {
       setUpdatingOrders(prev => {
         const newSet = new Set(prev);
@@ -203,7 +205,7 @@ export default function OrdersTable() {
 
       if (error) {
         console.error("Error updating payment status:", error);
-        alert("Failed to update payment status");
+        setActionMessage({ type: "error", text: "Failed to update payment status." });
         return;
       }
 
@@ -211,9 +213,10 @@ export default function OrdersTable() {
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, payment_status: newPaymentStatus } : order
       ));
+      setActionMessage({ type: "success", text: "Payment status updated." });
     } catch (error) {
       console.error("Error updating payment status:", error);
-      alert("Failed to update payment status");
+      setActionMessage({ type: "error", text: "Failed to update payment status." });
     } finally {
       setUpdatingOrders(prev => {
         const newSet = new Set(prev);
@@ -293,6 +296,25 @@ export default function OrdersTable() {
 
   return (
     <div className="space-y-6">
+      {actionMessage && (
+        <div
+          className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
+            actionMessage.type === "success"
+              ? "border-green-200 bg-green-50 text-green-700"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          <span>{actionMessage.text}</span>
+          <button
+            type="button"
+            onClick={() => setActionMessage(null)}
+            className="rounded-full px-2 py-1 text-xs font-black opacity-70 transition hover:bg-white/70 hover:opacity-100"
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       {/* Filter Tabs */}
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">

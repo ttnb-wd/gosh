@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 function LoginForm() {
   const router = useRouter();
@@ -15,7 +16,14 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [redirectTo, setRedirectTo] = useState<string>("/");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const accountCreated = searchParams.get("created") === "1";
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }, []);
 
   // Get redirect parameter from URL
   useEffect(() => {
@@ -36,6 +44,26 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      if (!turnstileToken) {
+        setError("Please complete the security check.");
+        setLoading(false);
+        return;
+      }
+
+      const turnstileResponse = await fetch("/api/verify-turnstile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+
+      const turnstileResult = (await turnstileResponse.json()) as { error?: string };
+      if (!turnstileResponse.ok) {
+        setError(turnstileResult.error || "Security check failed. Please try again.");
+        resetTurnstile();
+        setLoading(false);
+        return;
+      }
+
       // Signup flow - creates customer and redirects to login page
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
@@ -45,6 +73,7 @@ function LoginForm() {
 
         if (error) {
           setError(error.message);
+          resetTurnstile();
           setLoading(false);
           return;
         }
@@ -79,6 +108,7 @@ function LoginForm() {
 
       if (signInError) {
         setError(signInError.message);
+        resetTurnstile();
         setLoading(false);
         return;
       }
@@ -91,6 +121,7 @@ function LoginForm() {
 
       if (userError || !user) {
         setError("Could not verify logged in user.");
+        resetTurnstile();
         setLoading(false);
         return;
       }
@@ -110,12 +141,14 @@ function LoginForm() {
           code: profileError.code,
         });
         setError("Could not load user profile.");
+        resetTurnstile();
         setLoading(false);
         return;
       }
 
       if (!profile) {
         setError("Profile not found. Please contact admin.");
+        resetTurnstile();
         setLoading(false);
         return;
       }
@@ -137,6 +170,7 @@ function LoginForm() {
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
+      resetTurnstile();
       setLoading(false);
     } finally {
       setLoading(false);
@@ -209,6 +243,13 @@ function LoginForm() {
               </div>
             )}
 
+            <TurnstileWidget
+              action={mode === "login" ? "login" : "signup"}
+              resetKey={turnstileResetKey}
+              onVerify={setTurnstileToken}
+              onExpire={resetTurnstile}
+            />
+
             <button
               type="submit"
               disabled={loading}
@@ -226,6 +267,7 @@ function LoginForm() {
             type="button"
             onClick={() => {
               setError("");
+              resetTurnstile();
               setMode((prev) => (prev === "login" ? "signup" : "login"));
             }}
             className="mt-5 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700"

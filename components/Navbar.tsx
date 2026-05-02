@@ -100,13 +100,64 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
+      <style jsx>{`
+        @keyframes gosh-logo-drop-bounce {
+          0% {
+            opacity: 0;
+            transform: translateY(-120px) scale(0.92);
+          }
+          18% {
+            opacity: 1;
+            transform: translateY(8px) scale(1.04, 0.96);
+          }
+          30% {
+            transform: translateY(-44px) scale(0.98, 1.03);
+          }
+          43% {
+            transform: translateY(5px) scale(1.025, 0.98);
+          }
+          54% {
+            transform: translateY(-22px) scale(0.99, 1.015);
+          }
+          66% {
+            transform: translateY(3px) scale(1.012, 0.99);
+          }
+          76% {
+            transform: translateY(-9px) scale(0.996, 1.006);
+          }
+          86% {
+            transform: translateY(1px) scale(1.004, 0.996);
+          }
+          94% {
+            transform: translateY(-3px) scale(1);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .gosh-logo-drop-bounce {
+          animation: gosh-logo-drop-bounce 5s cubic-bezier(0.24, 0.72, 0.24, 1) both;
+          transform-origin: center bottom;
+          will-change: transform, opacity;
+        }
+
+        .gosh-logo-3d {
+          filter: drop-shadow(0 8px 10px rgba(92, 54, 5, 0.22)) drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
+          transform: rotateX(8deg) translateZ(0);
+          transform-style: preserve-3d;
+          backface-visibility: hidden;
+        }
+
+      `}</style>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
         <Link href="/" className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-3">
-          <div className="group/logo relative flex h-16 w-16 shrink-0 items-center justify-center overflow-visible rounded-full shadow-[0_14px_34px_rgba(234,179,8,0.20)] transition-all duration-500 hover:-translate-y-0.5 hover:scale-105 hover:shadow-[0_20px_48px_rgba(234,179,8,0.30)] sm:h-20 sm:w-20">
+          <div className="gosh-logo-drop-bounce group/logo relative flex h-16 w-16 shrink-0 items-center justify-center overflow-visible rounded-full transition-all duration-500 hover:-translate-y-0.5 hover:scale-105 sm:h-20 sm:w-20" style={{ perspective: "900px" }}>
             <img
               src="/images/gosh-circle-logo.png"
               alt="GOSH Perfume Studio"
-              className="relative h-full w-full object-contain object-center drop-shadow-[0_6px_14px_rgba(92,54,5,0.35)] transition-all duration-500 group-hover/logo:drop-shadow-[0_9px_20px_rgba(161,98,7,0.45)]"
+              className="gosh-logo-3d relative h-full w-full object-contain object-center transition-transform duration-700"
             />
           </div>
 

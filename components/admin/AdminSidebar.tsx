@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -17,34 +18,70 @@ const menuItems = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolling(true);
+
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 320);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed left-4 top-4 z-50 flex items-center justify-center rounded-xl bg-white p-2 shadow-lg lg:hidden"
+        className={`fixed left-4 top-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-300/80 bg-[#fffdf6] text-yellow-700 shadow-[0_16px_38px_rgba(234,179,8,0.22)] transition-all duration-300 hover:bg-yellow-50 active:scale-95 lg:hidden ${
+          isScrolling && !isMobileMenuOpen
+            ? "pointer-events-none -translate-y-2 opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
       >
         {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
 
       {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="fixed inset-0 z-40 bg-black/45 lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-200 bg-white transition-transform ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
+        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-yellow-100/80 bg-white shadow-[18px_0_60px_rgba(0,0,0,0.12)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:opacity-100 lg:shadow-none ${
+          isMobileMenuOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-95"
+        }`}
       >
         <div className="flex h-full flex-col overflow-y-auto px-3 py-4">
           {/* Logo */}
-          <Link href="/admin" className="mb-8 px-3" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link href="/admin" className="mb-8 pl-16 pr-3 lg:px-3" onClick={() => setIsMobileMenuOpen(false)}>
             <h1 className="text-2xl font-black text-black">
               GOSH <span className="text-yellow-600">ADMIN</span>
             </h1>

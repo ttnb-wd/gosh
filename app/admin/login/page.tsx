@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -13,6 +14,13 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +28,26 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
+      if (!turnstileToken) {
+        setError("Please complete the security check.");
+        setLoading(false);
+        return;
+      }
+
+      const turnstileResponse = await fetch("/api/verify-turnstile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+
+      const turnstileResult = (await turnstileResponse.json()) as { error?: string };
+      if (!turnstileResponse.ok) {
+        setError(turnstileResult.error || "Security check failed. Please try again.");
+        resetTurnstile();
+        setLoading(false);
+        return;
+      }
+
       // Create Supabase client
       const supabase = createSupabaseClient();
 
@@ -75,6 +103,7 @@ export default function AdminLoginPage() {
     } catch (err: unknown) {
       console.error("Login error:", err);
       setError(err instanceof Error ? err.message : "Invalid email or password");
+      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -162,6 +191,15 @@ export default function AdminLoginPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <TurnstileWidget
+                action="admin_login"
+                resetKey={turnstileResetKey}
+                onVerify={setTurnstileToken}
+                onExpire={resetTurnstile}
+              />
             </div>
 
             {/* Submit Button */}

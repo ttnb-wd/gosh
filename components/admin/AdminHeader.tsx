@@ -252,13 +252,13 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div>
-          <h1 className="text-2xl font-black text-black">{title}</h1>
+      <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
+        <div className="min-w-0 pl-14 lg:pl-0">
+          <h1 className="break-words text-2xl font-black leading-tight text-black">{title}</h1>
           {subtitle && <p className="text-sm text-zinc-600">{subtitle}</p>}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
           {/* Notifications */}
           <div className="relative" ref={notiRef}>
             <button
@@ -282,7 +282,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="absolute right-0 z-[9999] mt-3 w-[92vw] max-w-[380px] origin-top-right overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/95 shadow-[0_24px_70px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.12)] backdrop-blur-xl"
+                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/95 shadow-[0_24px_70px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.12)] backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
                 >
                   <div className="flex items-center justify-between border-b border-yellow-100 bg-white px-4 py-3">
                     <div>
@@ -302,7 +302,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     )}
                   </div>
 
-                  <div className="max-h-[360px] overflow-y-auto p-2">
+                  <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-2 sm:max-h-[360px]">
                     {notifications.length === 0 ? (
                       <div className="p-6 text-center">
                         <p className="text-sm font-bold text-zinc-500">No notifications yet.</p>
