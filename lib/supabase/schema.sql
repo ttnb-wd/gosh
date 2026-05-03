@@ -143,6 +143,30 @@ CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
   CONSTRAINT newsletter_subscribers_email_not_blank CHECK (length(trim(email)) > 3)
 );
 
+-- Admin Audit Logs Table
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id UUID DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE SET NULL,
+  actor_email TEXT,
+  action TEXT NOT NULL CHECK (
+    action IN (
+      'order_status_changed',
+      'payment_status_changed',
+      'product_created',
+      'product_updated',
+      'product_status_changed',
+      'product_deleted'
+    )
+  ),
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('order', 'product')),
+  entity_id TEXT NOT NULL,
+  entity_label TEXT,
+  before_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  after_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- Admin Notifications Table
 CREATE TABLE IF NOT EXISTS public.admin_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -169,6 +193,9 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_mes
 CREATE INDEX IF NOT EXISTS idx_contact_messages_email ON public.contact_messages(email);
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_status ON public.newsletter_subscribers(status);
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at ON public.newsletter_subscribers(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at ON public.admin_audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_entity ON public.admin_audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_actor_id ON public.admin_audit_logs(actor_id);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_created_at ON public.admin_notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_is_read ON public.admin_notifications(is_read);
 
@@ -326,6 +353,7 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -607,6 +635,163 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.subscribe_newsletter(TEXT, TEXT) TO anon, authenticated;
 
+CREATE OR REPLACE FUNCTION public.place_order(
+  p_customer_name TEXT,
+  p_customer_email TEXT,
+  p_phone TEXT,
+  p_address TEXT,
+  p_city TEXT,
+  p_payment_method TEXT,
+  p_payment_status TEXT,
+  p_payment_account_name TEXT,
+  p_payment_phone TEXT,
+  p_payment_account_number TEXT,
+  p_payment_screenshot_url TEXT,
+  p_subtotal NUMERIC,
+  p_delivery_fee NUMERIC,
+  p_discount NUMERIC,
+  p_total NUMERIC,
+  p_items JSONB
+)
+RETURNS TABLE (
+  id UUID,
+  order_number TEXT,
+  customer_name TEXT,
+  phone TEXT,
+  total NUMERIC,
+  payment_method TEXT,
+  payment_status TEXT,
+  status TEXT,
+  created_at TIMESTAMP WITH TIME ZONE
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_user_id UUID;
+  saved_order public.orders;
+  generated_order_number TEXT;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Please login or create an account to place your order.' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'Order must include at least one item.' USING ERRCODE = '22000';
+  END IF;
+
+  generated_order_number := 'GOSH-' ||
+    floor(extract(epoch from clock_timestamp()) * 1000)::BIGINT::TEXT ||
+    '-' ||
+    upper(substr(replace(gen_random_uuid()::TEXT, '-', ''), 1, 4));
+
+  INSERT INTO public.orders (
+    order_number,
+    user_id,
+    customer_name,
+    customer_email,
+    phone,
+    address,
+    city,
+    payment_method,
+    payment_status,
+    payment_account_name,
+    payment_phone,
+    payment_account_number,
+    payment_screenshot_url,
+    subtotal,
+    delivery_fee,
+    discount,
+    total,
+    status
+  )
+  VALUES (
+    generated_order_number,
+    current_user_id,
+    trim(p_customer_name),
+    lower(nullif(trim(p_customer_email), '')),
+    trim(p_phone),
+    trim(p_address),
+    trim(p_city),
+    p_payment_method,
+    p_payment_status,
+    p_payment_account_name,
+    p_payment_phone,
+    p_payment_account_number,
+    p_payment_screenshot_url,
+    COALESCE(p_subtotal, 0),
+    COALESCE(p_delivery_fee, 0),
+    COALESCE(p_discount, 0),
+    COALESCE(p_total, 0),
+    'Pending'
+  )
+  RETURNING * INTO saved_order;
+
+  INSERT INTO public.order_items (
+    order_id,
+    product_id,
+    product_name,
+    product_brand,
+    product_image,
+    selected_size,
+    price,
+    quantity
+  )
+  SELECT
+    saved_order.id,
+    item.product_id,
+    trim(item.product_name),
+    item.product_brand,
+    item.product_image,
+    item.selected_size,
+    COALESCE(item.price, 0),
+    GREATEST(COALESCE(item.quantity, 1), 1)
+  FROM jsonb_to_recordset(p_items) AS item(
+    product_id TEXT,
+    product_name TEXT,
+    product_brand TEXT,
+    product_image TEXT,
+    selected_size TEXT,
+    price NUMERIC,
+    quantity INTEGER
+  );
+
+  RETURN QUERY
+  SELECT
+    saved_order.id,
+    saved_order.order_number,
+    saved_order.customer_name,
+    saved_order.phone,
+    saved_order.total,
+    saved_order.payment_method,
+    saved_order.payment_status,
+    saved_order.status,
+    saved_order.created_at;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.place_order(
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  NUMERIC,
+  NUMERIC,
+  NUMERIC,
+  NUMERIC,
+  JSONB
+) TO authenticated;
+
 -- Newsletter Subscribers Policies
 DROP POLICY IF EXISTS "newsletter_subscribers_public_insert" ON public.newsletter_subscribers;
 DROP POLICY IF EXISTS "newsletter_subscribers_public_resubscribe" ON public.newsletter_subscribers;
@@ -629,6 +814,19 @@ CREATE POLICY "newsletter_subscribers_admin_delete"
   ON public.newsletter_subscribers FOR DELETE
   TO authenticated
   USING (public.is_admin());
+
+-- Admin Audit Log Policies
+DROP POLICY IF EXISTS "admin_audit_logs_admin_select" ON public.admin_audit_logs;
+CREATE POLICY "admin_audit_logs_admin_select"
+  ON public.admin_audit_logs FOR SELECT
+  TO authenticated
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "admin_audit_logs_admin_insert" ON public.admin_audit_logs;
+CREATE POLICY "admin_audit_logs_admin_insert"
+  ON public.admin_audit_logs FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_admin());
 
 -- Admin Notifications Policies
 DROP POLICY IF EXISTS "admin_notifications_admin_select" ON public.admin_notifications;

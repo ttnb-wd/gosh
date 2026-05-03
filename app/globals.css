@@ -110,3 +110,26 @@ video {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.admin-premium-type {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
+  text-rendering: geometricPrecision;
+  letter-spacing: 0;
+}
+
+.admin-premium-type h1,
+.admin-premium-type h2,
+.admin-premium-type h3 {
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.admin-premium-type p,
+.admin-premium-type span,
+.admin-premium-type a,
+.admin-premium-type button,
+.admin-premium-type input,
+.admin-premium-type textarea,
+.admin-premium-type label {
+  letter-spacing: 0;
+}

@@ -28,7 +28,13 @@ const ingredients = [
   }
 ];
 
+const SHOW_INGREDIENT_SHOWCASE = false;
+
 export default function IngredientShowcase() {
+  if (!SHOW_INGREDIENT_SHOWCASE) {
+    return null;
+  }
+
   return (
     <section className="py-16 lg:py-24 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

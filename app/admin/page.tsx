@@ -104,7 +104,7 @@ function DashboardPanel({ title, action, children }: { title: string; action?: R
   return (
     <section className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-black leading-tight text-black">{title}</h2>
+        <h2 className="text-xl font-black leading-none text-black">{title}</h2>
         {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}

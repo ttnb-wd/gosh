@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendAdminContactEmail } from "@/lib/email";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
@@ -38,6 +39,13 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    await sendAdminContactEmail({
+      fullName: (body.fullName || "").trim(),
+      email: (body.email || "").trim(),
+      subject: (body.subject || "").trim(),
+      message: (body.message || "").trim(),
+    });
 
     return NextResponse.json({ ok: true });
   } catch {

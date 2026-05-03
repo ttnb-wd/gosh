@@ -33,6 +33,34 @@ interface CartItem {
   selectedSize?: string;
 }
 
+const paymentStatusLabels: Record<string, { label: string; detail: string; className: string }> = {
+  Unpaid: {
+    label: "Unpaid",
+    detail: "Payment is still pending.",
+    className: "border-zinc-200 bg-zinc-50 text-zinc-700",
+  },
+  Verifying: {
+    label: "Verifying",
+    detail: "We are checking your payment proof.",
+    className: "border-yellow-200 bg-yellow-50 text-yellow-700",
+  },
+  Paid: {
+    label: "Paid",
+    detail: "Payment confirmed.",
+    className: "border-green-200 bg-green-50 text-green-700",
+  },
+  Failed: {
+    label: "Failed",
+    detail: "Payment could not be verified. Please contact us.",
+    className: "border-red-200 bg-red-50 text-red-700",
+  },
+  Refunded: {
+    label: "Refunded",
+    detail: "Refund completed or being processed.",
+    className: "border-zinc-200 bg-zinc-50 text-zinc-700",
+  },
+};
+
 export default function OrdersPage() {
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -288,8 +316,15 @@ export default function OrdersPage() {
                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                       Payment Status
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-black">
-                      {order.payment_status}
+                    <div
+                      className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-black ${
+                        paymentStatusLabels[order.payment_status]?.className || "border-zinc-200 bg-zinc-50 text-zinc-700"
+                      }`}
+                    >
+                      {paymentStatusLabels[order.payment_status]?.label || order.payment_status}
+                    </div>
+                    <p className="mt-2 text-sm font-semibold text-zinc-600">
+                      {paymentStatusLabels[order.payment_status]?.detail || "Payment status is being reviewed."}
                     </p>
                   </div>
                   <div>

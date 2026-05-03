@@ -2,9 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
+import Link from "next/link";
+import { Phone, Mail, MapPin, Clock, Send, ShieldCheck } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import { policies } from "@/lib/policies";
 
 export default function ContactSection() {
   const { settings } = useSiteSettings();
@@ -328,6 +330,39 @@ export default function ContactSection() {
               </form>
             </div>
           </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7 }}
+          className="mt-8 rounded-[28px] border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.06)] sm:p-6"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-300 bg-yellow-100 text-yellow-700">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-neutral-950">Shop Policies</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-600">
+                  Review our Myanmar shop policies for privacy, orders, refunds, and delivery before placing an order or sending an inquiry.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[420px]">
+              {policies.map((policy) => (
+                <Link
+                  key={policy.href}
+                  href={policy.href}
+                  className="rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
+                >
+                  {policy.title}
+                </Link>
+              ))}
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>

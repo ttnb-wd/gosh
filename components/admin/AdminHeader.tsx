@@ -254,8 +254,8 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <div className="min-w-0 pl-14 lg:pl-0">
-          <h1 className="break-words text-2xl font-black leading-tight text-black">{title}</h1>
-          {subtitle && <p className="text-sm text-zinc-600">{subtitle}</p>}
+          <h1 className="break-words text-[2rem] font-black leading-[0.98] text-black sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-2 text-sm font-medium leading-6 text-zinc-600 sm:text-base">{subtitle}</p>}
         </div>
 
         <div className="flex shrink-0 items-center gap-3 sm:gap-4">

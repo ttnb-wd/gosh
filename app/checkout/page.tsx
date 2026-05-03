@@ -27,6 +27,16 @@ interface SuccessOrder {
   order_items?: unknown;
 }
 
+interface PlacedOrder extends SuccessOrder {
+  id: string;
+  customer_name: string;
+  total: number;
+  payment_method: string;
+  payment_status: string;
+  status: string;
+  created_at: string;
+}
+
 type PaymentDetail = {
   title: string;
   message?: string;
@@ -293,11 +303,7 @@ export default function CheckoutPage() {
       throw uploadError;
     }
 
-    const { data } = supabase.storage
-      .from("payment-screenshots")
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    return filePath;
   };
 
   const submitGuestOrder = async () => {
@@ -381,47 +387,7 @@ export default function CheckoutPage() {
 
       const paymentScreenshotUrl = await uploadPaymentScreenshot();
 
-      const orderNumber = `GOSH-${Date.now()}`;
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          order_number: orderNumber,
-          user_id: user.id,
-          customer_name: customerForm.fullName,
-          customer_email: user.email,
-          phone: customerForm.phone,
-          address: customerForm.address,
-          city: customerForm.city,
-          payment_method: selectedPaymentInfo.payment_method,
-          payment_status: selectedPaymentInfo.payment_status,
-          payment_account_name: selectedPaymentInfo.payment_account_name,
-          payment_phone: selectedPaymentInfo.payment_phone,
-          payment_account_number: selectedPaymentInfo.payment_account_number,
-          payment_screenshot_url: paymentScreenshotUrl,
-          subtotal: Number(subtotal || 0),
-          delivery_fee: Number(deliveryFee || 0),
-          discount: Number(discount || 0),
-          total: Number(total || 0),
-          status: "Pending",
-        })
-        .select("id, order_number, customer_name, phone, total, payment_method, payment_status, status, created_at")
-        .single();
-
-      if (orderError) {
-        console.error("Order insert error:", {
-          message: orderError.message,
-          details: orderError.details,
-          hint: orderError.hint,
-          code: orderError.code,
-        });
-        setSubmitError(orderError.message || "Could not save order.");
-        setSubmittingOrder(false);
-        return;
-      }
-
       const orderItemsPayload = cartItems.map((item) => ({
-        order_id: order.id,
         product_id: String(item.id),
         product_name: item.name,
         product_brand: item.brand || null,
@@ -431,21 +397,61 @@ export default function CheckoutPage() {
         quantity: Number(item.qty || 1),
       }));
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItemsPayload);
+      const { data: savedOrder, error: orderError } = await supabase
+        .rpc("place_order", {
+          p_customer_name: customerForm.fullName,
+          p_customer_email: user.email || "",
+          p_phone: customerForm.phone,
+          p_address: customerForm.address,
+          p_city: customerForm.city,
+          p_payment_method: selectedPaymentInfo.payment_method,
+          p_payment_status: selectedPaymentInfo.payment_status,
+          p_payment_account_name: selectedPaymentInfo.payment_account_name,
+          p_payment_phone: selectedPaymentInfo.payment_phone,
+          p_payment_account_number: selectedPaymentInfo.payment_account_number,
+          p_payment_screenshot_url: paymentScreenshotUrl,
+          p_subtotal: Number(subtotal || 0),
+          p_delivery_fee: Number(deliveryFee || 0),
+          p_discount: Number(discount || 0),
+          p_total: Number(total || 0),
+          p_items: orderItemsPayload,
+        })
+        .single();
 
-      if (itemsError) {
-        console.error("Order items insert error:", {
-          message: itemsError.message,
-          details: itemsError.details,
-          hint: itemsError.hint,
-          code: itemsError.code,
+      if (orderError || !savedOrder) {
+        console.error("Order save error:", {
+          message: orderError?.message,
+          details: orderError?.details,
+          hint: orderError?.hint,
+          code: orderError?.code,
         });
-        setSubmitError(itemsError.message || "Could not save order items.");
+        setSubmitError(orderError?.message || "Could not save order.");
         setSubmittingOrder(false);
         return;
       }
+
+      const order = savedOrder as PlacedOrder;
+
+      const savedOrderItems = orderItemsPayload.map((item) => ({
+        ...item,
+        order_id: order.id,
+      }));
+
+      void supabase.auth.getSession().then(({ data }) => {
+        const accessToken = data.session?.access_token;
+        if (!accessToken) return;
+
+        return fetch("/api/email/order-created", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ orderId: order.id }),
+        }).catch((emailError) => {
+          console.error("Order email notification failed:", emailError);
+        });
+      });
 
       // NOTE: Admin notifications are now created by Supabase database triggers
       // This prevents duplicate notifications from frontend + backend sources
@@ -457,7 +463,7 @@ export default function CheckoutPage() {
         JSON.stringify([
           {
             ...order,
-            order_items: orderItemsPayload,
+            order_items: savedOrderItems,
           },
           ...localOrders,
         ])
@@ -466,7 +472,7 @@ export default function CheckoutPage() {
       setShowPaymentModal(false);
       setSuccessOrder({
         ...order,
-        order_items: orderItemsPayload,
+        order_items: savedOrderItems,
       });
       setShowSuccessModal(true);
       clearCart();

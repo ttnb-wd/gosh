@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, Package, X, EyeOff, CheckCircle, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle, ChevronLeft, ChevronRight, Edit, EyeOff, Package, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { logAdminAudit } from "@/lib/adminAudit";
 import PremiumSelect from "./PremiumSelect";
 
 interface Product {
@@ -78,19 +79,34 @@ const hasQuickViewNotes = (notes: ProductQuickViewNotes) =>
       notes.bestFor
   );
 
+const PRODUCTS_PER_PAGE = 12;
+const productStatusFilters = [
+  { label: "All Products", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
+] as const;
+
 export default function ProductManager() {
-  const supabase = createSupabaseClient();
+  const supabase = useMemo(() => createSupabaseClient(), []);
   const [products, setProducts] = useState<Product[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [listLoading, setListLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<(typeof productStatusFilters)[number]["value"]>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const formatPrice = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
+  const totalPages = Math.max(1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE));
+  const pageStart = totalProducts === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
+  const pageEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, totalProducts);
 
   // Image upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -158,9 +174,56 @@ export default function ProductManager() {
     bestFor: "",
   });
 
+  const loadProducts = useCallback(async () => {
+    try {
+      setListLoading(true);
+
+      const from = (currentPage - 1) * PRODUCTS_PER_PAGE;
+      const to = from + PRODUCTS_PER_PAGE - 1;
+      const search = searchQuery.trim();
+
+      let query = supabase
+        .from("products")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (statusFilter === "active") {
+        query = query.eq("is_active", true);
+      }
+
+      if (statusFilter === "inactive") {
+        query = query.eq("is_active", false);
+      }
+
+      if (search) {
+        const escapedSearch = search.replace(/[%_]/g, "\\$&");
+        query = query.or(`name.ilike.%${escapedSearch}%,brand.ilike.%${escapedSearch}%,category.ilike.%${escapedSearch}%`);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error loading products:", error);
+        return;
+      }
+
+      setProducts(data || []);
+      setTotalProducts(count || 0);
+    } catch (error) {
+      console.error("Error loading products:", error);
+    } finally {
+      setListLoading(false);
+    }
+  }, [currentPage, searchQuery, statusFilter, supabase]);
+
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [loadProducts]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -171,24 +234,6 @@ export default function ProductManager() {
       document.body.style.overflow = originalOverflow;
     };
   }, [showProductForm, showDeleteModal]);
-
-  const loadProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error loading products:", error);
-        return;
-      }
-
-      setProducts(data || []);
-    } catch (error) {
-      console.error("Error loading products:", error);
-    }
-  };
 
   const openAddProductForm = () => {
     setEditingProduct(null);
@@ -362,6 +407,32 @@ export default function ProductManager() {
       }
 
       console.log(editingProduct ? "Product updated successfully:" : "Product added successfully:", result.data);
+      const savedProduct = result.data as Product;
+
+      await logAdminAudit(supabase, {
+        action: editingProduct ? "product_updated" : "product_created",
+        entityType: "product",
+        entityId: savedProduct.id,
+        entityLabel: savedProduct.name,
+        beforeData: editingProduct
+          ? {
+              name: editingProduct.name,
+              brand: editingProduct.brand,
+              price: editingProduct.price,
+              stock: editingProduct.stock,
+              category: editingProduct.category,
+              is_active: editingProduct.is_active,
+            }
+          : {},
+        afterData: {
+          name: savedProduct.name,
+          brand: savedProduct.brand,
+          price: savedProduct.price,
+          stock: savedProduct.stock,
+          category: savedProduct.category,
+          is_active: savedProduct.is_active,
+        },
+      });
 
       // Reset form
       setFormData({
@@ -400,6 +471,8 @@ export default function ProductManager() {
   };
 
   const toggleProductStatus = async (productId: string, currentStatus: boolean) => {
+    const product = products.find((item) => item.id === productId);
+
     // Add to updating set
     setUpdatingProducts(prev => new Set(prev).add(productId));
 
@@ -415,6 +488,21 @@ export default function ProductManager() {
       }
 
       // Reload products to get fresh data
+      if (product) {
+        await logAdminAudit(supabase, {
+          action: "product_status_changed",
+          entityType: "product",
+          entityId: productId,
+          entityLabel: product.name,
+          beforeData: { is_active: currentStatus },
+          afterData: { is_active: !currentStatus },
+          metadata: {
+            brand: product.brand,
+            category: product.category,
+          },
+        });
+      }
+
       loadProducts();
     } catch (error) {
       console.error("Error updating product status:", error);
@@ -457,6 +545,21 @@ export default function ProductManager() {
       }
 
       // Close modal and reload products
+      await logAdminAudit(supabase, {
+        action: "product_deleted",
+        entityType: "product",
+        entityId: productToDelete.id,
+        entityLabel: productToDelete.name,
+        beforeData: {
+          name: productToDelete.name,
+          brand: productToDelete.brand,
+          price: productToDelete.price,
+          stock: productToDelete.stock,
+          category: productToDelete.category,
+          is_active: productToDelete.is_active,
+        },
+      });
+
       closeDeleteModal();
       loadProducts();
     } catch (error) {
@@ -473,7 +576,7 @@ export default function ProductManager() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-black">Product Inventory</h2>
-          <p className="text-sm text-zinc-600">{products.length} products in stock</p>
+          <p className="text-sm text-zinc-600">{totalProducts} products in inventory</p>
         </div>
         <button
           onClick={openAddProductForm}
@@ -484,8 +587,75 @@ export default function ProductManager() {
         </button>
       </div>
 
+      <div className="space-y-3 rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search product, brand, or category..."
+            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {productStatusFilters.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setStatusFilter(item.value)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                statusFilter === item.value
+                  ? "bg-yellow-400 text-black shadow-md"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!listLoading && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
+          <p>
+            Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
+            <span className="font-bold text-black">{totalProducts}</span> products
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage <= 1}
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Prev
+            </button>
+            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage >= totalPages}
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Products Grid */}
-      {products.length === 0 ? (
+      {listLoading ? (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
+          <p className="mt-4 text-sm text-zinc-600">Loading products...</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
           <Package className="mx-auto h-12 w-12 text-zinc-300" />
           <h3 className="mt-4 text-lg font-bold text-black">No products found</h3>

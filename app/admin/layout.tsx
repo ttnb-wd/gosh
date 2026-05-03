@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <AdminAuthProvider>
-      <div className="min-h-screen bg-zinc-50">
+      <div className="admin-premium-type min-h-screen bg-zinc-50">
         {/* Sidebar */}
         <AdminSidebar />
 

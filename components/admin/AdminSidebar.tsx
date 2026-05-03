@@ -82,10 +82,10 @@ export default function AdminSidebar() {
         <div className="flex h-full flex-col overflow-y-auto px-3 py-4">
           {/* Logo */}
           <Link href="/admin" className="mb-8 pl-16 pr-3 lg:px-3" onClick={() => setIsMobileMenuOpen(false)}>
-            <h1 className="text-2xl font-black text-black">
+            <h1 className="text-[1.7rem] font-black leading-none text-black">
               GOSH <span className="text-yellow-600">ADMIN</span>
             </h1>
-            <p className="text-xs text-zinc-500">Perfume Dashboard</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Perfume Dashboard</p>
           </Link>
 
           {/* Navigation */}
@@ -99,7 +99,7 @@ export default function AdminSidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200 ${
                     isActive
                       ? "bg-yellow-400 text-black shadow-md"
                       : "text-zinc-700 hover:bg-yellow-50 hover:text-yellow-700"

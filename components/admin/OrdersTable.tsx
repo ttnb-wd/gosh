@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Clock, CheckCircle, XCircle, Package, ExternalLink } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, Package, Search, XCircle } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { logAdminAudit } from "@/lib/adminAudit";
 import PremiumStatusSelect from "@/components/admin/PremiumStatusSelect";
 
 interface OrderItem {
@@ -42,9 +43,18 @@ interface Order {
 
 const statusFilters = ["All", "Pending", "Confirmed", "Processing", "Delivered", "Cancelled"] as const;
 const paymentFilters = ["All", "Unpaid", "Paid", "Verifying", "Failed", "Refunded"] as const;
+const ORDERS_PER_PAGE = 10;
+const prepaidPaymentMethods = new Set(["kbzpay", "wavepay", "ayapay", "bank"]);
+const paymentStatusGuidance: Record<string, string> = {
+  Unpaid: "Cash still pending or payment has not been received.",
+  Verifying: "Payment proof uploaded. Check amount, account, date, and transaction details before marking Paid.",
+  Paid: "Payment confirmed. Order can move forward for fulfillment.",
+  Failed: "Payment proof is invalid, amount is wrong, duplicate, or transfer failed.",
+  Refunded: "Customer payment has been returned or refund was completed.",
+};
 
 export default function OrdersTable() {
-  const supabase = createSupabaseClient();
+  const supabase = useMemo(() => createSupabaseClient(), []);
   const searchParams = useSearchParams();
   const orderIdFromNotification = searchParams.get("orderId");
   const statusFromUrl = searchParams.get("status");
@@ -53,6 +63,9 @@ export default function OrdersTable() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<string>("All");
   const [paymentFilter, setPaymentFilter] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState<string | null>(null);
@@ -62,9 +75,62 @@ export default function OrdersTable() {
   const [notificationOrderNotFound, setNotificationOrderNotFound] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const totalPages = Math.max(1, Math.ceil(totalOrders / ORDERS_PER_PAGE));
+  const pageStart = totalOrders === 0 ? 0 : (currentPage - 1) * ORDERS_PER_PAGE + 1;
+  const pageEnd = Math.min(currentPage * ORDERS_PER_PAGE, totalOrders);
+
+  const loadOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const from = (currentPage - 1) * ORDERS_PER_PAGE;
+      const to = from + ORDERS_PER_PAGE - 1;
+      const search = searchQuery.trim();
+
+      let query = supabase
+        .from("orders")
+        .select("*, order_items(*)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (filter !== "All") {
+        query = query.eq("status", filter);
+      }
+
+      if (paymentFilter !== "All") {
+        query = query.eq("payment_status", paymentFilter);
+      }
+
+      if (search) {
+        const escapedSearch = search.replace(/[%_]/g, "\\$&");
+        query = query.or(
+          `order_number.ilike.%${escapedSearch}%,customer_name.ilike.%${escapedSearch}%,customer_email.ilike.%${escapedSearch}%,phone.ilike.%${escapedSearch}%`
+        );
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error loading orders:", error);
+        return;
+      }
+
+      setOrders((data || []) as Order[]);
+      setTotalOrders(count || 0);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, filter, paymentFilter, searchQuery, supabase]);
+
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [loadOrders]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, paymentFilter, searchQuery]);
 
   useEffect(() => {
     if (statusFromUrl && statusFilters.includes(statusFromUrl as typeof statusFilters[number])) {
@@ -101,46 +167,6 @@ export default function OrdersTable() {
     }
   }, [orderIdFromNotification, orders, openedNotificationOrderId]);
 
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      const { data: ordersData, error: ordersError } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (ordersError) {
-        console.error("Error loading orders:", ordersError);
-        return;
-      }
-
-      // Fetch order items for each order
-      const ordersWithItems = await Promise.all(
-        (ordersData || []).map(async (order) => {
-          const { data: items, error: itemsError } = await supabase
-            .from("order_items")
-            .select("*")
-            .eq("order_id", order.id);
-
-          if (itemsError) {
-            console.error("Error loading order items:", itemsError);
-          }
-
-          return {
-            ...order,
-            order_items: items || [],
-          };
-        })
-      );
-
-      setOrders(ordersWithItems);
-    } catch (error) {
-      console.error("Error loading orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getPaymentScreenshotUrl = async (pathOrUrl: string) => {
     if (!pathOrUrl) return null;
     
@@ -165,6 +191,9 @@ export default function OrdersTable() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    const previousOrder = orders.find((order) => order.id === orderId);
+    const previousStatus = previousOrder?.status;
+
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
       const { error } = await supabase
@@ -183,6 +212,44 @@ export default function OrdersTable() {
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
       setActionMessage({ type: "success", text: "Order status updated." });
+
+      if (previousOrder && previousStatus !== newStatus) {
+        await logAdminAudit(supabase, {
+          action: "order_status_changed",
+          entityType: "order",
+          entityId: orderId,
+          entityLabel: previousOrder.order_number,
+          beforeData: { status: previousStatus },
+          afterData: { status: newStatus },
+          metadata: {
+            customer_name: previousOrder.customer_name,
+            customer_email: previousOrder.customer_email,
+            total: previousOrder.total,
+          },
+        });
+      }
+
+      if (previousStatus && previousStatus !== newStatus) {
+        void supabase.auth.getSession().then(({ data }) => {
+          const accessToken = data.session?.access_token;
+          if (!accessToken) return;
+
+          return fetch("/api/admin/email/order-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              orderId,
+              previousStatus,
+              nextStatus: newStatus,
+            }),
+          }).catch((emailError) => {
+            console.error("Order status email failed:", emailError);
+          });
+        });
+      }
     } catch (error) {
       console.error("Error updating order status:", error);
       setActionMessage({ type: "error", text: "Failed to update order status." });
@@ -196,6 +263,22 @@ export default function OrdersTable() {
   };
 
   const updatePaymentStatus = async (orderId: string, newPaymentStatus: string) => {
+    const previousOrder = orders.find((order) => order.id === orderId);
+    const previousPaymentStatus = previousOrder?.payment_status;
+
+    if (
+      previousOrder &&
+      newPaymentStatus === "Paid" &&
+      prepaidPaymentMethods.has(previousOrder.payment_method) &&
+      !previousOrder.payment_screenshot_url
+    ) {
+      setActionMessage({
+        type: "error",
+        text: "Payment proof is missing. Upload or confirm proof before marking this prepaid order as Paid.",
+      });
+      return;
+    }
+
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
       const { error } = await supabase
@@ -214,6 +297,23 @@ export default function OrdersTable() {
         order.id === orderId ? { ...order, payment_status: newPaymentStatus } : order
       ));
       setActionMessage({ type: "success", text: "Payment status updated." });
+
+      if (previousOrder && previousPaymentStatus !== newPaymentStatus) {
+        await logAdminAudit(supabase, {
+          action: "payment_status_changed",
+          entityType: "order",
+          entityId: orderId,
+          entityLabel: previousOrder.order_number,
+          beforeData: { payment_status: previousPaymentStatus },
+          afterData: { payment_status: newPaymentStatus },
+          metadata: {
+            customer_name: previousOrder.customer_name,
+            customer_email: previousOrder.customer_email,
+            payment_method: previousOrder.payment_method,
+            total: previousOrder.total,
+          },
+        });
+      }
     } catch (error) {
       console.error("Error updating payment status:", error);
       setActionMessage({ type: "error", text: "Failed to update payment status." });
@@ -278,14 +378,7 @@ export default function OrdersTable() {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesStatus = filter === "All" || order.status === filter;
-    const matchesPayment = paymentFilter === "All" || order.payment_status === paymentFilter;
-
-    return matchesStatus && matchesPayment;
-  });
-
-  if (loading) {
+  if (loading && orders.length === 0 && totalOrders === 0) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
@@ -317,6 +410,17 @@ export default function OrdersTable() {
 
       {/* Filter Tabs */}
       <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search order number, customer, email, or phone..."
+            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {statusFilters.map((status) => (
             <button
@@ -350,6 +454,15 @@ export default function OrdersTable() {
         </div>
       </div>
 
+      <div className="grid gap-3 rounded-[24px] border border-yellow-200 bg-[#fffdf6] p-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Object.entries(paymentStatusGuidance).map(([status, description]) => (
+          <div key={status} className="rounded-2xl border border-yellow-100 bg-white p-3">
+            <p className="text-sm font-black text-neutral-950">{status}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-600">{description}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Notification Order Not Found Message */}
       {notificationOrderNotFound && (
         <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
@@ -362,8 +475,45 @@ export default function OrdersTable() {
         </div>
       )}
 
+      {!loading && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
+          <p>
+            Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
+            <span className="font-bold text-black">{totalOrders}</span> orders
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage <= 1}
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Prev
+            </button>
+            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage >= totalPages}
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Orders List */}
-      {filteredOrders.length === 0 ? (
+      {loading ? (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
+          <p className="mt-4 text-sm text-zinc-600">Loading orders...</p>
+        </div>
+      ) : orders.length === 0 ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
           <Package className="mx-auto h-12 w-12 text-zinc-300" />
           <h3 className="mt-4 text-lg font-bold text-black">No orders found</h3>
@@ -371,7 +521,7 @@ export default function OrdersTable() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => {
+          {orders.map((order) => {
             const isHighlighted = order.id === orderIdFromNotification;
             
             return (
@@ -473,6 +623,17 @@ export default function OrdersTable() {
                         No Screenshot
                       </span>
                     )}
+
+                    {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                        Prepaid order has no payment proof. Keep as Verifying/Failed until proof is confirmed.
+                      </div>
+                    )}
+
+                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                      <span className="font-black">{order.payment_status || "Unpaid"}:</span>{" "}
+                      {paymentStatusGuidance[order.payment_status || "Unpaid"] || "Review this payment before fulfillment."}
+                    </div>
                     
                     {/* Payment Status Dropdown */}
                     <div className="flex items-center gap-2">
