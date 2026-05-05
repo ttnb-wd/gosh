@@ -47,7 +47,7 @@ export default function Page() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-white text-black dark:bg-zinc-950 dark:text-white">
+    <main role="main" className="min-h-screen bg-white text-black">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
