@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle, ChevronLeft, ChevronRight, Edit, EyeOff, Package, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { logAdminAudit } from "@/lib/adminAudit";
 import PremiumSelect from "./PremiumSelect";
 
 interface Product {
@@ -86,6 +85,12 @@ const productStatusFilters = [
   { label: "Inactive", value: "inactive" },
 ] as const;
 
+const productCategoryFilters = [
+  { label: "All Categories", value: "all" },
+  { label: "Perfume Products", value: "perfume" },
+  { label: "Accessories Products", value: "accessories" },
+] as const;
+
 export default function ProductManager() {
   const supabase = useMemo(() => createSupabaseClient(), []);
   const [products, setProducts] = useState<Product[]>([]);
@@ -96,6 +101,7 @@ export default function ProductManager() {
   const [listLoading, setListLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<(typeof productStatusFilters)[number]["value"]>("all");
+  const [categoryFilter, setCategoryFilter] = useState<(typeof productCategoryFilters)[number]["value"]>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -115,7 +121,7 @@ export default function ProductManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Upload image to Supabase Storage
-  const uploadProductImage = async (file: File): Promise<string> => {
+  const uploadProductImage = async (file: File): Promise<{ publicUrl: string; filePath: string }> => {
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
     const filePath = `products/${fileName}`;
@@ -130,7 +136,19 @@ export default function ProductManager() {
     }
 
     const { data } = supabase.storage.from("product-images").getPublicUrl(filePath);
-    return data.publicUrl;
+    return { publicUrl: data.publicUrl, filePath };
+  };
+
+  const deleteUploadedProductImage = async (filePath: string | null) => {
+    if (!filePath) return;
+
+    const { error: removeError } = await supabase.storage
+      .from("product-images")
+      .remove([filePath]);
+
+    if (removeError) {
+      console.warn("Product image cleanup failed:", removeError.message);
+    }
   };
 
   // Handle image file selection
@@ -173,6 +191,7 @@ export default function ProductManager() {
     madeWith: "",
     bestFor: "",
   });
+  const isAccessoryForm = formData.category === "Accessories";
 
   const loadProducts = useCallback(async () => {
     try {
@@ -196,6 +215,14 @@ export default function ProductManager() {
         query = query.eq("is_active", false);
       }
 
+      if (categoryFilter === "perfume") {
+        query = query.neq("category", "Accessories").not("category", "is", null);
+      }
+
+      if (categoryFilter === "accessories") {
+        query = query.eq("category", "Accessories");
+      }
+
       if (search) {
         const escapedSearch = search.replace(/[%_]/g, "\\$&");
         query = query.or(`name.ilike.%${escapedSearch}%,brand.ilike.%${escapedSearch}%,category.ilike.%${escapedSearch}%`);
@@ -215,7 +242,7 @@ export default function ProductManager() {
     } finally {
       setListLoading(false);
     }
-  }, [currentPage, searchQuery, statusFilter, supabase]);
+  }, [currentPage, searchQuery, statusFilter, categoryFilter, supabase]);
 
   useEffect(() => {
     loadProducts();
@@ -223,7 +250,7 @@ export default function ProductManager() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, categoryFilter]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -235,7 +262,7 @@ export default function ProductManager() {
     };
   }, [showProductForm, showDeleteModal]);
 
-  const openAddProductForm = () => {
+  const openAddProductForm = (presetCategory = "") => {
     setEditingProduct(null);
     setFormData({
       name: "",
@@ -245,7 +272,7 @@ export default function ProductManager() {
       image: "",
       badge: "",
       stock: "",
-      category: "",
+      category: presetCategory,
       is_active: true,
       decant5ml: "",
       decant10ml: "",
@@ -311,6 +338,7 @@ export default function ProductManager() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    let uploadedImagePath: string | null = null;
 
     try {
       // Validate required fields
@@ -327,12 +355,14 @@ export default function ProductManager() {
       }
 
       // Build decants array
-      const decants = [
-        { label: "5ml", price: Number(formData.decant5ml || 0) },
-        { label: "10ml", price: Number(formData.decant10ml || 0) },
-        { label: "20ml", price: Number(formData.decant20ml || 0) },
-        { label: "30ml", price: Number(formData.decant30ml || 0) },
-      ].filter((d) => d.price > 0);
+      const decants = formData.category === "Accessories"
+        ? []
+        : [
+            { label: "5ml", price: Number(formData.decant5ml || 0) },
+            { label: "10ml", price: Number(formData.decant10ml || 0) },
+            { label: "20ml", price: Number(formData.decant20ml || 0) },
+            { label: "30ml", price: Number(formData.decant30ml || 0) },
+          ].filter((d) => d.price > 0);
 
       const quickViewNotes: ProductQuickViewNotes = {
         story: formData.quickStory.trim(),
@@ -348,7 +378,9 @@ export default function ProductManager() {
       if (imageFile) {
         setUploadingImage(true);
         try {
-          imageUrl = await uploadProductImage(imageFile);
+          const uploadedImage = await uploadProductImage(imageFile);
+          imageUrl = uploadedImage.publicUrl;
+          uploadedImagePath = uploadedImage.filePath;
         } catch (uploadErr: unknown) {
           setError(uploadErr instanceof Error ? uploadErr.message : "Image upload failed. Please try again.");
           setLoading(false);
@@ -374,27 +406,13 @@ export default function ProductManager() {
         notes: hasQuickViewNotes(quickViewNotes) ? quickViewNotes : {},
       };
 
-      console.log("Product payload:", productPayload);
-
-      let result;
-      if (editingProduct) {
-        // Update existing product
-        result = await supabase
-          .from("products")
-          .update(productPayload)
-          .eq("id", editingProduct.id)
-          .select()
-          .single();
-      } else {
-        // Insert new product
-        result = await supabase
-          .from("products")
-          .insert(productPayload)
-          .select()
-          .single();
-      }
+      const result = await supabase.rpc("admin_save_product", {
+        p_product_id: editingProduct?.id || null,
+        p_product: productPayload,
+      });
 
       if (result.error) {
+        await deleteUploadedProductImage(uploadedImagePath);
         console.error(editingProduct ? "Update product error:" : "Add product error:", {
           message: result.error.message,
           details: result.error.details,
@@ -405,34 +423,6 @@ export default function ProductManager() {
         setLoading(false);
         return;
       }
-
-      console.log(editingProduct ? "Product updated successfully:" : "Product added successfully:", result.data);
-      const savedProduct = result.data as Product;
-
-      await logAdminAudit(supabase, {
-        action: editingProduct ? "product_updated" : "product_created",
-        entityType: "product",
-        entityId: savedProduct.id,
-        entityLabel: savedProduct.name,
-        beforeData: editingProduct
-          ? {
-              name: editingProduct.name,
-              brand: editingProduct.brand,
-              price: editingProduct.price,
-              stock: editingProduct.stock,
-              category: editingProduct.category,
-              is_active: editingProduct.is_active,
-            }
-          : {},
-        afterData: {
-          name: savedProduct.name,
-          brand: savedProduct.brand,
-          price: savedProduct.price,
-          stock: savedProduct.stock,
-          category: savedProduct.category,
-          is_active: savedProduct.is_active,
-        },
-      });
 
       // Reset form
       setFormData({
@@ -463,6 +453,7 @@ export default function ProductManager() {
       closeProductForm();
       loadProducts();
     } catch (err) {
+      await deleteUploadedProductImage(uploadedImagePath);
       console.error("Unexpected error:", err);
       setError(editingProduct ? "Failed to update product" : "Failed to add product");
     } finally {
@@ -471,36 +462,18 @@ export default function ProductManager() {
   };
 
   const toggleProductStatus = async (productId: string, currentStatus: boolean) => {
-    const product = products.find((item) => item.id === productId);
-
     // Add to updating set
     setUpdatingProducts(prev => new Set(prev).add(productId));
 
     try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: !currentStatus })
-        .eq("id", productId);
+      const { error } = await supabase.rpc("admin_set_product_active", {
+        p_product_id: productId,
+        p_is_active: !currentStatus,
+      });
 
       if (error) {
         console.error("Error updating product status:", error);
         return;
-      }
-
-      // Reload products to get fresh data
-      if (product) {
-        await logAdminAudit(supabase, {
-          action: "product_status_changed",
-          entityType: "product",
-          entityId: productId,
-          entityLabel: product.name,
-          beforeData: { is_active: currentStatus },
-          afterData: { is_active: !currentStatus },
-          metadata: {
-            brand: product.brand,
-            category: product.category,
-          },
-        });
       }
 
       loadProducts();
@@ -533,10 +506,9 @@ export default function ProductManager() {
 
     setDeletingProduct(true);
     try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productToDelete.id);
+      const { error } = await supabase.rpc("admin_delete_product", {
+        p_product_id: productToDelete.id,
+      });
 
       if (error) {
         console.error("Error deleting product:", error);
@@ -545,21 +517,6 @@ export default function ProductManager() {
       }
 
       // Close modal and reload products
-      await logAdminAudit(supabase, {
-        action: "product_deleted",
-        entityType: "product",
-        entityId: productToDelete.id,
-        entityLabel: productToDelete.name,
-        beforeData: {
-          name: productToDelete.name,
-          brand: productToDelete.brand,
-          price: productToDelete.price,
-          stock: productToDelete.stock,
-          category: productToDelete.category,
-          is_active: productToDelete.is_active,
-        },
-      });
-
       closeDeleteModal();
       loadProducts();
     } catch (error) {
@@ -573,24 +530,37 @@ export default function ProductManager() {
   return (
     <div className="space-y-6">
       {/* Header Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-black">Product Inventory</h2>
           <p className="text-sm text-zinc-600">{totalProducts} products in inventory</p>
         </div>
-        <button
-          onClick={openAddProductForm}
-          className="inline-flex items-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Product
-        </button>
+        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => openAddProductForm()}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Perfume Product
+          </button>
+          <button
+            type="button"
+            onClick={() => openAddProductForm("Accessories")}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Accessories Product
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3 rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
           <input
+            id="admin-product-search"
+            name="admin_product_search"
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -607,6 +577,23 @@ export default function ProductManager() {
               onClick={() => setStatusFilter(item.value)}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 statusFilter === item.value
+                  ? "bg-yellow-400 text-black shadow-md"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {productCategoryFilters.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setCategoryFilter(item.value)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                categoryFilter === item.value
                   ? "bg-yellow-400 text-black shadow-md"
                   : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
               }`}
@@ -700,7 +687,7 @@ export default function ProductManager() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold uppercase tracking-wider text-yellow-600">{product.brand}</p>
                   {product.category === "Accessories" && (
-                    <span className="rounded-full bg-purple-100 px-2 py-1 text-xs font-bold text-purple-700">
+                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700">
                       Accessory
                     </span>
                   )}
@@ -797,9 +784,17 @@ export default function ProductManager() {
             {/* Header */}
             <div className="sticky top-0 z-20 flex items-center justify-between border-b border-yellow-200/70 bg-[#fffdf6]/95 px-6 py-5 backdrop-blur">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-yellow-600">Admin Product</p>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-yellow-600">
+                  {isAccessoryForm ? "Admin Accessory" : "Admin Product"}
+                </p>
                 <h2 className="mt-1 text-2xl font-black text-neutral-950">
-                  {editingProduct ? "Edit Product" : "Add Product"}
+                  {editingProduct
+                    ? isAccessoryForm
+                      ? "Edit Accessory"
+                      : "Edit Product"
+                    : isAccessoryForm
+                    ? "Add Accessory"
+                    : "Add Product"}
                 </h2>
               </div>
               <button
@@ -816,7 +811,7 @@ export default function ProductManager() {
             <div className="scrollbar-auto-hide overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain">
               <form id="product-form" onSubmit={handleAddProduct} className="space-y-5">
                 {error && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                     {error}
                   </div>
                 )}
@@ -824,7 +819,7 @@ export default function ProductManager() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-bold text-neutral-800">
-                      Product Name *
+                      {isAccessoryForm ? "Accessory Name *" : "Product Name *"}
                     </label>
                     <input
                       type="text"
@@ -833,13 +828,13 @@ export default function ProductManager() {
                       value={formData.name}
                       onChange={handleInputChange}
                       className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                      placeholder="Golden Noir"
+                      placeholder={isAccessoryForm ? "Travel Atomizer" : "Golden Noir"}
                     />
                   </div>
 
                   <div>
                     <label className="mb-2 block text-sm font-bold text-neutral-800">
-                      Brand
+                      {isAccessoryForm ? "Brand / Maker" : "Brand"}
                     </label>
                     <input
                       type="text"
@@ -847,7 +842,7 @@ export default function ProductManager() {
                       value={formData.brand}
                       onChange={handleInputChange}
                       className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                      placeholder="Dior"
+                      placeholder={isAccessoryForm ? "GOSH PERFUME" : "Dior"}
                     />
                   </div>
                 </div>
@@ -861,7 +856,7 @@ export default function ProductManager() {
                     value={formData.description}
                     onChange={handleInputChange}
                     className="min-h-28 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="Warm amber, vanilla, dark wood"
+                    placeholder={isAccessoryForm ? "Premium refillable perfume travel atomizer with a clean leak-resistant finish." : "Warm amber, vanilla, dark wood"}
                   />
                 </div>
 
@@ -879,7 +874,7 @@ export default function ProductManager() {
                       value={formData.price}
                       onChange={handleInputChange}
                       className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                      placeholder="89"
+                      placeholder={isAccessoryForm ? "25000" : "89000"}
                     />
                   </div>
 
@@ -894,31 +889,49 @@ export default function ProductManager() {
                       value={formData.stock}
                       onChange={handleInputChange}
                       className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                      placeholder="45"
+                      placeholder={isAccessoryForm ? "25" : "45"}
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <PremiumSelect
-                    label="Category"
-                    value={formData.category || ""}
-                    placeholder="Select category"
-                    options={[
-                      { label: "Woody", value: "Woody" },
-                      { label: "Oriental", value: "Oriental" },
-                      { label: "Floral", value: "Floral" },
-                      { label: "Fresh", value: "Fresh" },
-                      { label: "Citrus", value: "Citrus" },
-                      { label: "Accessories", value: "Accessories" },
-                    ]}
-                    onChange={(value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        category: value,
-                      }))
-                    }
-                  />
+                  {isAccessoryForm ? (
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        Category
+                      </label>
+                      <div className="flex min-h-[58px] items-center rounded-2xl border border-yellow-300 bg-yellow-50 px-5 text-sm font-black text-neutral-950 shadow-[0_12px_28px_rgba(234,179,8,0.12)]">
+                        Accessories
+                      </div>
+                    </div>
+                  ) : (
+                    <PremiumSelect
+                      label="Category"
+                      value={formData.category || ""}
+                      placeholder="Select category"
+                      options={[
+                        { label: "Woody", value: "Woody" },
+                        { label: "Oriental", value: "Oriental" },
+                        { label: "Floral", value: "Floral" },
+                        { label: "Fresh", value: "Fresh" },
+                        { label: "Citrus", value: "Citrus" },
+                      ]}
+                      onChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          category: value,
+                          ...(value === "Accessories"
+                            ? {
+                                decant5ml: "",
+                                decant10ml: "",
+                                decant20ml: "",
+                                decant30ml: "",
+                              }
+                            : {}),
+                        }))
+                      }
+                    />
+                  )}
 
                   <PremiumSelect
                     label="Badge"
@@ -1025,31 +1038,33 @@ export default function ProductManager() {
                 <div className="rounded-[24px] border border-yellow-200 bg-white/70 p-4">
                   <div className="mb-4">
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">
-                      Quick View Details
+                      {isAccessoryForm ? "Accessory Details" : "Quick View Details"}
                     </p>
                     <p className="mt-1 text-sm text-neutral-500">
-                      Optional content shown inside product quick view.
+                      {isAccessoryForm
+                        ? "Optional content shown inside accessory quick view."
+                        : "Optional content shown inside product quick view."}
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <div>
                       <label className="mb-2 block text-sm font-bold text-neutral-800">
-                        The Story
+                          {isAccessoryForm ? "Product Details" : "The Story"}
                       </label>
                       <textarea
                         name="quickStory"
                         value={formData.quickStory}
                         onChange={handleInputChange}
                         className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                        placeholder="A short realistic story about the fragrance, mood, and character."
+                        placeholder={isAccessoryForm ? "A short realistic description of the accessory, finish, and daily use." : "A short realistic story about the fragrance, mood, and character."}
                       />
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div>
                         <label className="mb-2 block text-sm font-bold text-neutral-800">
-                          Top Notes
+                          {isAccessoryForm ? "Key Features" : "Top Notes"}
                         </label>
                         <input
                           type="text"
@@ -1057,12 +1072,12 @@ export default function ProductManager() {
                           value={formData.topNotes}
                           onChange={handleInputChange}
                           className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                          placeholder="Bergamot, Citrus"
+                          placeholder={isAccessoryForm ? "Refillable, Leak-resistant" : "Bergamot, Citrus"}
                         />
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-bold text-neutral-800">
-                          Heart Notes
+                          {isAccessoryForm ? "Materials" : "Heart Notes"}
                         </label>
                         <input
                           type="text"
@@ -1070,12 +1085,12 @@ export default function ProductManager() {
                           value={formData.heartNotes}
                           onChange={handleInputChange}
                           className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                          placeholder="Jasmine, Rose"
+                          placeholder={isAccessoryForm ? "Glass, Metal" : "Jasmine, Rose"}
                         />
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-bold text-neutral-800">
-                          Base Notes
+                          {isAccessoryForm ? "Care Tips" : "Base Notes"}
                         </label>
                         <input
                           type="text"
@@ -1083,7 +1098,7 @@ export default function ProductManager() {
                           value={formData.baseNotes}
                           onChange={handleInputChange}
                           className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                          placeholder="Amber, Vanilla"
+                          placeholder={isAccessoryForm ? "Keep dry, Clean gently" : "Amber, Vanilla"}
                         />
                       </div>
                     </div>
@@ -1091,91 +1106,93 @@ export default function ProductManager() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-bold text-neutral-800">
-                          Made With
+                          {isAccessoryForm ? "Made With" : "Made With"}
                         </label>
                         <textarea
                           name="madeWith"
                           value={formData.madeWith}
                           onChange={handleInputChange}
                           className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                          placeholder="Premium oils, clean alcohol base, and carefully balanced aroma compounds."
+                          placeholder={isAccessoryForm ? "Durable materials selected for daily perfume storage and gifting." : "Premium oils, clean alcohol base, and carefully balanced aroma compounds."}
                         />
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-bold text-neutral-800">
-                          Best For
+                          {isAccessoryForm ? "Best For" : "Best For"}
                         </label>
                         <textarea
                           name="bestFor"
                           value={formData.bestFor}
                           onChange={handleInputChange}
                           className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                          placeholder="Daily wear, evening events, office, dates, or special occasions."
+                          placeholder={isAccessoryForm ? "Travel, gifting, handbag carry, and perfume refills." : "Daily wear, evening events, office, dates, or special occasions."}
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-neutral-800">
-                    Decant Sizes (Price in MMK)
-                  </label>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <div>
-                      <label className="mb-1 block text-xs font-semibold text-neutral-600">5ml</label>
-                      <input
-                        type="number"
-                        name="decant5ml"
-                        min="0"
-                        step="0.01"
-                        value={formData.decant5ml}
-                        onChange={handleInputChange}
-                        className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                        placeholder="12"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-semibold text-neutral-600">10ml</label>
-                      <input
-                        type="number"
-                        name="decant10ml"
-                        min="0"
-                        step="0.01"
-                        value={formData.decant10ml}
-                        onChange={handleInputChange}
-                        className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                        placeholder="20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-semibold text-neutral-600">20ml</label>
-                      <input
-                        type="number"
-                        name="decant20ml"
-                        min="0"
-                        step="0.01"
-                        value={formData.decant20ml}
-                        onChange={handleInputChange}
-                        className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                        placeholder="35"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-semibold text-neutral-600">30ml</label>
-                      <input
-                        type="number"
-                        name="decant30ml"
-                        min="0"
-                        step="0.01"
-                        value={formData.decant30ml}
-                        onChange={handleInputChange}
-                        className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                        placeholder="48"
-                      />
+                {!isAccessoryForm && (
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-neutral-800">
+                      Decant Sizes (Price in MMK)
+                    </label>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-neutral-600">5ml</label>
+                        <input
+                          type="number"
+                          name="decant5ml"
+                          min="0"
+                          step="0.01"
+                          value={formData.decant5ml}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="12"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-neutral-600">10ml</label>
+                        <input
+                          type="number"
+                          name="decant10ml"
+                          min="0"
+                          step="0.01"
+                          value={formData.decant10ml}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="20"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-neutral-600">20ml</label>
+                        <input
+                          type="number"
+                          name="decant20ml"
+                          min="0"
+                          step="0.01"
+                          value={formData.decant20ml}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="35"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-neutral-600">30ml</label>
+                        <input
+                          type="number"
+                          name="decant30ml"
+                          min="0"
+                          step="0.01"
+                          value={formData.decant30ml}
+                          onChange={handleInputChange}
+                          className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          placeholder="48"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   <input
@@ -1211,8 +1228,12 @@ export default function ProductManager() {
                 {uploadingImage
                   ? "Uploading image..."
                   : loading
-                  ? (editingProduct ? "Saving..." : "Adding...")
-                  : (editingProduct ? "Save Changes" : "Add Product")}
+                  ? (editingProduct ? "Saving..." : isAccessoryForm ? "Adding Accessory..." : "Adding...")
+                  : editingProduct
+                  ? "Save Changes"
+                  : isAccessoryForm
+                  ? "Add Accessory"
+                  : "Add Product"}
               </button>
             </div>
           </div>
@@ -1230,7 +1251,7 @@ export default function ProductManager() {
                 This action permanently removes &quot;{productToDelete.name}&quot; and cannot be undone.
               </p>
               {deleteError && (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                <div role="alert" className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                   {deleteError}
                 </div>
               )}
