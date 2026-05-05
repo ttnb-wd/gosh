@@ -72,7 +72,7 @@ export const sendTransactionalEmail = async ({
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    console.warn("Email skipped: RESEND_API_KEY is not configured.");
+    // Email skipped: RESEND_API_KEY is not configured
     return { ok: true, skipped: true };
   }
 
@@ -154,7 +154,7 @@ const renderEmailShell = (title: string, body: string) => `
 export const sendAdminNewOrderEmail = async (order: OrderEmailData) => {
   const adminEmail = getAdminEmail();
   if (!adminEmail) {
-    console.warn("Admin order email skipped: ADMIN_NOTIFICATION_EMAIL is not configured.");
+    // Admin order email skipped: ADMIN_NOTIFICATION_EMAIL is not configured
     return { ok: true, skipped: true };
   }
 
@@ -228,7 +228,7 @@ export const sendCustomerOrderStatusEmail = async (
 export const sendAdminContactEmail = async (message: ContactEmailData) => {
   const adminEmail = getAdminEmail();
   if (!adminEmail) {
-    console.warn("Admin contact email skipped: ADMIN_NOTIFICATION_EMAIL is not configured.");
+    // Admin contact email skipped: ADMIN_NOTIFICATION_EMAIL is not configured
     return { ok: true, skipped: true };
   }
 

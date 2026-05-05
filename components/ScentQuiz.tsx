@@ -16,7 +16,7 @@ export default function ScentQuiz() {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <section className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
+    <section role="region" aria-label="Product catalog" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

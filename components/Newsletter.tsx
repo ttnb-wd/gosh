@@ -54,7 +54,7 @@ export default function Newsletter() {
   };
 
   return (
-    <section className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
+    <section role="region" aria-label="Newsletter signup" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -114,6 +114,7 @@ export default function Newsletter() {
 
             {status && (
               <p
+                role="alert"
                 className={`mt-4 text-sm font-semibold ${
                   status.type === "success" ? "text-black" : "text-red-800"
                 }`}

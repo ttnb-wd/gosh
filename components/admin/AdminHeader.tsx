@@ -2,7 +2,7 @@
 
 import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,6 +36,7 @@ interface ContactMessageNotification {
 export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const { user } = useAdminAuth();
   const router = useRouter();
+  const supabase = useMemo(() => createSupabaseClient(), []);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
@@ -56,8 +57,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   });
 
   const fetchNotifications = async () => {
+    if (!user) return;
+
     try {
-      const supabase = createSupabaseClient();
       const [orderNotifications, contactMessages] = await Promise.all([
         supabase
           .from("admin_notifications")
@@ -80,7 +82,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
         console.error("Contact notification fetch error:", contactMessages.error);
       }
 
-      const mappedOrderNotifications = (orderNotifications.data || []).map((item) => ({
+      const mappedOrderNotifications = ((orderNotifications.data || []) as Omit<AdminNotification, "source">[]).map((item) => ({
         ...item,
         source: "order" as const,
         order_id: item.order_id || null,
@@ -102,9 +104,10 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   };
 
   useEffect(() => {
+    if (!user) return;
+
     fetchNotifications();
 
-    const supabase = createSupabaseClient();
     const channel = supabase
       .channel("admin-notifications")
       .on(
@@ -114,9 +117,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           schema: "public",
           table: "admin_notifications",
         },
-        (payload) => {
-          console.log("Realtime notification received:", payload.new);
-          
+        (payload: { new: Record<string, unknown> }) => {
           // Prevent duplicate notifications
           setNotifications((prev) => {
             const next = {
@@ -127,7 +128,6 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             
             // Check if notification already exists
             if (prev.some((item) => item.source === next.source && item.id === next.id)) {
-              console.log("Duplicate notification prevented:", next.id);
               return prev;
             }
             
@@ -142,11 +142,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           schema: "public",
           table: "contact_messages",
         },
-        (payload) => {
-          console.log("Realtime contact notification received:", payload.new);
-
+        (payload: { new: Record<string, unknown> }) => {
           setNotifications((prev) => {
-            const next = toContactNotification(payload.new as ContactMessageNotification);
+            const next = toContactNotification(payload.new as unknown as ContactMessageNotification);
 
             if (prev.some((item) => item.source === next.source && item.id === next.id)) {
               return prev;
@@ -156,14 +154,12 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           });
         }
       )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [supabase, user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -184,9 +180,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   }, [notiOpen]);
 
   const markNotificationRead = async (notification: AdminNotification) => {
-    try {
-      const supabase = createSupabaseClient();
+    if (!user) return;
 
+    try {
       if (notification.source === "contact") {
         await supabase.from("contact_messages").update({ status: "read" }).eq("id", notification.id);
       } else {
@@ -206,8 +202,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   };
 
   const markAllNotificationsRead = async () => {
+    if (!user) return;
+
     try {
-      const supabase = createSupabaseClient();
       await Promise.all([
         supabase.from("admin_notifications").update({ is_read: true }).eq("is_read", false),
         supabase.from("contact_messages").update({ status: "read" }).eq("status", "unread"),
@@ -239,7 +236,6 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      const supabase = createSupabaseClient();
       await supabase.auth.signOut();
       router.push("/login");
       router.refresh();
@@ -251,7 +247,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <header role="banner" className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <div className="min-w-0 pl-14 lg:pl-0">
           <h1 className="break-words text-[2rem] font-black leading-[0.98] text-black sm:text-4xl">{title}</h1>

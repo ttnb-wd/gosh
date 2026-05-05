@@ -101,7 +101,16 @@ export default function AdminSettingsPage() {
           title="Settings"
           subtitle="Manage store, checkout, payment, and website behavior"
         />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Screen Reader Loading Announcement */}
+        <div 
+          role="status" 
+          aria-live="polite" 
+          aria-atomic="true"
+          className="sr-only"
+        >
+          Loading settings, please wait...
+        </div>
+        <main role="main" className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="rounded-[28px] border border-zinc-200 bg-white p-12 text-center shadow-sm">
             <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-yellow-100"></div>
             <p className="mt-4 text-sm font-medium text-zinc-600">
@@ -120,7 +129,16 @@ export default function AdminSettingsPage() {
           title="Settings"
           subtitle="Manage store, checkout, payment, and website behavior"
         />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Screen Reader Error Announcement */}
+        <div 
+          role="alert" 
+          aria-live="assertive" 
+          aria-atomic="true"
+          className="sr-only"
+        >
+          Failed to load settings
+        </div>
+        <main role="main" className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="rounded-[28px] border border-red-200 bg-red-50 p-12 text-center shadow-sm">
             <AlertCircle className="mx-auto h-12 w-12 text-red-600" />
             <p className="mt-4 text-sm font-medium text-red-700">
@@ -145,10 +163,21 @@ export default function AdminSettingsPage() {
         subtitle="Manage store, checkout, payment, and website behavior"
       />
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Screen Reader Settings Loaded Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        Settings loaded successfully
+      </div>
+
+      <main role="main" className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Success/Error Message */}
         {message && (
           <div
+            role="alert"
             className={`mb-6 flex items-center gap-3 rounded-[22px] border px-5 py-4 ${
               message.type === "success"
                 ? "border-green-200 bg-green-50 text-green-700"
@@ -187,6 +216,8 @@ export default function AdminSettingsPage() {
                   Store Name
                 </label>
                 <input
+                  id="setting-store-name"
+                  name="store_name"
                   type="text"
                   value={settings.store_name}
                   onChange={(e) =>
@@ -202,6 +233,8 @@ export default function AdminSettingsPage() {
                   Store Tagline
                 </label>
                 <input
+                  id="setting-store-tagline"
+                  name="store_tagline"
                   type="text"
                   value={settings.store_tagline || ""}
                   onChange={(e) =>
@@ -217,6 +250,8 @@ export default function AdminSettingsPage() {
                   Email
                 </label>
                 <input
+                  id="setting-store-email"
+                  name="store_email"
                   type="email"
                   value={settings.store_email || ""}
                   onChange={(e) =>
@@ -232,6 +267,8 @@ export default function AdminSettingsPage() {
                   Phone
                 </label>
                 <input
+                  id="setting-store-phone"
+                  name="store_phone"
                   type="tel"
                   value={settings.store_phone || ""}
                   onChange={(e) =>
@@ -247,6 +284,8 @@ export default function AdminSettingsPage() {
                   Address
                 </label>
                 <input
+                  id="setting-store-address"
+                  name="store_address"
                   type="text"
                   value={settings.store_address || ""}
                   onChange={(e) =>
@@ -262,6 +301,8 @@ export default function AdminSettingsPage() {
                   City
                 </label>
                 <input
+                  id="setting-city"
+                  name="city"
                   type="text"
                   value={settings.city || ""}
                   onChange={(e) => updateSetting("city", e.target.value)}
@@ -275,6 +316,8 @@ export default function AdminSettingsPage() {
                   Country
                 </label>
                 <input
+                  id="setting-country"
+                  name="country"
                   type="text"
                   value={settings.country}
                   onChange={(e) => updateSetting("country", e.target.value)}
@@ -337,6 +380,8 @@ export default function AdminSettingsPage() {
                     Delivery Fee (MMK)
                   </label>
                   <input
+                    id="setting-delivery-fee"
+                    name="delivery_fee"
                     type="number"
                     min="0"
                     value={settings.delivery_fee}
@@ -353,6 +398,8 @@ export default function AdminSettingsPage() {
                     Minimum Order (MMK)
                   </label>
                   <input
+                    id="setting-minimum-order-amount"
+                    name="minimum_order_amount"
                     type="number"
                     min="0"
                     value={settings.minimum_order_amount}

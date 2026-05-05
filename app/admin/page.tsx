@@ -5,6 +5,7 @@ import Link from "next/link";
 import AdminHeader from "@/components/admin/AdminHeader";
 import StatCard from "@/components/admin/StatCard";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import {
   AlertTriangle,
   ArrowRight,
@@ -202,6 +203,7 @@ function OperationalFlag({
 }
 
 export default function AdminDashboard() {
+  const { user, loading: authLoading } = useAdminAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     stats: emptyStats,
     lowStockList: [],
@@ -213,10 +215,18 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     loadDashboard();
-  }, []);
+  }, [authLoading, user]);
 
   const loadDashboard = async () => {
+    if (!user) return;
+
     setLoading(true);
     setError(null);
 
@@ -346,7 +356,17 @@ export default function AdminDashboard() {
     <div className="min-h-screen">
       <AdminHeader title="Dashboard" subtitle="Store operations overview" />
 
-      <main className="overflow-hidden p-4 sm:p-6">
+      {/* Screen Reader Loading Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading ? "Loading dashboard data, please wait..." : "Dashboard data loaded"}
+      </div>
+
+      <main role="main" className="overflow-hidden p-4 sm:p-6">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-600">Live Summary</p>
@@ -368,7 +388,7 @@ export default function AdminDashboard() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
             {error}
           </div>
         )}

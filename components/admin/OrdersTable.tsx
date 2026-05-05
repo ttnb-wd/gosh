@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, Package, Search, XCircle } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { logAdminAudit } from "@/lib/adminAudit";
 import PremiumStatusSelect from "@/components/admin/PremiumStatusSelect";
 
 interface OrderItem {
@@ -196,10 +195,10 @@ export default function OrdersTable() {
 
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: newStatus })
-        .eq("id", orderId);
+      const { data: updatedOrderData, error } = await supabase.rpc("admin_update_order_status", {
+        p_order_id: orderId,
+        p_status: newStatus,
+      });
 
       if (error) {
         console.error("Error updating order status:", error);
@@ -207,30 +206,17 @@ export default function OrdersTable() {
         return;
       }
 
+      const updatedOrder = Array.isArray(updatedOrderData) ? updatedOrderData[0] : updatedOrderData;
+
       // Update local state
       setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.id === orderId ? { ...order, ...(updatedOrder || {}), status: newStatus } : order
       ));
       setActionMessage({ type: "success", text: "Order status updated." });
 
-      if (previousOrder && previousStatus !== newStatus) {
-        await logAdminAudit(supabase, {
-          action: "order_status_changed",
-          entityType: "order",
-          entityId: orderId,
-          entityLabel: previousOrder.order_number,
-          beforeData: { status: previousStatus },
-          afterData: { status: newStatus },
-          metadata: {
-            customer_name: previousOrder.customer_name,
-            customer_email: previousOrder.customer_email,
-            total: previousOrder.total,
-          },
-        });
-      }
-
       if (previousStatus && previousStatus !== newStatus) {
-        void supabase.auth.getSession().then(({ data }) => {
+        void supabase.auth.getSession().then((response: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
+          const { data } = response;
           const accessToken = data.session?.access_token;
           if (!accessToken) return;
 
@@ -264,7 +250,6 @@ export default function OrdersTable() {
 
   const updatePaymentStatus = async (orderId: string, newPaymentStatus: string) => {
     const previousOrder = orders.find((order) => order.id === orderId);
-    const previousPaymentStatus = previousOrder?.payment_status;
 
     if (
       previousOrder &&
@@ -281,10 +266,10 @@ export default function OrdersTable() {
 
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ payment_status: newPaymentStatus })
-        .eq("id", orderId);
+      const { data: updatedOrderData, error } = await supabase.rpc("admin_update_payment_status", {
+        p_order_id: orderId,
+        p_payment_status: newPaymentStatus,
+      });
 
       if (error) {
         console.error("Error updating payment status:", error);
@@ -292,28 +277,13 @@ export default function OrdersTable() {
         return;
       }
 
+      const updatedOrder = Array.isArray(updatedOrderData) ? updatedOrderData[0] : updatedOrderData;
+
       // Update local state
       setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, payment_status: newPaymentStatus } : order
+        order.id === orderId ? { ...order, ...(updatedOrder || {}), payment_status: newPaymentStatus } : order
       ));
       setActionMessage({ type: "success", text: "Payment status updated." });
-
-      if (previousOrder && previousPaymentStatus !== newPaymentStatus) {
-        await logAdminAudit(supabase, {
-          action: "payment_status_changed",
-          entityType: "order",
-          entityId: orderId,
-          entityLabel: previousOrder.order_number,
-          beforeData: { payment_status: previousPaymentStatus },
-          afterData: { payment_status: newPaymentStatus },
-          metadata: {
-            customer_name: previousOrder.customer_name,
-            customer_email: previousOrder.customer_email,
-            payment_method: previousOrder.payment_method,
-            total: previousOrder.total,
-          },
-        });
-      }
     } catch (error) {
       console.error("Error updating payment status:", error);
       setActionMessage({ type: "error", text: "Failed to update payment status." });
@@ -391,6 +361,7 @@ export default function OrdersTable() {
     <div className="space-y-6">
       {actionMessage && (
         <div
+          role="alert"
           className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
             actionMessage.type === "success"
               ? "border-green-200 bg-green-50 text-green-700"
@@ -413,6 +384,8 @@ export default function OrdersTable() {
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
           <input
+            id="admin-order-search"
+            name="admin_order_search"
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -625,7 +598,7 @@ export default function OrdersTable() {
                     )}
 
                     {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
-                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                         Prepaid order has no payment proof. Keep as Verifying/Failed until proof is confirmed.
                       </div>
                     )}

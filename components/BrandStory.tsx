@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function BrandStory() {
   return (
-    <section className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
+    <section role="region" aria-label="Brand story" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <motion.div
@@ -47,6 +47,7 @@ export default function BrandStory() {
                 src="https://images.unsplash.com/photo-1594735982593-1b0f3e4e5e5e?q=80&w=1200&auto=format&fit=crop"
                 alt="Perfume craftsmanship"
                 fill
+                unoptimized
                 sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-cover"
               />

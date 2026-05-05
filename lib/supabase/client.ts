@@ -162,6 +162,10 @@ const supabaseClientOptions = {
   },
 };
 
+type SupabaseBrowserClient = ReturnType<typeof createBrowserClient>;
+
+let supabaseClient: SupabaseBrowserClient | null = null;
+
 // Client-side Supabase client for use in Client Components
 export const createSupabaseClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -172,7 +176,11 @@ export const createSupabaseClient = () => {
     throw new Error('Supabase configuration is missing. Please check your .env.local file.');
   }
 
-  return createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
+  if (!supabaseClient) {
+    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
+  }
+
+  return supabaseClient;
 };
 
 export const getSupabaseUser = async (client = createSupabaseClient()) => {
@@ -193,18 +201,15 @@ export const getSupabaseUser = async (client = createSupabaseClient()) => {
   return response;
 };
 
-// Browser client for direct usage
-let supabase: ReturnType<typeof createBrowserClient> | null = null;
-
 try {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (supabaseUrl && supabaseKey) {
-    supabase = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
+    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
   }
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
 }
 
-export { supabase };
+export { supabaseClient as supabase };

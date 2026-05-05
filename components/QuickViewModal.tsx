@@ -12,6 +12,7 @@ interface Product {
   description: string;
   image: string;
   badge: string | null;
+  category?: string;
   decants: { label: string; price: number }[];
   notes?: ProductQuickViewNotes;
 }
@@ -84,12 +85,28 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
   if (!product) return null;
 
+  const isAccessory = String(product.category || "").toLowerCase().trim() === "accessories";
   const quickViewNotes = product.notes || {};
   const scentNotes = {
-    top: quickViewNotes.top?.length ? quickViewNotes.top : ["Bergamot", "Citrus", "Fresh Herbs"],
-    heart: quickViewNotes.heart?.length ? quickViewNotes.heart : ["Jasmine", "Rose", "Lavender"],
-    base: quickViewNotes.base?.length ? quickViewNotes.base : ["Sandalwood", "Vanilla", "Amber"],
+    top: quickViewNotes.top?.length
+      ? quickViewNotes.top
+      : isAccessory
+      ? ["Refillable", "Travel Ready", "Gift Friendly"]
+      : ["Bergamot", "Citrus", "Fresh Herbs"],
+    heart: quickViewNotes.heart?.length
+      ? quickViewNotes.heart
+      : isAccessory
+      ? ["Glass", "Metal", "Premium Finish"]
+      : ["Jasmine", "Rose", "Lavender"],
+    base: quickViewNotes.base?.length
+      ? quickViewNotes.base
+      : isAccessory
+      ? ["Keep Dry", "Clean Gently", "Store Safely"]
+      : ["Sandalwood", "Vanilla", "Amber"],
   };
+  const noteTabLabels = isAccessory
+    ? { top: "Features", heart: "Materials", base: "Care" }
+    : { top: "Top Notes", heart: "Heart Notes", base: "Base Notes" };
 
   return (
     <AnimatePresence mode="wait">
@@ -165,15 +182,18 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
                   {/* The Story */}
                   <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">The Story</h3>
+                    <h3 className="mb-3 text-lg font-bold text-black">{isAccessory ? "Product Details" : "The Story"}</h3>
                     <p className="text-sm text-zinc-600 leading-relaxed">
-                      {quickViewNotes.story || "Crafted by master perfumers, this exquisite fragrance captures the essence of luxury and sophistication. Each note is carefully selected to create a harmonious blend that evolves beautifully throughout the day."}
+                      {quickViewNotes.story ||
+                        (isAccessory
+                          ? "Designed for daily fragrance routines, this accessory adds a polished, practical touch to storing, carrying, or gifting perfume."
+                          : "Crafted by master perfumers, this exquisite fragrance captures the essence of luxury and sophistication. Each note is carefully selected to create a harmonious blend that evolves beautifully throughout the day.")}
                     </p>
                   </div>
 
                   {/* Scent Notes */}
                   <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">Scent Notes</h3>
+                    <h3 className="mb-3 text-lg font-bold text-black">{isAccessory ? "Accessory Notes" : "Scent Notes"}</h3>
                     
                     {/* Tabs */}
                     <div className="mb-4 flex gap-2">
@@ -187,7 +207,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                               : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                           }`}
                         >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)} Notes
+                          {noteTabLabels[tab]}
                         </button>
                       ))}
                     </div>
@@ -209,7 +229,10 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   <div className="mb-6">
                     <h3 className="mb-3 text-lg font-bold text-black">Made With</h3>
                     <p className="text-sm text-zinc-600">
-                      {quickViewNotes.madeWith || "Premium natural ingredients, ethically sourced from around the world. Cruelty-free and vegan-friendly."}
+                      {quickViewNotes.madeWith ||
+                        (isAccessory
+                          ? "Durable materials selected for everyday use, clean presentation, and premium perfume care."
+                          : "Premium natural ingredients, ethically sourced from around the world. Cruelty-free and vegan-friendly.")}
                     </p>
                   </div>
 
@@ -217,17 +240,22 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   <div className="mb-6">
                     <h3 className="mb-3 text-lg font-bold text-black">Best For</h3>
                     <p className="text-sm text-zinc-600">
-                      {quickViewNotes.bestFor || "Evening wear, special occasions, romantic dinners, and making a lasting impression."}
+                      {quickViewNotes.bestFor ||
+                        (isAccessory
+                          ? "Travel, gifting, handbag carry, shelf display, and perfume refill routines."
+                          : "Evening wear, special occasions, romantic dinners, and making a lasting impression.")}
                     </p>
                   </div>
 
                   {/* How to Use */}
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">How to Use</h3>
-                    <p className="text-sm text-zinc-600">
-                      Apply to pulse points: wrists, neck, and behind ears. For best results, apply to moisturized skin. Do not rub after application.
-                    </p>
-                  </div>
+                  {!isAccessory && (
+                    <div className="mb-6">
+                      <h3 className="mb-3 text-lg font-bold text-black">How to Use</h3>
+                      <p className="text-sm text-zinc-600">
+                        Apply to pulse points: wrists, neck, and behind ears. For best results, apply to moisturized skin. Do not rub after application.
+                      </p>
+                    </div>
+                  )}
                 </div>
             </motion.div>
           </div>

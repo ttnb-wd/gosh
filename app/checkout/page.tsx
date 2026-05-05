@@ -27,6 +27,17 @@ interface SuccessOrder {
   order_items?: unknown;
 }
 
+interface SavedOrderItem {
+  order_id: string;
+  product_id: string | null;
+  product_name: string;
+  product_brand: string | null;
+  product_image: string | null;
+  selected_size: string | null;
+  price: number;
+  quantity: number;
+}
+
 interface PlacedOrder extends SuccessOrder {
   id: string;
   customer_name: string;
@@ -36,6 +47,27 @@ interface PlacedOrder extends SuccessOrder {
   status: string;
   created_at: string;
 }
+
+type SupabaseErrorLike = {
+  message?: string;
+  details?: string;
+  hint?: string;
+  code?: string;
+};
+
+const getOrderErrorMessage = (error: SupabaseErrorLike | null | undefined) => {
+  if (!error) return "Could not save order. Please refresh and try again.";
+
+  if (typeof error.message === "string" && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error.details === "string" && error.details.trim()) {
+    return error.details;
+  }
+
+  return "Could not save order. Please refresh and try again.";
+};
 
 type PaymentDetail = {
   title: string;
@@ -181,9 +213,6 @@ export default function CheckoutPage() {
 
   const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
   const subtotal = cartItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
-  const deliveryFee = settings.free_delivery_enabled ? 0 : Number(settings.delivery_fee || 0);
-  const discount = 0;
-  const total = subtotal + deliveryFee - discount;
 
   // Minimum order validation
   const minimumOrderAmount = Number(settings.minimum_order_amount || 0);
@@ -306,6 +335,18 @@ export default function CheckoutPage() {
     return filePath;
   };
 
+  const deleteUploadedPaymentScreenshot = async (filePath: string | null) => {
+    if (!filePath) return;
+
+    const { error: deleteError } = await supabase.storage
+      .from("payment-screenshots")
+      .remove([filePath]);
+
+    if (deleteError) {
+      // Payment screenshot cleanup failed (non-critical)
+    }
+  };
+
   const submitGuestOrder = async () => {
     setSubmitError("");
     setSubmittingOrder(true);
@@ -389,55 +430,57 @@ export default function CheckoutPage() {
 
       const orderItemsPayload = cartItems.map((item) => ({
         product_id: String(item.id),
-        product_name: item.name,
-        product_brand: item.brand || null,
-        product_image: item.image || null,
         selected_size: item.selectedSize || null,
-        price: Number(item.price || 0),
         quantity: Number(item.qty || 1),
       }));
 
-      const { data: savedOrder, error: orderError } = await supabase
+      const { data: savedOrderData, error: orderError } = await supabase
         .rpc("place_order", {
           p_customer_name: customerForm.fullName,
-          p_customer_email: user.email || "",
           p_phone: customerForm.phone,
           p_address: customerForm.address,
           p_city: customerForm.city,
           p_payment_method: selectedPaymentInfo.payment_method,
-          p_payment_status: selectedPaymentInfo.payment_status,
           p_payment_account_name: selectedPaymentInfo.payment_account_name,
           p_payment_phone: selectedPaymentInfo.payment_phone,
           p_payment_account_number: selectedPaymentInfo.payment_account_number,
           p_payment_screenshot_url: paymentScreenshotUrl,
-          p_subtotal: Number(subtotal || 0),
-          p_delivery_fee: Number(deliveryFee || 0),
-          p_discount: Number(discount || 0),
-          p_total: Number(total || 0),
           p_items: orderItemsPayload,
-        })
-        .single();
+        });
+
+      const savedOrder = Array.isArray(savedOrderData) ? savedOrderData[0] : savedOrderData;
 
       if (orderError || !savedOrder) {
-        console.error("Order save error:", {
-          message: orderError?.message,
-          details: orderError?.details,
-          hint: orderError?.hint,
-          code: orderError?.code,
-        });
-        setSubmitError(orderError?.message || "Could not save order.");
+        const orderMessage = getOrderErrorMessage(orderError);
+
+        await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
+
+        // Order was not saved - keeping error for debugging
+        setSubmitError(orderMessage);
         setSubmittingOrder(false);
         return;
       }
 
       const order = savedOrder as PlacedOrder;
 
-      const savedOrderItems = orderItemsPayload.map((item) => ({
+      const { data: trustedOrderItems, error: orderItemsError } = await supabase
+        .from("order_items")
+        .select("order_id, product_id, product_name, product_brand, product_image, selected_size, price, quantity")
+        .eq("order_id", order.id)
+        .order("created_at", { ascending: true });
+
+      if (orderItemsError) {
+        // Trusted order items fetch failed (non-critical, will use empty array)
+      }
+
+      const savedOrderItems = ((trustedOrderItems || []) as SavedOrderItem[]).map((item) => ({
         ...item,
-        order_id: order.id,
+        price: Number(item.price || 0),
+        quantity: Number(item.quantity || 1),
       }));
 
-      void supabase.auth.getSession().then(({ data }) => {
+      void supabase.auth.getSession().then((response: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
+        const { data } = response;
         const accessToken = data.session?.access_token;
         if (!accessToken) return;
 
@@ -527,7 +570,7 @@ export default function CheckoutPage() {
   }, [showPaymentModal]);
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-white text-black">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
@@ -589,7 +632,7 @@ export default function CheckoutPage() {
                     placeholder="John Doe"
                   />
                   {errors.fullName && (
-                    <p className="mt-1 text-xs font-semibold text-red-600">{errors.fullName}</p>
+                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.fullName}</p>
                   )}
                 </div>
 
@@ -601,13 +644,14 @@ export default function CheckoutPage() {
                     id="customer-phone"
                     name="phone"
                     type="tel"
+                    autoComplete="tel"
                     value={customerForm.phone}
                     onChange={(e) => setCustomerForm((prev) => ({ ...prev, phone: e.target.value }))}
                     className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
                     placeholder="09XXXXXXXXX"
                   />
                   {errors.phone && (
-                    <p className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
+                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
                   )}
                 </div>
 
@@ -619,6 +663,7 @@ export default function CheckoutPage() {
                     id="customer-email"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     value={customerForm.email}
                     onChange={(e) => setCustomerForm((prev) => ({ ...prev, email: e.target.value }))}
                     className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
@@ -634,13 +679,14 @@ export default function CheckoutPage() {
                     id="customer-address"
                     name="address"
                     type="text"
+                    autoComplete="street-address"
                     value={customerForm.address}
                     onChange={(e) => setCustomerForm((prev) => ({ ...prev, address: e.target.value }))}
                     className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
                     placeholder="Street address, building, floor"
                   />
                   {errors.address && (
-                    <p className="mt-1 text-xs font-semibold text-red-600">{errors.address}</p>
+                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.address}</p>
                   )}
                 </div>
 
@@ -658,7 +704,7 @@ export default function CheckoutPage() {
                     placeholder="Yangon"
                   />
                   {errors.city && (
-                    <p className="mt-1 text-xs font-semibold text-red-600">{errors.city}</p>
+                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.city}</p>
                   )}
                 </div>
               </div>
@@ -669,7 +715,7 @@ export default function CheckoutPage() {
           <div className="mb-8">
             <h2 className="mb-6 text-2xl font-bold text-black">Select Payment Method</h2>
             {errors.payment && (
-              <p className="mb-4 text-sm font-semibold text-red-600">{errors.payment}</p>
+              <p role="alert" className="mb-4 text-sm font-semibold text-red-600">{errors.payment}</p>
             )}
           </div>
 
@@ -1148,35 +1194,35 @@ export default function CheckoutPage() {
                   <>
                     {/* Checkout disabled message */}
                     {!settings.enable_checkout && (
-                      <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                         Checkout is currently unavailable.
                       </div>
                     )}
 
                     {/* Minimum order amount message */}
                     {isBelowMinimumOrder && (
-                      <div className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
+                      <div role="alert" className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
                         Minimum order amount is {minimumOrderAmount.toLocaleString()} MMK.
                       </div>
                     )}
 
                     {/* No payment methods available */}
                     {availablePaymentMethods.length === 0 && (
-                      <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                         No payment methods are currently available.
                       </div>
                     )}
 
                     {/* Helper message for screenshot requirement */}
                     {requiresScreenshot && !selectedPaymentScreenshot && (
-                      <div className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
+                      <div role="alert" className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
                         Upload your payment screenshot to continue.
                       </div>
                     )}
 
                     {/* Error message */}
                     {submitError && (
-                      <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                         {submitError}
                       </div>
                     )}

@@ -73,6 +73,7 @@ export default function AboutPage() {
 
   return (
     <motion.main 
+      role="main"
       className="min-h-screen bg-white text-black"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -81,7 +82,7 @@ export default function AboutPage() {
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white py-8 lg:py-12">
+      <section role="region" aria-label="About us hero" className="relative overflow-hidden bg-white py-8 lg:py-12">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_50%)]" />
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

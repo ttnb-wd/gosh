@@ -136,9 +136,6 @@ export function seedAdminData() {
   try {
     localStorage.setItem("gosh_orders", JSON.stringify(sampleOrders));
     localStorage.setItem("gosh_products", JSON.stringify(sampleProducts));
-    console.log("✅ Admin data seeded successfully!");
-    console.log("📦 Orders:", sampleOrders.length);
-    console.log("🛍️ Products:", sampleProducts.length);
     return true;
   } catch (error) {
     console.error("❌ Error seeding data:", error);

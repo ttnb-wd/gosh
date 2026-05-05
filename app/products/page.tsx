@@ -125,6 +125,7 @@ export default function ProductsPage() {
 
   return (
     <motion.main 
+      role="main"
       className="min-h-screen bg-white text-black"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

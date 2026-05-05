@@ -7,8 +7,7 @@ export default function AdminOrdersPage() {
   return (
     <div className="min-h-screen">
       <AdminHeader title="Orders" subtitle="Manage customer orders" />
-
-      <main className="p-6">
+      <main role="main" className="p-6">
         <OrdersTable />
       </main>
     </div>

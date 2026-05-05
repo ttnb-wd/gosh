@@ -27,7 +27,7 @@ const collections = [
 
 export default function CollectionPreview() {
   return (
-    <section className="py-16 lg:py-24 bg-white">
+    <section role="region" aria-label="Collection preview" className="py-16 lg:py-24 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -63,7 +63,7 @@ export default function CollectionPreview() {
                       src={collection.image}
                       alt={collection.title}
                       loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                   </div>

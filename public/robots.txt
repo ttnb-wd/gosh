@@ -1,0 +1,12 @@
+# GOSH PERFUME - Robots.txt
+# Allow search engines to crawl the site
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /orders/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://gosh-perfume.com/sitemap.xml

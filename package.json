@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:security": "node scripts/test-security-headers.js",
+    "test:a11y": "node scripts/test-accessibility.js"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.51.0",

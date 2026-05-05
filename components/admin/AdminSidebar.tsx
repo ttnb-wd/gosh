@@ -75,6 +75,8 @@ export default function AdminSidebar() {
 
       {/* Sidebar */}
       <aside
+        role="navigation"
+        aria-label="Admin sidebar navigation"
         className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-yellow-100/80 bg-white shadow-[18px_0_60px_rgba(0,0,0,0.12)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:opacity-100 lg:shadow-none ${
           isMobileMenuOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-95"
         }`}
@@ -89,7 +91,7 @@ export default function AdminSidebar() {
           </Link>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2">
+          <nav role="navigation" aria-label="Admin menu" className="flex-1 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;

@@ -4,14 +4,15 @@ import { useState, useEffect } from "react";
 import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut } from "lucide-react";
 import Link from "next/link";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 interface NavbarProps {
   onCartOpen: () => void;
   cartCount: number;
+  enableDropAnimation?: boolean;
 }
 
-export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
+export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = false }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -66,7 +67,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
     // Listen to auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       loadUserProfile(currentUser);
@@ -99,8 +100,20 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   };
   
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
+    <>
+    <header role="banner" className="fixed inset-x-0 top-0 z-[1000] border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
       <style jsx>{`
+        @keyframes navbar-drop {
+          0% {
+            opacity: 0;
+            transform: translateY(-40px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         @keyframes gosh-logo-drop-bounce {
           0% {
             opacity: 0;
@@ -171,7 +184,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav role="navigation" aria-label="Main navigation" className="hidden items-center gap-8 md:flex">
           <Link
             href="/"
             className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
@@ -303,7 +316,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
 
       {open && (
         <div className="border-t border-zinc-200 bg-white px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-4">
+          <nav role="navigation" aria-label="Mobile navigation" className="flex flex-col gap-4">
             <Link
               href="/"
               className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
@@ -403,5 +416,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
         </div>
       )}
     </header>
+    <div aria-hidden="true" className="h-[89px] sm:h-[113px]" />
+    </>
   );
 }

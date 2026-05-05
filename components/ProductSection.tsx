@@ -87,6 +87,8 @@ const normalizeImageUrl = (url?: string | null): string => {
   return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
 };
 
+const formatMmk = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
+
 // Scroll reveal wrapper component
 function ProductRevealCard({
   children,
@@ -297,7 +299,7 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
                 >
                   <span>{decant.label}</span>
                   <span className={isSelected ? "text-black" : "text-yellow-700"}>
-                    ${decant.price}
+                    {formatMmk(decant.price)}
                   </span>
                 </button>
               );
@@ -370,6 +372,78 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
     return "bg-zinc-800 text-white";
   };
 
+  if (isAccessory) {
+    return (
+      <motion.div
+        variants={item}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="group relative h-full min-w-0"
+      >
+        <div className="group flex h-full min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-yellow-200/70 bg-white shadow-[0_16px_45px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300 hover:shadow-[0_24px_70px_rgba(234,179,8,0.15)] sm:min-h-[390px] sm:rounded-[28px]">
+          <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
+
+          <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 via-white to-zinc-100">
+            <Image
+              src={imageSrc}
+              alt={product.name}
+              fill
+              loading="lazy"
+              sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+              unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+              className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              onError={() => {
+                setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
+              }}
+            />
+            {product.badge && (
+              <div className={`absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getBadgeColor(product.badge)}`}>
+                {product.badge}
+              </div>
+            )}
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+            <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
+              {product.brand || "GOSH PERFUME"}
+            </p>
+            <h3 className="mt-2 line-clamp-1 text-lg font-black leading-tight text-black sm:text-xl">
+              {product.name}
+            </h3>
+            <p className="mt-2 line-clamp-2 min-h-[44px] text-sm leading-6 text-zinc-600">
+              {product.description || "Premium accessory for your fragrance routine."}
+            </p>
+
+            <div className="mt-auto space-y-3 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="shrink-0 text-xl font-black text-yellow-600 sm:text-2xl">
+                  {formatMmk(product.price)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleQuickView}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                  aria-label="Quick view"
+                  title="Quick view"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddToBag}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Add to Bag
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       variants={item}
@@ -386,6 +460,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             src={imageSrc}
             alt={product.name}
             fill
+            loading="lazy"
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
             className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
@@ -452,7 +527,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
           <div className="mt-auto space-y-3 pt-5">
             <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
               <span className="shrink-0 text-2xl font-black text-yellow-600">
-                ${isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price)}
+                {formatMmk(isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price))}
               </span>
               
               <button 
@@ -668,13 +743,14 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const fallbackBrands = ["All", "Dior", "Chanel", "Gucci", "YSL", "Versace", "Tom Ford", "Jo Malone", "Armani", "Valentino"];
 
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [selectedDecants, setSelectedDecants] = useState<Record<string, { label: string; price: number }>>({});
   const [openDecantDropdown, setOpenDecantDropdown] = useState<string | null>(null);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Perfumes");
+  const [isMounted, setIsMounted] = useState(false);
   const brandMenuRef = useRef<HTMLDivElement>(null);
   
   // Normalize Supabase product to match original product shape
@@ -702,6 +778,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       description: product.description || "",
       image: imageUrl,
       badge: product.badge || null,
+      category: product.category || "",
       notes: normalizeQuickViewNotes(product.notes),
       decants: Array.isArray(product.decants) && product.decants.length > 0
         ? product.decants
@@ -716,6 +793,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
   // Fetch Supabase products and merge with fallback (safely)
   useEffect(() => {
+    setIsMounted(true);
     loadProducts();
   }, []);
 
@@ -738,12 +816,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           loadedProducts = data.map(normalizeProduct);
         }
       } catch (supabaseError) {
-        console.warn("Supabase products failed, using only fallback products:", supabaseError);
+        // Supabase products failed, using fallback products
       }
       
       setProducts(loadedProducts);
     } catch (error) {
-      console.warn("Error loading products, using fallback products:", error);
+      // Error loading products, using fallback products
       setProducts(fallbackProducts);
     } finally {
       setLoading(false);
@@ -845,19 +923,38 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   });
 
   const getBrandTitle = () => {
+    if (selectedCategory === "Accessories") return "Accessories";
+    if (selectedCategory === "Perfumes") {
+      return selectedBrand === "All" ? "All Perfumes" : `${selectedBrand} Perfumes`;
+    }
     return selectedBrand === "All" ? "All Perfumes" : `${selectedBrand} Collection`;
   };
 
   const getProductCount = () => {
     const count = filteredProducts.length;
+    if (selectedCategory === "Accessories") {
+      return `${count} luxury accessor${count === 1 ? 'y' : 'ies'}`;
+    }
     return `${count} luxury perfume${count !== 1 ? 's' : ''}`;
   };
 
   return (
     <section
+      role="region"
+      aria-label="Product catalog"
       id="products"
       className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-16"
     >
+      {/* Screen Reader Loading Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading ? "Loading products, please wait..." : `${getProductCount()} loaded`}
+      </div>
+
       {/* Section Header */}
       <motion.div
         key={selectedBrand}
@@ -885,7 +982,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         <div className="flex flex-col gap-3 rounded-[26px] border border-yellow-100 bg-white/85 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           {/* Category Filter Pills */}
           <div className="grid grid-cols-[0.7fr_1fr_1.35fr] gap-2 sm:flex sm:overflow-x-auto sm:pb-0">
-            {["All", "Perfumes", "Accessories"].map((category) => (
+            {["Perfumes", "Accessories"].map((category) => (
               <button
                 key={category}
                 type="button"
@@ -931,63 +1028,6 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             </button>
 
             <AnimatePresence>
-              {/* Mobile dropdown - floating panel */}
-              {isBrandMenuOpen && (
-                <motion.div
-                  key="mobile-brand-dropdown"
-                  role="listbox"
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute left-1/2 top-[calc(100%+12px)] z-40 w-[92vw] max-w-[360px] -translate-x-1/2 overflow-hidden rounded-[28px] border border-yellow-200 bg-[#fffdf6]/95 p-3 shadow-[0_28px_80px_rgba(0,0,0,0.20),0_0_35px_rgba(234,179,8,0.16)] backdrop-blur-xl sm:hidden"
-                >
-                  <div className="mb-3 px-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-yellow-600">
-                      Filter by brand
-                    </p>
-                    <h3 className="mt-1 text-base font-black text-neutral-950">
-                      Choose Brand
-                    </h3>
-                  </div>
-
-                  <div className="scrollbar-auto-hide grid max-h-[65vh] gap-2 overflow-y-auto pr-1">
-                    {brands.map((brand, index) => {
-                      const active = selectedBrand === brand;
-                      const label = brand || "Unbranded";
-
-                      return (
-                        <motion.button
-                          key={`mobile-dropdown-${brand || "empty"}-${index}`}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.22,
-                            delay: Math.min(index * 0.025, 0.18),
-                            ease: [0.22, 1, 0.36, 1],
-                          }}
-                          onClick={() => {
-                            onBrandSelect?.(brand);
-                            setIsBrandMenuOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-left text-sm font-black transition-all duration-300 ${
-                            active
-                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
-                              : "bg-white text-neutral-700 active:bg-yellow-50"
-                          }`}
-                        >
-                          <span className="truncate">{label}</span>
-                          {active && <Check className="h-4 w-4 shrink-0" />}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-
               {/* Desktop dropdown - compact */}
               {isBrandMenuOpen && (
                 <motion.div
@@ -1091,6 +1131,89 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isMounted &&
+        createPortal(
+          <AnimatePresence>
+            {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
+              <motion.div
+                key="mobile-brand-popup"
+                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                onClick={() => setIsBrandMenuOpen(false)}
+              >
+                <motion.div
+                  role="listbox"
+                  aria-label="Choose brand"
+                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
+                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
+                        Filter by brand
+                      </p>
+                      <h3 className="mt-1 text-xl font-black text-neutral-950">
+                        Choose Brand
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBrandMenuOpen(false)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
+                      aria-label="Close brands popup"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1">
+                    {brands.map((brand, index) => {
+                      const active = selectedBrand === brand;
+                      const label = brand || "Unbranded";
+
+                      return (
+                        <motion.button
+                          key={`mobile-popup-${brand || "empty"}-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.24,
+                            delay: Math.min(index * 0.025, 0.18),
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          onClick={() => {
+                            onBrandSelect?.(brand);
+                            setIsBrandMenuOpen(false);
+                          }}
+                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
+                            active
+                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
+                              : "bg-white text-neutral-700 active:bg-yellow-50"
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          {active && <Check className="h-4 w-4 shrink-0" />}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
 
       {/* Quick View Modal */}
       <QuickViewModal

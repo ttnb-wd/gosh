@@ -110,7 +110,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-yellow-50/30 px-4 py-12">
+    <main role="main" className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-yellow-50/30 px-4 py-12">
       {/* Background decoration */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-yellow-400/10 blur-3xl" />
@@ -157,6 +157,7 @@ export default function AdminLoginPage() {
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -176,6 +177,7 @@ export default function AdminLoginPage() {
                 <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -228,6 +230,6 @@ export default function AdminLoginPage() {
           Protected by Supabase Authentication
         </p>
       </div>
-    </div>
+    </main>
   );
 }

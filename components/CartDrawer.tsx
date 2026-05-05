@@ -30,6 +30,7 @@ export default function CartDrawer({
   const router = useRouter();
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const isEmpty = cartItems.length === 0;
+  const formatMmk = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
 
   const handleContinueShopping = () => {
     onClose();
@@ -140,7 +141,7 @@ export default function CartDrawer({
                               {item.selectedSize && (
                                 <p className="text-xs text-neutral-500 mt-0.5">Size: {item.selectedSize}</p>
                               )}
-                              <p className="text-sm font-bold text-yellow-600">${item.price}</p>
+                              <p className="text-sm font-bold text-yellow-600">{formatMmk(item.price)}</p>
                             </div>
                             
                             <div className="flex items-center justify-between">
@@ -163,7 +164,7 @@ export default function CartDrawer({
                               </div>
                               
                               <p className="text-sm font-bold text-black">
-                                ${(item.price * item.qty).toFixed(2)}
+                                {formatMmk(item.price * item.qty)}
                               </p>
                             </div>
                           </div>
@@ -181,11 +182,11 @@ export default function CartDrawer({
                   <div className="mb-6 space-y-2">
                     <div className="flex justify-between text-sm text-zinc-600">
                       <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.qty, 0)} items)</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatMmk(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold text-black">
                       <span>Total</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatMmk(subtotal)}</span>
                     </div>
                   </div>
 

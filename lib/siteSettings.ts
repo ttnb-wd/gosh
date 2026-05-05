@@ -108,7 +108,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
 
     if (!data) {
-      console.warn("No site settings found, using defaults");
+      // No site settings found, using defaults
       return defaultSettings;
     }
 

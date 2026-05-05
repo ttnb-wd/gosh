@@ -101,7 +101,7 @@ export default function ContactSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-white py-8 lg:py-12">
+    <section role="region" aria-label="Contact form" className="relative overflow-hidden bg-white py-8 lg:py-12">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_50%)]" />
       
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -236,6 +236,7 @@ export default function ContactSection() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {formStatus && (
                   <div
+                    role="alert"
                     className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
                       formStatus.type === "success"
                         ? "border-green-200 bg-green-50 text-green-700"

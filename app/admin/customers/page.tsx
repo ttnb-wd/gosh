@@ -277,13 +277,25 @@ export default function AdminCustomersPage() {
     <div className="min-h-screen">
       <AdminHeader title="Customers" subtitle="Manage customer information" />
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Screen Reader Loading Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading ? "Loading customers, please wait..." : `${totalCustomers} customer${totalCustomers !== 1 ? 's' : ''} loaded`}
+      </div>
+
+      <main role="main" className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
             <input
+              id="admin-customer-search"
+              name="admin_customer_search"
               type="text"
               placeholder="Search by name, email, or phone..."
               value={searchQuery}

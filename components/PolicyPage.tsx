@@ -47,10 +47,10 @@ export default function PolicyPage({ policy }: { policy: PolicyPageData }) {
   };
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-white text-black">
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
 
-      <section className="relative overflow-hidden border-b border-yellow-100 bg-[#fffdf6] py-10 sm:py-14">
+      <section role="region" aria-label="Policy header" className="relative overflow-hidden border-b border-yellow-100 bg-[#fffdf6] py-10 sm:py-14">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.10),transparent_45%)]" />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <Link
@@ -83,7 +83,7 @@ export default function PolicyPage({ policy }: { policy: PolicyPageData }) {
         </div>
       </section>
 
-      <section className="py-10 sm:py-14">
+      <section role="region" aria-label="Policy content" className="py-10 sm:py-14">
         <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:px-6 lg:px-8">
           <div className="rounded-[28px] border border-yellow-200 bg-yellow-50/70 p-5 text-sm leading-6 text-zinc-700">
             These policies are written for normal Myanmar retail operations. They should be reviewed by a qualified

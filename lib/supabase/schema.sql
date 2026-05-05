@@ -635,22 +635,35 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.subscribe_newsletter(TEXT, TEXT) TO anon, authenticated;
 
+DROP FUNCTION IF EXISTS public.place_order(
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  NUMERIC,
+  NUMERIC,
+  NUMERIC,
+  NUMERIC,
+  JSONB
+);
+
 CREATE OR REPLACE FUNCTION public.place_order(
   p_customer_name TEXT,
-  p_customer_email TEXT,
   p_phone TEXT,
   p_address TEXT,
   p_city TEXT,
   p_payment_method TEXT,
-  p_payment_status TEXT,
   p_payment_account_name TEXT,
   p_payment_phone TEXT,
   p_payment_account_number TEXT,
   p_payment_screenshot_url TEXT,
-  p_subtotal NUMERIC,
-  p_delivery_fee NUMERIC,
-  p_discount NUMERIC,
-  p_total NUMERIC,
   p_items JSONB
 )
 RETURNS TABLE (
@@ -672,8 +685,24 @@ DECLARE
   current_user_id UUID;
   saved_order public.orders;
   generated_order_number TEXT;
+  cart_item RECORD;
+  product_row public.products%ROWTYPE;
+  settings_row public.site_settings%ROWTYPE;
+  clean_quantity INTEGER;
+  clean_selected_size TEXT;
+  trusted_selected_size TEXT;
+  trusted_price NUMERIC;
+  computed_subtotal NUMERIC := 0;
+  computed_delivery_fee NUMERIC := 0;
+  computed_discount NUMERIC := 0;
+  computed_total NUMERIC := 0;
+  minimum_order_amount NUMERIC := 0;
+  server_payment_status TEXT;
+  trusted_items JSONB := '[]'::jsonb;
+  customer_email TEXT;
 BEGIN
   current_user_id := auth.uid();
+  customer_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
 
   IF current_user_id IS NULL THEN
     RAISE EXCEPTION 'Please login or create an account to place your order.' USING ERRCODE = '42501';
@@ -682,6 +711,129 @@ BEGIN
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
     RAISE EXCEPTION 'Order must include at least one item.' USING ERRCODE = '22000';
   END IF;
+
+  SELECT * INTO settings_row
+  FROM public.site_settings
+  WHERE site_settings.id = 1;
+
+  IF p_payment_method = 'cod' THEN
+    IF COALESCE(settings_row.allow_cash_on_delivery, true) IS NOT TRUE THEN
+      RAISE EXCEPTION 'Cash on delivery is currently unavailable.' USING ERRCODE = '22000';
+    END IF;
+    server_payment_status := 'Unpaid';
+  ELSIF p_payment_method = 'kbzpay' THEN
+    IF COALESCE(settings_row.allow_kbzpay, true) IS NOT TRUE THEN
+      RAISE EXCEPTION 'KBZPay is currently unavailable.' USING ERRCODE = '22000';
+    END IF;
+    server_payment_status := 'Verifying';
+  ELSIF p_payment_method = 'wavepay' THEN
+    IF COALESCE(settings_row.allow_wavepay, true) IS NOT TRUE THEN
+      RAISE EXCEPTION 'WavePay is currently unavailable.' USING ERRCODE = '22000';
+    END IF;
+    server_payment_status := 'Verifying';
+  ELSIF p_payment_method = 'ayapay' THEN
+    IF COALESCE(settings_row.allow_ayapay, true) IS NOT TRUE THEN
+      RAISE EXCEPTION 'AYA Pay is currently unavailable.' USING ERRCODE = '22000';
+    END IF;
+    server_payment_status := 'Verifying';
+  ELSIF p_payment_method = 'bank' THEN
+    IF COALESCE(settings_row.allow_bank_transfer, true) IS NOT TRUE THEN
+      RAISE EXCEPTION 'Bank transfer is currently unavailable.' USING ERRCODE = '22000';
+    END IF;
+    server_payment_status := 'Verifying';
+  ELSE
+    RAISE EXCEPTION 'Invalid payment method.' USING ERRCODE = '22000';
+  END IF;
+
+  FOR cart_item IN
+    SELECT *
+    FROM jsonb_to_recordset(p_items) AS cart_item(
+      product_id TEXT,
+      selected_size TEXT,
+      quantity INTEGER
+    )
+  LOOP
+    clean_quantity := GREATEST(COALESCE(cart_item.quantity, 1), 1);
+
+    IF clean_quantity > 99 THEN
+      RAISE EXCEPTION 'Quantity is too high for one order.' USING ERRCODE = '22000';
+    END IF;
+
+    BEGIN
+      SELECT * INTO product_row
+      FROM public.products
+      WHERE products.id = cart_item.product_id::UUID
+        AND products.is_active = true
+      FOR UPDATE;
+    EXCEPTION WHEN invalid_text_representation THEN
+      RAISE EXCEPTION 'This product is not available for checkout. Please add products from the admin dashboard and try again.' USING ERRCODE = '22000';
+    END;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'One product in your cart is no longer available. Please remove it and add it again.' USING ERRCODE = '22000';
+    END IF;
+
+    IF COALESCE(product_row.stock, 0) < clean_quantity THEN
+      RAISE EXCEPTION 'Only % left in stock for %. Please reduce quantity or choose another product.', COALESCE(product_row.stock, 0), product_row.name USING ERRCODE = '22000';
+    END IF;
+
+    clean_selected_size := nullif(trim(COALESCE(cart_item.selected_size, '')), '');
+    trusted_selected_size := NULL;
+    trusted_price := NULL;
+
+    IF jsonb_array_length(COALESCE(product_row.decants, '[]'::jsonb)) > 0
+      AND clean_selected_size IS NOT NULL
+      AND lower(clean_selected_size) <> 'full size'
+    THEN
+      SELECT decant.label, decant.price
+      INTO trusted_selected_size, trusted_price
+      FROM jsonb_to_recordset(product_row.decants) AS decant(label TEXT, price NUMERIC)
+      WHERE decant.label = clean_selected_size
+        AND decant.price >= 0
+      LIMIT 1;
+
+      IF trusted_price IS NULL THEN
+        RAISE EXCEPTION 'Selected decant size is no longer available for %.', product_row.name USING ERRCODE = '22000';
+      END IF;
+    ELSE
+      trusted_price := COALESCE(product_row.price, 0);
+      trusted_selected_size := CASE
+        WHEN lower(COALESCE(product_row.category, '')) = 'accessories' THEN 'Accessory'
+        WHEN jsonb_array_length(COALESCE(product_row.decants, '[]'::jsonb)) > 0 THEN 'Full Size'
+        ELSE NULL
+      END;
+    END IF;
+
+    UPDATE public.products
+    SET
+      stock = products.stock - clean_quantity,
+      updated_at = NOW()
+    WHERE products.id = product_row.id;
+
+    computed_subtotal := computed_subtotal + (trusted_price * clean_quantity);
+    trusted_items := trusted_items || jsonb_build_array(jsonb_build_object(
+      'product_id', product_row.id::TEXT,
+      'product_name', product_row.name,
+      'product_brand', product_row.brand,
+      'product_image', product_row.image,
+      'selected_size', trusted_selected_size,
+      'price', trusted_price,
+      'quantity', clean_quantity
+    ));
+  END LOOP;
+
+  minimum_order_amount := COALESCE(settings_row.minimum_order_amount, 0);
+
+  IF minimum_order_amount > 0 AND computed_subtotal < minimum_order_amount THEN
+    RAISE EXCEPTION 'Minimum order amount is % MMK.', minimum_order_amount USING ERRCODE = '22000';
+  END IF;
+
+  computed_delivery_fee := CASE
+    WHEN COALESCE(settings_row.free_delivery_enabled, true) THEN 0
+    ELSE GREATEST(COALESCE(settings_row.delivery_fee, 0), 0)
+  END;
+  computed_discount := 0;
+  computed_total := GREATEST(computed_subtotal + computed_delivery_fee - computed_discount, 0);
 
   generated_order_number := 'GOSH-' ||
     floor(extract(epoch from clock_timestamp()) * 1000)::BIGINT::TEXT ||
@@ -712,20 +864,20 @@ BEGIN
     generated_order_number,
     current_user_id,
     trim(p_customer_name),
-    lower(nullif(trim(p_customer_email), '')),
+    customer_email,
     trim(p_phone),
     trim(p_address),
     trim(p_city),
     p_payment_method,
-    p_payment_status,
+    server_payment_status,
     p_payment_account_name,
     p_payment_phone,
     p_payment_account_number,
     p_payment_screenshot_url,
-    COALESCE(p_subtotal, 0),
-    COALESCE(p_delivery_fee, 0),
-    COALESCE(p_discount, 0),
-    COALESCE(p_total, 0),
+    computed_subtotal,
+    computed_delivery_fee,
+    computed_discount,
+    computed_total,
     'Pending'
   )
   RETURNING * INTO saved_order;
@@ -742,14 +894,14 @@ BEGIN
   )
   SELECT
     saved_order.id,
-    item.product_id,
-    trim(item.product_name),
-    item.product_brand,
-    item.product_image,
-    item.selected_size,
-    COALESCE(item.price, 0),
-    GREATEST(COALESCE(item.quantity, 1), 1)
-  FROM jsonb_to_recordset(p_items) AS item(
+    trusted_item.product_id,
+    trim(trusted_item.product_name),
+    trusted_item.product_brand,
+    trusted_item.product_image,
+    trusted_item.selected_size,
+    trusted_item.price,
+    trusted_item.quantity
+  FROM jsonb_to_recordset(trusted_items) AS trusted_item(
     product_id TEXT,
     product_name TEXT,
     product_brand TEXT,
@@ -783,14 +935,492 @@ GRANT EXECUTE ON FUNCTION public.place_order(
   TEXT,
   TEXT,
   TEXT,
-  TEXT,
-  TEXT,
-  NUMERIC,
-  NUMERIC,
-  NUMERIC,
-  NUMERIC,
   JSONB
 ) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_update_order_status(
+  p_order_id UUID,
+  p_status TEXT
+)
+RETURNS public.orders
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  previous_order public.orders;
+  updated_order public.orders;
+  actor_email TEXT;
+  stock_item RECORD;
+  uuid_pattern CONSTANT TEXT := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+BEGIN
+  IF public.is_admin() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Admin access required.' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_status NOT IN ('Pending', 'Confirmed', 'Processing', 'Delivered', 'Cancelled') THEN
+    RAISE EXCEPTION 'Invalid order status.' USING ERRCODE = '22000';
+  END IF;
+
+  SELECT * INTO previous_order
+  FROM public.orders
+  WHERE orders.id = p_order_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Order not found.' USING ERRCODE = '22000';
+  END IF;
+
+  IF previous_order.status IS DISTINCT FROM p_status THEN
+    IF p_status = 'Cancelled' AND previous_order.status <> 'Cancelled' THEN
+      UPDATE public.products AS product
+      SET
+        stock = product.stock + restored.quantity,
+        updated_at = NOW()
+      FROM (
+        SELECT
+          order_items.product_id::UUID AS product_id,
+          SUM(order_items.quantity)::INTEGER AS quantity
+        FROM public.order_items
+        WHERE order_items.order_id = previous_order.id
+          AND order_items.product_id ~* uuid_pattern
+        GROUP BY order_items.product_id
+      ) AS restored
+      WHERE product.id = restored.product_id;
+    ELSIF previous_order.status = 'Cancelled' AND p_status <> 'Cancelled' THEN
+      FOR stock_item IN
+        SELECT
+          order_items.product_id::UUID AS product_id,
+          COALESCE(NULLIF(trim(order_items.product_name), ''), 'product') AS product_name,
+          SUM(order_items.quantity)::INTEGER AS quantity
+        FROM public.order_items
+        WHERE order_items.order_id = previous_order.id
+          AND order_items.product_id ~* uuid_pattern
+        GROUP BY order_items.product_id, order_items.product_name
+      LOOP
+        UPDATE public.products AS product
+        SET
+          stock = product.stock - stock_item.quantity,
+          updated_at = NOW()
+        WHERE product.id = stock_item.product_id
+          AND product.stock >= stock_item.quantity;
+
+        IF NOT FOUND THEN
+          RAISE EXCEPTION 'Not enough stock to reopen cancelled order for %.', stock_item.product_name USING ERRCODE = '22000';
+        END IF;
+      END LOOP;
+    END IF;
+  END IF;
+
+  UPDATE public.orders
+  SET
+    status = p_status,
+    updated_at = NOW()
+  WHERE orders.id = p_order_id
+  RETURNING * INTO updated_order;
+
+  IF previous_order.status IS DISTINCT FROM updated_order.status THEN
+    actor_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
+
+    INSERT INTO public.admin_audit_logs (
+      actor_id,
+      actor_email,
+      action,
+      entity_type,
+      entity_id,
+      entity_label,
+      before_data,
+      after_data,
+      metadata
+    )
+    VALUES (
+      auth.uid(),
+      actor_email,
+      'order_status_changed',
+      'order',
+      updated_order.id::TEXT,
+      updated_order.order_number,
+      jsonb_build_object('status', previous_order.status),
+      jsonb_build_object('status', updated_order.status),
+      jsonb_build_object(
+        'customer_name', updated_order.customer_name,
+        'customer_email', updated_order.customer_email,
+        'total', updated_order.total
+      )
+    );
+  END IF;
+
+  RETURN updated_order;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_update_order_status(UUID, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_update_payment_status(
+  p_order_id UUID,
+  p_payment_status TEXT
+)
+RETURNS public.orders
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  previous_order public.orders;
+  updated_order public.orders;
+  actor_email TEXT;
+BEGIN
+  IF public.is_admin() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Admin access required.' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_payment_status NOT IN ('Unpaid', 'Paid', 'Verifying', 'Failed', 'Refunded') THEN
+    RAISE EXCEPTION 'Invalid payment status.' USING ERRCODE = '22000';
+  END IF;
+
+  SELECT * INTO previous_order
+  FROM public.orders
+  WHERE orders.id = p_order_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Order not found.' USING ERRCODE = '22000';
+  END IF;
+
+  IF p_payment_status = 'Paid'
+    AND previous_order.payment_method IN ('kbzpay', 'wavepay', 'ayapay', 'bank')
+    AND previous_order.payment_screenshot_url IS NULL
+  THEN
+    RAISE EXCEPTION 'Payment proof is missing. Upload or confirm proof before marking this prepaid order as Paid.' USING ERRCODE = '22000';
+  END IF;
+
+  UPDATE public.orders
+  SET
+    payment_status = p_payment_status,
+    updated_at = NOW()
+  WHERE orders.id = p_order_id
+  RETURNING * INTO updated_order;
+
+  IF previous_order.payment_status IS DISTINCT FROM updated_order.payment_status THEN
+    actor_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
+
+    INSERT INTO public.admin_audit_logs (
+      actor_id,
+      actor_email,
+      action,
+      entity_type,
+      entity_id,
+      entity_label,
+      before_data,
+      after_data,
+      metadata
+    )
+    VALUES (
+      auth.uid(),
+      actor_email,
+      'payment_status_changed',
+      'order',
+      updated_order.id::TEXT,
+      updated_order.order_number,
+      jsonb_build_object('payment_status', previous_order.payment_status),
+      jsonb_build_object('payment_status', updated_order.payment_status),
+      jsonb_build_object(
+        'customer_name', updated_order.customer_name,
+        'customer_email', updated_order.customer_email,
+        'payment_method', updated_order.payment_method,
+        'total', updated_order.total
+      )
+    );
+  END IF;
+
+  RETURN updated_order;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_update_payment_status(UUID, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_save_product(
+  p_product_id UUID,
+  p_product JSONB
+)
+RETURNS public.products
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  previous_product public.products;
+  saved_product public.products;
+  audit_action TEXT;
+  actor_email TEXT;
+  next_name TEXT;
+  next_brand TEXT;
+  next_description TEXT;
+  next_image TEXT;
+  next_category TEXT;
+  next_price NUMERIC;
+  next_stock INTEGER;
+  next_is_active BOOLEAN;
+  next_is_featured BOOLEAN;
+  next_decants JSONB;
+  next_notes JSONB;
+BEGIN
+  IF public.is_admin() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Admin access required.' USING ERRCODE = '42501';
+  END IF;
+
+  next_name := nullif(trim(COALESCE(p_product ->> 'name', '')), '');
+  IF next_name IS NULL THEN
+    RAISE EXCEPTION 'Product name is required.' USING ERRCODE = '22000';
+  END IF;
+
+  next_brand := nullif(trim(COALESCE(p_product ->> 'brand', '')), '');
+  next_description := nullif(trim(COALESCE(p_product ->> 'description', '')), '');
+  next_image := nullif(trim(COALESCE(p_product ->> 'image', '')), '');
+  next_category := nullif(trim(COALESCE(p_product ->> 'category', '')), '');
+  next_price := GREATEST(COALESCE((p_product ->> 'price')::NUMERIC, 0), 0);
+  next_stock := GREATEST(COALESCE((p_product ->> 'stock')::INTEGER, 0), 0);
+  next_is_active := COALESCE((p_product ->> 'is_active')::BOOLEAN, true);
+  next_is_featured := COALESCE((p_product ->> 'is_featured')::BOOLEAN, false);
+  next_decants := COALESCE(p_product -> 'decants', '[]'::jsonb);
+  next_notes := COALESCE(p_product -> 'notes', '{}'::jsonb);
+  actor_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
+
+  IF p_product_id IS NULL THEN
+    INSERT INTO public.products (
+      name,
+      brand,
+      description,
+      image,
+      category,
+      price,
+      stock,
+      is_active,
+      is_featured,
+      decants,
+      notes
+    )
+    VALUES (
+      next_name,
+      next_brand,
+      next_description,
+      next_image,
+      next_category,
+      next_price,
+      next_stock,
+      next_is_active,
+      next_is_featured,
+      next_decants,
+      next_notes
+    )
+    RETURNING * INTO saved_product;
+
+    audit_action := 'product_created';
+  ELSE
+    SELECT * INTO previous_product
+    FROM public.products
+    WHERE products.id = p_product_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Product not found.' USING ERRCODE = '22000';
+    END IF;
+
+    UPDATE public.products
+    SET
+      name = next_name,
+      brand = next_brand,
+      description = next_description,
+      image = next_image,
+      category = next_category,
+      price = next_price,
+      stock = next_stock,
+      is_active = next_is_active,
+      is_featured = next_is_featured,
+      decants = next_decants,
+      notes = next_notes,
+      updated_at = NOW()
+    WHERE products.id = p_product_id
+    RETURNING * INTO saved_product;
+
+    audit_action := 'product_updated';
+  END IF;
+
+  INSERT INTO public.admin_audit_logs (
+    actor_id,
+    actor_email,
+    action,
+    entity_type,
+    entity_id,
+    entity_label,
+    before_data,
+    after_data
+  )
+  VALUES (
+    auth.uid(),
+    actor_email,
+    audit_action,
+    'product',
+    saved_product.id::TEXT,
+    saved_product.name,
+    CASE
+      WHEN p_product_id IS NULL THEN '{}'::jsonb
+      ELSE jsonb_build_object(
+        'name', previous_product.name,
+        'brand', previous_product.brand,
+        'price', previous_product.price,
+        'stock', previous_product.stock,
+        'category', previous_product.category,
+        'is_active', previous_product.is_active
+      )
+    END,
+    jsonb_build_object(
+      'name', saved_product.name,
+      'brand', saved_product.brand,
+      'price', saved_product.price,
+      'stock', saved_product.stock,
+      'category', saved_product.category,
+      'is_active', saved_product.is_active
+    )
+  );
+
+  RETURN saved_product;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_save_product(UUID, JSONB) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_set_product_active(
+  p_product_id UUID,
+  p_is_active BOOLEAN
+)
+RETURNS public.products
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  previous_product public.products;
+  saved_product public.products;
+  actor_email TEXT;
+BEGIN
+  IF public.is_admin() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Admin access required.' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO previous_product
+  FROM public.products
+  WHERE products.id = p_product_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product not found.' USING ERRCODE = '22000';
+  END IF;
+
+  UPDATE public.products
+  SET
+    is_active = p_is_active,
+    updated_at = NOW()
+  WHERE products.id = p_product_id
+  RETURNING * INTO saved_product;
+
+  IF previous_product.is_active IS DISTINCT FROM saved_product.is_active THEN
+    actor_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
+
+    INSERT INTO public.admin_audit_logs (
+      actor_id,
+      actor_email,
+      action,
+      entity_type,
+      entity_id,
+      entity_label,
+      before_data,
+      after_data,
+      metadata
+    )
+    VALUES (
+      auth.uid(),
+      actor_email,
+      'product_status_changed',
+      'product',
+      saved_product.id::TEXT,
+      saved_product.name,
+      jsonb_build_object('is_active', previous_product.is_active),
+      jsonb_build_object('is_active', saved_product.is_active),
+      jsonb_build_object(
+        'brand', saved_product.brand,
+        'category', saved_product.category
+      )
+    );
+  END IF;
+
+  RETURN saved_product;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_set_product_active(UUID, BOOLEAN) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_delete_product(
+  p_product_id UUID
+)
+RETURNS public.products
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  previous_product public.products;
+  actor_email TEXT;
+BEGIN
+  IF public.is_admin() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Admin access required.' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO previous_product
+  FROM public.products
+  WHERE products.id = p_product_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product not found.' USING ERRCODE = '22000';
+  END IF;
+
+  DELETE FROM public.products
+  WHERE products.id = p_product_id;
+
+  actor_email := lower(nullif(trim(COALESCE(auth.jwt() ->> 'email', '')), ''));
+
+  INSERT INTO public.admin_audit_logs (
+    actor_id,
+    actor_email,
+    action,
+    entity_type,
+    entity_id,
+    entity_label,
+    before_data
+  )
+  VALUES (
+    auth.uid(),
+    actor_email,
+    'product_deleted',
+    'product',
+    previous_product.id::TEXT,
+    previous_product.name,
+    jsonb_build_object(
+      'name', previous_product.name,
+      'brand', previous_product.brand,
+      'price', previous_product.price,
+      'stock', previous_product.stock,
+      'category', previous_product.category,
+      'is_active', previous_product.is_active
+    )
+  );
+
+  RETURN previous_product;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_delete_product(UUID) TO authenticated;
 
 -- Newsletter Subscribers Policies
 DROP POLICY IF EXISTS "newsletter_subscribers_public_insert" ON public.newsletter_subscribers;

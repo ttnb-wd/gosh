@@ -195,8 +195,17 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white">
+      <main role="main" className="min-h-screen bg-white">
         <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
+        {/* Screen Reader Loading Announcement */}
+        <div 
+          role="status" 
+          aria-live="polite" 
+          aria-atomic="true"
+          className="sr-only"
+        >
+          Loading your orders, please wait...
+        </div>
         <div className="flex min-h-[60vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-yellow-600" />
         </div>
@@ -212,8 +221,18 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-white text-black">
       <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
+
+      {/* Screen Reader Orders Loaded Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {orders.length === 0 ? "No orders found" : `${orders.length} order${orders.length !== 1 ? 's' : ''} loaded`}
+      </div>
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}

@@ -14,6 +14,7 @@ declare global {
           "error-callback": () => void;
           theme?: "light" | "dark" | "auto";
           action?: string;
+          "response-field"?: boolean;
         }
       ) => string;
       remove: (widgetId: string) => void;
@@ -29,6 +30,7 @@ interface TurnstileWidgetProps {
 }
 
 const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const localBypassToken = "__LOCAL_TURNSTILE_BYPASS__";
 
 export default function TurnstileWidget({
   action,
@@ -38,9 +40,20 @@ export default function TurnstileWidget({
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
+  const isLocalBypass =
+    mounted &&
+    process.env.NODE_ENV !== "production" &&
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLocalBypass) return;
     if (!siteKey) return;
 
     if (window.turnstile) {
@@ -63,9 +76,15 @@ export default function TurnstileWidget({
     script.defer = true;
     script.onload = () => setScriptReady(true);
     document.head.appendChild(script);
-  }, []);
+  }, [isLocalBypass]);
 
   useEffect(() => {
+    if (!isLocalBypass) return;
+    onVerify(localBypassToken);
+  }, [isLocalBypass, onVerify]);
+
+  useEffect(() => {
+    if (isLocalBypass) return;
     if (!siteKey || !scriptReady || !window.turnstile || !containerRef.current) return;
 
     if (widgetIdRef.current) {
@@ -78,6 +97,7 @@ export default function TurnstileWidget({
       sitekey: siteKey,
       action,
       theme: "light",
+      "response-field": false,
       callback: onVerify,
       "expired-callback": onExpire,
       "error-callback": onExpire,
@@ -89,11 +109,20 @@ export default function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [action, onExpire, onVerify, resetKey, scriptReady]);
+  }, [action, isLocalBypass, onExpire, onVerify, resetKey, scriptReady]);
+
+  if (isLocalBypass) {
+    return (
+      <div
+        aria-hidden="true"
+        className="hidden"
+      />
+    );
+  }
 
   if (!siteKey) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
         Security check is not configured.
       </div>
     );

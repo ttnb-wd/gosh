@@ -107,7 +107,17 @@ export default function AdminMessagesPage() {
     <div className="min-h-screen">
       <AdminHeader title="Messages" subtitle="Review contact form submissions" />
 
-      <main className="p-6">
+      {/* Screen Reader Loading Announcement */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading ? "Loading messages, please wait..." : `${filteredMessages.length} message${filteredMessages.length !== 1 ? 's' : ''} loaded`}
+      </div>
+
+      <main role="main" className="p-6">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (
@@ -138,7 +148,7 @@ export default function AdminMessagesPage() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
             {error}
           </div>
         )}
