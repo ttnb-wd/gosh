@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import { validateEmail, validatePassword } from "@/lib/validation";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,6 +19,7 @@ function LoginForm() {
   const [redirectTo, setRedirectTo] = useState<string>("/");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const accountCreated = searchParams.get("created") === "1";
 
   const resetTurnstile = useCallback(() => {
@@ -38,12 +40,38 @@ function LoginForm() {
     }
   }, [searchParams, accountCreated]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error || "Invalid email";
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.error || "Invalid password";
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     try {
+      // Validate form
+      if (!validateForm()) {
+        setLoading(false);
+        return;
+      }
+
       if (!turnstileToken) {
         setError("Please complete the security check.");
         setLoading(false);
@@ -214,10 +242,24 @@ function LoginForm() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.email;
+                      return newErrors;
+                    });
+                  }
+                }}
+                className={`w-full rounded-2xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
                 placeholder="your@email.com"
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? "email-error" : undefined}
               />
+              {fieldErrors.email && (
+                <p id="email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -230,11 +272,28 @@ function LoginForm() {
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) {
+                    setFieldErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.password;
+                      return newErrors;
+                    });
+                  }
+                }}
+                className={`w-full rounded-2xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={8}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "password-error" : undefined}
               />
+              {fieldErrors.password && (
+                <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+              )}
+              {mode === "signup" && !fieldErrors.password && (
+                <p className="mt-1 text-xs text-neutral-500">At least 8 characters with letters and numbers</p>
+              )}
             </div>
 
             {error && (

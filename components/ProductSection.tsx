@@ -12,6 +12,8 @@ interface Product {
   id: string | number;
   name: string;
   brand: string;
+  brand_id?: string | null;
+  brands?: BrandOption | null;
   price: number;
   description: string;
   image: string;
@@ -27,7 +29,15 @@ interface Product {
 type SupabaseProduct = Partial<Omit<Product, "decants">> & {
   decants?: unknown;
   notes?: unknown;
+  brands?: unknown;
 };
+
+interface BrandOption {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
 
 interface ProductQuickViewNotes {
   story?: string;
@@ -422,19 +432,20 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
                   type="button"
                   onClick={handleQuickView}
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-                  aria-label="Quick view"
-                  title="Quick view"
+                  aria-label={`Quick view ${product.name}`}
+                  title={`Quick view ${product.name}`}
                 >
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={handleAddToBag}
+                aria-label={`Add ${product.name} to bag`}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
               >
-                <ShoppingBag className="h-4 w-4" />
+                <ShoppingBag className="h-4 w-4" aria-hidden="true" />
                 Add to Bag
               </button>
             </div>
@@ -534,19 +545,20 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
                 type="button"
                 onClick={handleQuickView}
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-                aria-label="Quick view"
-                title="Quick view"
+                aria-label={`Quick view ${product.name}`}
+                title={`Quick view ${product.name}`}
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
             
             <button 
               type="button"
               onClick={handleAddToBag}
+              aria-label={`Add ${product.name} to bag`}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
             >
-              <ShoppingBag className="h-4 w-4" />
+              <ShoppingBag className="h-4 w-4" aria-hidden="true" />
               Add to Bag
             </button>
           </div>
@@ -739,10 +751,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     },
   ];
 
-  // Original brand filters - NEVER remove these
-  const fallbackBrands = ["All", "Dior", "Chanel", "Gucci", "YSL", "Versace", "Tom Ford", "Jo Malone", "Armani", "Valentino"];
-
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [activeBrands, setActiveBrands] = useState<BrandOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
@@ -770,10 +780,19 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       // Otherwise use placeholder
     }
 
+    const brandRelation =
+      product.brands &&
+      typeof product.brands === "object" &&
+      !Array.isArray(product.brands)
+        ? (product.brands as BrandOption)
+        : null;
+
     return {
       id: product.id || Math.random(),
       name: product.name || "Untitled Perfume",
-      brand: product.brand || "",
+      brand: brandRelation?.name || product.brand || "",
+      brand_id: product.brand_id || null,
+      brands: brandRelation,
       price: Number(product.price) || 0,
       description: product.description || "",
       image: imageUrl,
@@ -794,8 +813,21 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   // Fetch Supabase products and merge with fallback (safely)
   useEffect(() => {
     setIsMounted(true);
+    loadActiveBrands();
     loadProducts();
   }, []);
+
+  const loadActiveBrands = async () => {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("id, name, slug, is_active")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if (!error && data) {
+      setActiveBrands(data as BrandOption[]);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -808,19 +840,29 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       try {
         const { data, error } = await supabase
           .from("products")
-          .select("*")
+          .select("*, brands(id, name, slug, is_active)")
           .eq("is_active", true)
           .order("created_at", { ascending: false });
 
         if (!error && data && data.length > 0) {
-          loadedProducts = data.map(normalizeProduct);
+          loadedProducts = (data as SupabaseProduct[])
+            .filter((product) => {
+              const brandRelation =
+                product.brands &&
+                typeof product.brands === "object" &&
+                !Array.isArray(product.brands)
+                  ? (product.brands as BrandOption)
+                  : null;
+              return !product.brand_id || brandRelation?.is_active === true;
+            })
+            .map(normalizeProduct);
         }
-      } catch (supabaseError) {
+      } catch {
         // Supabase products failed, using fallback products
       }
       
       setProducts(loadedProducts);
-    } catch (error) {
+    } catch {
       // Error loading products, using fallback products
       setProducts(fallbackProducts);
     } finally {
@@ -828,33 +870,42 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
   };
 
-  // Get brands from combined products (fallback brands + any new brands from Supabase)
-  // Filter out non-brand names like "Luxury Collection", "Private Blend", etc.
-  const hiddenFilterNames = [
-    "Luxury Collection",
-    "Private Blend",
-    "Collection",
-    "Men",
-    "Women",
-    "Unisex",
-    "GOSH",
-    "",
-  ];
+  const legacyBrandOptions = Array.from(
+    new Set(
+      products
+        .filter((product) => !product.brand_id)
+        .map((product) => product.brand?.trim())
+        .filter((brand): brand is string => Boolean(brand && brand !== "GOSH PERFUME"))
+    )
+  )
+    .sort((a, b) => a.localeCompare(b))
+    .map((brand) => ({
+      id: brand,
+      name: brand,
+      slug: brand.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      is_active: true,
+    }));
 
   const brands = [
-    "All",
-    ...Array.from(new Set([
-      ...fallbackBrands.filter(b => b !== "All"),
-      ...products
-        .map((p) => p.brand)
-        .filter(Boolean)
-        .filter((brand) => !hiddenFilterNames.includes(brand))
-    ]))
-  ].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => {
-    if (a === "All") return -1;
-    if (b === "All") return 1;
-    return a.localeCompare(b);
-  });
+    { id: "All", name: "All", slug: "all", is_active: true },
+    ...activeBrands,
+    ...legacyBrandOptions.filter(
+      (legacyBrand) =>
+        !activeBrands.some(
+          (activeBrand) => activeBrand.name.toLowerCase() === legacyBrand.name.toLowerCase()
+        )
+    ),
+  ];
+
+  useEffect(() => {
+    if (
+      selectedBrand !== "All" &&
+      brands.length > 1 &&
+      !brands.some((brand) => brand.id === selectedBrand)
+    ) {
+      onBrandSelect?.("All");
+    }
+  }, [brands, onBrandSelect, selectedBrand]);
   
   // Close brand menu when clicking outside
   useEffect(() => {
@@ -899,7 +950,11 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     const isAccessory = normalizedCategory === "accessories" || normalizedCategory === "accessory";
     
     // Filter by brand
-    const matchesBrand = selectedBrand === "All" || product.brand === selectedBrand;
+    const selectedBrandRecord = brands.find((brand) => brand.id === selectedBrand);
+    const matchesBrand =
+      selectedBrand === "All" ||
+      product.brand_id === selectedBrand ||
+      (!product.brand_id && selectedBrandRecord?.name === product.brand);
     
     // Filter by category
     let matchesCategory = true;
@@ -923,11 +978,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   });
 
   const getBrandTitle = () => {
+    const selectedBrandName = brands.find((brand) => brand.id === selectedBrand)?.name || selectedBrand;
     if (selectedCategory === "Accessories") return "Accessories";
     if (selectedCategory === "Perfumes") {
-      return selectedBrand === "All" ? "All Perfumes" : `${selectedBrand} Perfumes`;
+      return selectedBrand === "All" ? "All Perfumes" : `${selectedBrandName} Perfumes`;
     }
-    return selectedBrand === "All" ? "All Perfumes" : `${selectedBrand} Collection`;
+    return selectedBrand === "All" ? "All Perfumes" : `${selectedBrandName} Collection`;
   };
 
   const getProductCount = () => {
@@ -937,6 +993,11 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
     return `${count} luxury perfume${count !== 1 ? 's' : ''}`;
   };
+
+  const selectedBrandLabel =
+    selectedBrand === "All"
+      ? "All"
+      : brands.find((brand) => brand.id === selectedBrand)?.name || "this brand";
 
   return (
     <section
@@ -981,19 +1042,19 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
         <div className="flex flex-col gap-3 rounded-[26px] border border-yellow-100 bg-white/85 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           {/* Category Filter Pills */}
-          <div className="grid grid-cols-[0.7fr_1fr_1.35fr] gap-2 sm:flex sm:overflow-x-auto sm:pb-0">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:overflow-x-auto sm:pb-0">
             {["Perfumes", "Accessories"].map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setSelectedCategory(category)}
-                className={`min-w-0 rounded-full px-2 py-2.5 text-[13px] font-bold transition-all duration-300 min-[390px]:px-3 min-[390px]:text-sm sm:shrink-0 sm:px-5 ${
+                className={`min-w-0 rounded-full px-3 py-2.5 text-sm font-bold transition-all duration-300 sm:shrink-0 sm:px-5 ${
                   selectedCategory === category
                     ? "bg-yellow-400 text-black shadow-[0_10px_25px_rgba(234,179,8,0.28)]"
                     : "border border-yellow-300 bg-white text-neutral-700 hover:bg-yellow-50"
                 }`}
               >
-                <span className="block whitespace-nowrap">{category}</span>
+                <span className="block truncate whitespace-nowrap">{category}</span>
               </button>
             ))}
           </div>
@@ -1051,7 +1112,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                   <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
                     {brands.map((brand, index) => (
                       <motion.button
-                        key={`desktop-${isBrandMenuOpen}-${brand || "empty"}-${index}`}
+                        key={`desktop-${isBrandMenuOpen}-${brand.id}-${index}`}
                         type="button"
                         initial={{ opacity: 0, x: 22 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -1061,17 +1122,17 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                           ease: [0.22, 1, 0.36, 1]
                         }}
                         onClick={() => {
-                          onBrandSelect?.(brand);
+                          onBrandSelect?.(brand.id);
                           setIsBrandMenuOpen(false);
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
-                          selectedBrand === brand
+                          selectedBrand === brand.id
                             ? "bg-yellow-400 text-black shadow-[0_8px_18px_rgba(234,179,8,0.20)]"
                             : "bg-neutral-50 text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
                         }`}
                       >
-                        <span className="truncate">{brand || "Unbranded"}</span>
-                        {selectedBrand === brand && <Check className="h-3.5 w-3.5 shrink-0" />}
+                        <span className="truncate">{brand.name || "Unbranded"}</span>
+                        {selectedBrand === brand.id && <Check className="h-3.5 w-3.5 shrink-0" />}
                       </motion.button>
                     ))}
                   </div>
@@ -1122,7 +1183,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               </div>
               <h3 className="mb-2 text-xl font-bold text-black">No perfumes found</h3>
               <p className="text-zinc-600">
-                No perfumes available for <span className="font-medium text-yellow-600">{selectedBrand}</span> yet.
+                No perfumes available for <span className="font-medium text-yellow-600">{selectedBrandLabel}</span> yet.
               </p>
               <p className="mt-2 text-sm text-zinc-500">
                 Check back soon for new arrivals!
@@ -1176,12 +1237,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
                   <div className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1">
                     {brands.map((brand, index) => {
-                      const active = selectedBrand === brand;
-                      const label = brand || "Unbranded";
+                      const active = selectedBrand === brand.id;
+                      const label = brand.name || "Unbranded";
 
                       return (
                         <motion.button
-                          key={`mobile-popup-${brand || "empty"}-${index}`}
+                          key={`mobile-popup-${brand.id}-${index}`}
                           type="button"
                           role="option"
                           aria-selected={active}
@@ -1193,7 +1254,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                             ease: [0.22, 1, 0.36, 1],
                           }}
                           onClick={() => {
-                            onBrandSelect?.(brand);
+                            onBrandSelect?.(brand.id);
                             setIsBrandMenuOpen(false);
                           }}
                           className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${

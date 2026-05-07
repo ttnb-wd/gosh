@@ -6,6 +6,7 @@ import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import { validateEmail, validatePassword } from "@/lib/validation";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,18 +17,45 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
     setTurnstileResetKey((key) => key + 1);
   }, []);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error || "Invalid email";
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.error || "Invalid password";
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setFieldErrors({});
 
     try {
+      // Validate form
+      if (!validateForm()) {
+        setLoading(false);
+        return;
+      }
+
       if (!turnstileToken) {
         setError("Please complete the security check.");
         setLoading(false);
@@ -160,12 +188,26 @@ export default function AdminLoginPage() {
                   name="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) {
+                      setFieldErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.email;
+                        return newErrors;
+                      });
+                    }
+                  }}
                   required
                   placeholder="admin@goshperfume.com"
-                  className="w-full rounded-xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-medium text-black transition focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-400/20"
+                  className={`w-full rounded-xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white py-3 pl-12 pr-4 text-sm font-medium text-black transition focus:outline-none focus:ring-4`}
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
                 />
               </div>
+              {fieldErrors.email && (
+                <p id="email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -180,10 +222,21 @@ export default function AdminLoginPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) {
+                      setFieldErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.password;
+                        return newErrors;
+                      });
+                    }
+                  }}
                   required
                   placeholder="Enter your password"
-                  className="w-full rounded-xl border border-zinc-200 bg-white py-3 pl-12 pr-12 text-sm font-medium text-black transition focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-400/20"
+                  className={`w-full rounded-xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white py-3 pl-12 pr-12 text-sm font-medium text-black transition focus:outline-none focus:ring-4`}
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
                 />
                 <button
                   type="button"
@@ -193,6 +246,9 @@ export default function AdminLoginPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+              )}
             </div>
 
             <div className="mb-6">

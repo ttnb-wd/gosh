@@ -6,6 +6,7 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import StatCard from "@/components/admin/StatCard";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
+import { PageErrorBoundary } from "@/components/ErrorBoundaries";
 import {
   AlertTriangle,
   ArrowRight,
@@ -202,7 +203,7 @@ function OperationalFlag({
   );
 }
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { user, loading: authLoading } = useAdminAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     stats: emptyStats,
@@ -518,5 +519,13 @@ export default function AdminDashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <PageErrorBoundary context="admin-dashboard">
+      <AdminDashboardContent />
+    </PageErrorBoundary>
   );
 }
