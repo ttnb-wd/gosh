@@ -364,18 +364,21 @@ export default function AdminCustomersPage() {
                 className="flex w-full items-center justify-between gap-4 rounded-2xl border border-yellow-300/80 bg-[#fffdf6] px-5 py-3 text-sm font-black text-neutral-900 shadow-[0_16px_38px_rgba(234,179,8,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-white focus:outline-none focus:ring-4 focus:ring-yellow-200/70 sm:min-w-[210px]"
                 aria-haspopup="listbox"
                 aria-expanded={sortOpen}
+                aria-label="Sort customers"
               >
                 <span>{sortOptions.find((option) => option.value === sortType)?.label}</span>
                 <ChevronDown
                   className={`h-4 w-4 text-yellow-600 transition-transform duration-300 ${
                     sortOpen ? "rotate-180" : ""
                   }`}
+                  aria-hidden="true"
                 />
               </button>
 
               {sortOpen && (
                 <div
                   role="listbox"
+                  aria-label="Sort options"
                   className="absolute right-0 top-[calc(100%+10px)] z-50 w-full min-w-[230px] overflow-hidden rounded-[22px] border border-yellow-200 bg-[#fffdf6]/98 p-2 shadow-[0_24px_70px_rgba(0,0,0,0.18),0_0_32px_rgba(234,179,8,0.16)] backdrop-blur-xl"
                 >
                   {sortOptions.map((option) => {
@@ -524,6 +527,7 @@ export default function AdminCustomersPage() {
                   <button
                     type="button"
                     onClick={() => openCustomerDetail(customer)}
+                    aria-label={`View details for ${getCustomerDisplayName(customer)}`}
                     className="w-full rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-[0_10px_24px_rgba(234,179,8,0.20)] transition hover:bg-yellow-300 lg:w-auto"
                   >
                     Details
@@ -545,6 +549,7 @@ export default function AdminCustomersPage() {
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                 disabled={currentPage === 1 || loading}
+                aria-label="Go to previous page"
                 className="flex-1 rounded-full border border-yellow-200 bg-[#fffdf6] px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
                 Previous
@@ -553,6 +558,7 @@ export default function AdminCustomersPage() {
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                 disabled={currentPage === totalPages || loading}
+                aria-label="Go to next page"
                 className="flex-1 rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
                 Next

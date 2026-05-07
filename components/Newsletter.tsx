@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { Mail, Gift } from "lucide-react";
 import { useCallback, useState } from "react";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import { validateEmail, sanitizeInput } from "@/lib/validation";
+import { FormErrorBoundary } from "./ErrorBoundaries";
 
-export default function Newsletter() {
+function NewsletterContent() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -23,12 +25,21 @@ export default function Newsletter() {
     setStatus(null);
 
     try {
-      if (!turnstileToken) {
-        setStatus({ type: "error", text: "Please complete the security check." });
+      // Validate email
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.isValid) {
+        setStatus({ type: "error", text: emailValidation.error || "Invalid email" });
+        setSubmitting(false);
         return;
       }
 
-      const normalizedEmail = email.trim().toLowerCase();
+      if (!turnstileToken) {
+        setStatus({ type: "error", text: "Please complete the security check." });
+        setSubmitting(false);
+        return;
+      }
+
+      const normalizedEmail = sanitizeInput(email.trim().toLowerCase());
       const response = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,5 +141,13 @@ export default function Newsletter() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+export default function Newsletter() {
+  return (
+    <FormErrorBoundary context="newsletter-form">
+      <NewsletterContent />
+    </FormErrorBoundary>
   );
 }

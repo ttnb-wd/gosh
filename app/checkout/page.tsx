@@ -9,6 +9,7 @@ import CartDrawer from "@/components/CartDrawer";
 import { Check, CheckCircle, Banknote, Building2, Smartphone } from "lucide-react";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { PageErrorBoundary } from "@/components/ErrorBoundaries";
 
 // Cart item type
 interface CartItem {
@@ -158,7 +159,7 @@ const paymentMethods = [
   }
 ];
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const supabase = createSupabaseClient();
   const router = useRouter();
   const { settings } = useSiteSettings();
@@ -275,21 +276,21 @@ export default function CheckoutPage() {
     kbzpay: {
       title: "KBZPay Payment Details",
       accountName: settings.kbzpay_account_name || "GOSH PERFUME",
-      phone: settings.kbzpay_phone || "09XXXXXXXXX",
+      phone: settings.kbzpay_phone || "",
       instruction: "Please send payment to this KBZPay number and keep your transaction screenshot.",
       note: "QR payment will be available soon.",
     },
     wavepay: {
       title: "WavePay Payment Details",
       accountName: settings.wavepay_account_name || "GOSH PERFUME",
-      phone: settings.wavepay_phone || "09XXXXXXXXX",
+      phone: settings.wavepay_phone || "",
       instruction: "Please send payment to this WavePay number and keep your transaction screenshot.",
       note: "QR payment will be available soon.",
     },
     ayapay: {
       title: "AYA Pay Payment Details",
       accountName: settings.ayapay_account_name || "GOSH PERFUME",
-      phone: settings.ayapay_phone || "09XXXXXXXXX",
+      phone: settings.ayapay_phone || "",
       instruction: "Please send payment to this AYA Pay number and keep your transaction screenshot.",
       note: "QR payment will be available soon.",
     },
@@ -297,7 +298,7 @@ export default function CheckoutPage() {
       title: "Bank Transfer Details",
       bankName: settings.bank_name || "KBZ Bank",
       accountName: settings.bank_account_name || "GOSH PERFUME",
-      accountNumber: settings.bank_account_number || "XXXXXXXXXXXXX",
+      accountNumber: settings.bank_account_number || "",
       instruction: "Please transfer to this bank account and keep your payment screenshot.",
     },
   };
@@ -343,7 +344,8 @@ export default function CheckoutPage() {
       .remove([filePath]);
 
     if (deleteError) {
-      // Payment screenshot cleanup failed (non-critical)
+      // Payment screenshot cleanup failed (non-critical) - log for debugging
+      console.error("Failed to delete payment screenshot:", deleteError);
     }
   };
 
@@ -392,21 +394,21 @@ export default function CheckoutPage() {
           payment_method: "kbzpay",
           payment_status: "Verifying",
           payment_account_name: settings.kbzpay_account_name || "GOSH PERFUME",
-          payment_phone: settings.kbzpay_phone || "09XXXXXXXXX",
+          payment_phone: settings.kbzpay_phone || null,
           payment_account_number: null,
         },
         wavepay: {
           payment_method: "wavepay",
           payment_status: "Verifying",
           payment_account_name: settings.wavepay_account_name || "GOSH PERFUME",
-          payment_phone: settings.wavepay_phone || "09XXXXXXXXX",
+          payment_phone: settings.wavepay_phone || null,
           payment_account_number: null,
         },
         ayapay: {
           payment_method: "ayapay",
           payment_status: "Verifying",
           payment_account_name: settings.ayapay_account_name || "GOSH PERFUME",
-          payment_phone: settings.ayapay_phone || "09XXXXXXXXX",
+          payment_phone: settings.ayapay_phone || null,
           payment_account_number: null,
         },
         bank: {
@@ -414,7 +416,7 @@ export default function CheckoutPage() {
           payment_status: "Verifying",
           payment_account_name: settings.bank_account_name || "GOSH PERFUME",
           payment_phone: null,
-          payment_account_number: settings.bank_account_number || "XXXXXXXXXXXXX",
+          payment_account_number: settings.bank_account_number || null,
         },
       } as const;
 
@@ -455,7 +457,8 @@ export default function CheckoutPage() {
 
         await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
 
-        // Order was not saved - keeping error for debugging
+        // Log error for debugging and show user-friendly message
+        console.error("Order creation failed:", orderError);
         setSubmitError(orderMessage);
         setSubmittingOrder(false);
         return;
@@ -470,7 +473,8 @@ export default function CheckoutPage() {
         .order("created_at", { ascending: true });
 
       if (orderItemsError) {
-        // Trusted order items fetch failed (non-critical, will use empty array)
+        // Order items fetch failed (non-critical) - log for debugging but continue with empty array
+        console.error("Failed to fetch order items:", orderItemsError);
       }
 
       const savedOrderItems = ((trustedOrderItems || []) as SavedOrderItem[]).map((item) => ({
@@ -648,7 +652,7 @@ export default function CheckoutPage() {
                     value={customerForm.phone}
                     onChange={(e) => setCustomerForm((prev) => ({ ...prev, phone: e.target.value }))}
                     className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="09XXXXXXXXX"
+                    placeholder="09123456789"
                   />
                   {errors.phone && (
                     <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
@@ -1273,5 +1277,13 @@ export default function CheckoutPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <PageErrorBoundary context="checkout">
+      <CheckoutPageContent />
+    </PageErrorBoundary>
   );
 }

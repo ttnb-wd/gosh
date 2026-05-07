@@ -56,11 +56,23 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Brands Table
+CREATE TABLE IF NOT EXISTS public.brands (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Products Table
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   brand TEXT,
+  brand_id UUID REFERENCES public.brands(id) ON DELETE SET NULL,
   price DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (price >= 0),
   description TEXT,
   image TEXT,
@@ -185,7 +197,10 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON public.orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_brands_slug ON public.brands(slug);
+CREATE INDEX IF NOT EXISTS idx_brands_is_active ON public.brands(is_active);
 CREATE INDEX IF NOT EXISTS idx_products_brand ON public.products(brand);
+CREATE INDEX IF NOT EXISTS idx_products_brand_id ON public.products(brand_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
 CREATE INDEX IF NOT EXISTS idx_products_is_active ON public.products(is_active);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON public.contact_messages(status);
@@ -1155,6 +1170,7 @@ DECLARE
   actor_email TEXT;
   next_name TEXT;
   next_brand TEXT;
+  next_brand_id UUID;
   next_description TEXT;
   next_image TEXT;
   next_category TEXT;
@@ -1175,6 +1191,16 @@ BEGIN
   END IF;
 
   next_brand := nullif(trim(COALESCE(p_product ->> 'brand', '')), '');
+  next_brand_id := nullif(trim(COALESCE(p_product ->> 'brand_id', '')), '')::UUID;
+  IF next_brand_id IS NOT NULL THEN
+    SELECT brands.name INTO next_brand
+    FROM public.brands
+    WHERE brands.id = next_brand_id;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Selected brand not found.' USING ERRCODE = '22000';
+    END IF;
+  END IF;
   next_description := nullif(trim(COALESCE(p_product ->> 'description', '')), '');
   next_image := nullif(trim(COALESCE(p_product ->> 'image', '')), '');
   next_category := nullif(trim(COALESCE(p_product ->> 'category', '')), '');
@@ -1190,6 +1216,7 @@ BEGIN
     INSERT INTO public.products (
       name,
       brand,
+      brand_id,
       description,
       image,
       category,
@@ -1203,6 +1230,7 @@ BEGIN
     VALUES (
       next_name,
       next_brand,
+      next_brand_id,
       next_description,
       next_image,
       next_category,
@@ -1230,6 +1258,7 @@ BEGIN
     SET
       name = next_name,
       brand = next_brand,
+      brand_id = next_brand_id,
       description = next_description,
       image = next_image,
       category = next_category,
@@ -1268,6 +1297,7 @@ BEGIN
       ELSE jsonb_build_object(
         'name', previous_product.name,
         'brand', previous_product.brand,
+        'brand_id', previous_product.brand_id,
         'price', previous_product.price,
         'stock', previous_product.stock,
         'category', previous_product.category,
@@ -1277,6 +1307,7 @@ BEGIN
     jsonb_build_object(
       'name', saved_product.name,
       'brand', saved_product.brand,
+      'brand_id', saved_product.brand_id,
       'price', saved_product.price,
       'stock', saved_product.stock,
       'category', saved_product.category,

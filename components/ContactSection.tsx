@@ -7,8 +7,10 @@ import { Phone, Mail, MapPin, Clock, Send, ShieldCheck } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { policies } from "@/lib/policies";
+import { validateEmail, validateName, validateSubject, validateMessage, sanitizeInput } from "@/lib/validation";
+import { FormErrorBoundary } from "./ErrorBoundaries";
 
-export default function ContactSection() {
+function ContactSectionContent() {
   const { settings } = useSiteSettings();
   const [formData, setFormData] = useState({
     fullName: "",
@@ -20,6 +22,7 @@ export default function ContactSection() {
   const [formStatus, setFormStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
@@ -41,6 +44,45 @@ export default function ContactSection() {
       ...prev,
       [name]: value
     }));
+    // Clear error for this field when user types
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate full name
+    const nameValidation = validateName(formData.fullName, "Full name");
+    if (!nameValidation.isValid) {
+      newErrors.fullName = nameValidation.error || "Invalid name";
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error || "Invalid email";
+    }
+
+    // Validate subject
+    const subjectValidation = validateSubject(formData.subject);
+    if (!subjectValidation.isValid) {
+      newErrors.subject = subjectValidation.error || "Invalid subject";
+    }
+
+    // Validate message
+    const messageValidation = validateMessage(formData.message, 10, 5000);
+    if (!messageValidation.isValid) {
+      newErrors.message = messageValidation.error || "Invalid message";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +91,15 @@ export default function ContactSection() {
     setFormStatus(null);
 
     try {
+      // Validate form
+      if (!validateForm()) {
+        setSubmitting(false);
+        return;
+      }
+
       if (!turnstileToken) {
         setFormStatus({ type: "error", text: "Please complete the security check." });
+        setSubmitting(false);
         return;
       }
 
@@ -58,10 +107,10 @@ export default function ContactSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: formData.fullName.trim(),
-          email: formData.email.trim(),
-          subject: formData.subject.trim(),
-          message: formData.message.trim(),
+          fullName: sanitizeInput(formData.fullName.trim()),
+          email: sanitizeInput(formData.email.trim()),
+          subject: sanitizeInput(formData.subject.trim()),
+          message: sanitizeInput(formData.message.trim()),
           token: turnstileToken,
         }),
       });
@@ -258,9 +307,14 @@ export default function ContactSection() {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     required
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    className={`w-full rounded-2xl border ${errors.fullName ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
                     placeholder="Enter your full name"
+                    aria-invalid={!!errors.fullName}
+                    aria-describedby={errors.fullName ? "fullName-error" : undefined}
                   />
+                  {errors.fullName && (
+                    <p id="fullName-error" className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                  )}
                 </div>
 
                 <div>
@@ -274,9 +328,14 @@ export default function ContactSection() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    className={`w-full rounded-2xl border ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
                     placeholder="Enter your email address"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
+                  {errors.email && (
+                    <p id="email-error" className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
                 </div>
 
                 <div>
@@ -290,9 +349,14 @@ export default function ContactSection() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    className={`w-full rounded-2xl border ${errors.subject ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
                     placeholder="What can we help you with?"
+                    aria-invalid={!!errors.subject}
+                    aria-describedby={errors.subject ? "subject-error" : undefined}
                   />
+                  {errors.subject && (
+                    <p id="subject-error" className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                  )}
                 </div>
 
                 <div>
@@ -306,9 +370,14 @@ export default function ContactSection() {
                     onChange={handleInputChange}
                     required
                     rows={5}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 resize-none"
+                    className={`w-full rounded-2xl border ${errors.message ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2 resize-none`}
                     placeholder="Tell us more about your inquiry..."
+                    aria-invalid={!!errors.message}
+                    aria-describedby={errors.message ? "message-error" : undefined}
                   />
+                  {errors.message && (
+                    <p id="message-error" className="mt-1 text-sm text-red-600">{errors.message}</p>
+                  )}
                 </div>
 
                 <TurnstileWidget
@@ -367,5 +436,13 @@ export default function ContactSection() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+export default function ContactSection() {
+  return (
+    <FormErrorBoundary context="contact-form">
+      <ContactSectionContent />
+    </FormErrorBoundary>
   );
 }

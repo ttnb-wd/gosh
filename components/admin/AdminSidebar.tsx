@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare, Tags } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: ShoppingBag, label: "Orders", href: "/admin/orders" },
   { icon: Package, label: "Products", href: "/admin/products" },
+  { icon: Tags, label: "Brands", href: "/admin/brands" },
   { icon: MessageSquare, label: "Messages", href: "/admin/messages" },
   { icon: Users, label: "Customers", href: "/admin/customers" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },

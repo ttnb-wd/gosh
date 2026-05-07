@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ComponentErrorBoundary } from "./ErrorBoundaries";
 
 interface CartItem {
   id: string | number;
@@ -21,7 +22,7 @@ interface CartDrawerProps {
   onUpdateQuantity?: (id: string | number, selectedSize: string | undefined, newQuantity: number) => void;
 }
 
-export default function CartDrawer({ 
+function CartDrawerContent({ 
   isOpen, 
   onClose, 
   cartItems = [], 
@@ -79,19 +80,21 @@ export default function CartDrawer({
                     <button
                       type="button"
                       onClick={handleRemoveAll}
+                      aria-label="Remove all items from bag"
                       className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-semibold text-neutral-800 shadow-[0_8px_24px_rgba(234,179,8,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_12px_30px_rgba(234,179,8,0.24)]"
                     >
-                      <Trash2 className="h-4 w-4 text-yellow-600 transition-transform duration-300 group-hover:scale-110" />
+                      <Trash2 className="h-4 w-4 text-yellow-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
                       <span>Remove All</span>
                     </button>
                   )}
                 </div>
                 <button
                   onClick={onClose}
+                  type="button"
                   className="flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-700"
-                  aria-label="Close bag"
+                  aria-label="Close shopping bag"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
 
@@ -109,6 +112,8 @@ export default function CartDrawer({
                     </p>
                     <button
                       onClick={handleContinueShopping}
+                      type="button"
+                      aria-label="Continue shopping"
                       className="rounded-2xl bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300"
                     >
                       Continue Shopping
@@ -145,21 +150,25 @@ export default function CartDrawer({
                             </div>
                             
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2" role="group" aria-label={`Quantity controls for ${item.name}`}>
                                 <button
                                   onClick={() => onUpdateQuantity(item.id, item.selectedSize, item.qty - 1)}
+                                  type="button"
+                                  aria-label={`Decrease quantity of ${item.name}`}
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-700"
                                 >
-                                  <Minus className="h-3 w-3" />
+                                  <Minus className="h-3 w-3" aria-hidden="true" />
                                 </button>
-                                <span className="w-8 text-center text-sm font-medium text-black">
+                                <span className="w-8 text-center text-sm font-medium text-black" aria-label={`Quantity: ${item.qty}`}>
                                   {item.qty}
                                 </span>
                                 <button
                                   onClick={() => onUpdateQuantity(item.id, item.selectedSize, item.qty + 1)}
+                                  type="button"
+                                  aria-label={`Increase quantity of ${item.name}`}
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-700"
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Plus className="h-3 w-3" aria-hidden="true" />
                                 </button>
                               </div>
                               
@@ -194,12 +203,16 @@ export default function CartDrawer({
                   <div className="space-y-3">
                     <button 
                       onClick={handleCheckout}
+                      type="button"
+                      aria-label="Proceed to checkout"
                       className="w-full rounded-2xl bg-yellow-400 py-4 font-semibold text-black transition hover:bg-yellow-300"
                     >
                       Checkout
                     </button>
                     <button
                       onClick={handleContinueShopping}
+                      type="button"
+                      aria-label="Continue shopping for more products"
                       className="w-full rounded-2xl border border-zinc-200 bg-white py-4 font-semibold text-black transition hover:bg-zinc-50"
                     >
                       Continue Shopping
@@ -212,5 +225,13 @@ export default function CartDrawer({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+export default function CartDrawer(props: CartDrawerProps) {
+  return (
+    <ComponentErrorBoundary context="cart-drawer">
+      <CartDrawerContent {...props} />
+    </ComponentErrorBoundary>
   );
 }

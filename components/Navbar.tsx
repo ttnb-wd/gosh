@@ -227,16 +227,23 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
               <button
                 type="button"
                 onClick={() => setShowAccountMenu((prev) => !prev)}
+                aria-label="Open account menu"
+                aria-expanded={showAccountMenu}
+                aria-haspopup="true"
                 className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
               >
-                <CircleUserRound className="h-4 w-4 text-yellow-600" />
+                <CircleUserRound className="h-4 w-4 text-yellow-600" aria-hidden="true" />
                 <span className="hidden max-w-[120px] truncate sm:inline">
                   {profileName || "Account"}
                 </span>
               </button>
               
               {showAccountMenu && (
-                <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.18)] backdrop-blur">
+                <div 
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.18)] backdrop-blur"
+                  role="menu"
+                  aria-label="Account menu"
+                >
                   <div className="px-3 py-2">
                     <p className="truncate text-sm font-bold text-neutral-900">
                       {profileName || "Account"}
@@ -248,6 +255,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
                   <Link
                     href="/orders"
                     onClick={() => setShowAccountMenu(false)}
+                    role="menuitem"
                     className="block rounded-xl px-3 py-2 text-sm font-bold text-neutral-800 transition hover:bg-yellow-50 hover:text-yellow-700"
                   >
                     My Orders
@@ -255,9 +263,11 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
                   <button
                     type="button"
                     onClick={handleLogout}
+                    role="menuitem"
+                    aria-label="Logout from account"
                     className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" aria-hidden="true" />
                     Logout
                   </button>
                 </div>
@@ -306,10 +316,11 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
           <button
             type="button"
             onClick={() => setOpen(!open)}
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition active:scale-95"
-            aria-label="Open navigation menu"
           >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -381,9 +392,10 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
                         handleLogout();
                         setOpen(false);
                       }}
+                      aria-label="Logout from account"
                       className="mt-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4" aria-hidden="true" />
                       Logout
                     </button>
                   </div>

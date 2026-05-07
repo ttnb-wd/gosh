@@ -81,7 +81,7 @@ export default function TurnstileWidget({
   useEffect(() => {
     if (!isLocalBypass) return;
     onVerify(localBypassToken);
-  }, [isLocalBypass, onVerify]);
+  }, [action, isLocalBypass, onVerify, resetKey]);
 
   useEffect(() => {
     if (isLocalBypass) return;

@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import { PageErrorBoundary } from "@/components/ErrorBoundaries";
 
 // Cart item type definition
 interface CartItem {
@@ -31,7 +32,7 @@ interface Product {
   decants?: { label: string; price: number }[];
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedBrand, setSelectedBrand] = useState("All");
@@ -158,5 +159,13 @@ export default function ProductsPage() {
         onUpdateQuantity={updateCartItemQuantity}
       />
     </motion.main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <PageErrorBoundary context="products">
+      <ProductsPageContent />
+    </PageErrorBoundary>
   );
 }

@@ -1,14 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle, ChevronLeft, ChevronRight, Edit, EyeOff, Package, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight, Edit, EyeOff, Package, Plus, Search, Tags, Trash2, Upload, X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import PremiumSelect from "./PremiumSelect";
+import { ComponentErrorBoundary } from "../ErrorBoundaries";
 
 interface Product {
   id: string;
   name: string;
   brand: string;
+  brand_id?: string | null;
+  brands?: Brand | null;
   price: number;
   description: string;
   image: string;
@@ -18,6 +21,19 @@ interface Product {
   is_active: boolean;
   decants: { label: string; price: number }[];
   notes?: ProductQuickViewNotes | null;
+}
+
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+interface LegacyProductBrandRow {
+  brand: string | null;
+  brand_id: string | null;
 }
 
 interface ProductQuickViewNotes {
@@ -91,9 +107,11 @@ const productCategoryFilters = [
   { label: "Accessories Products", value: "accessories" },
 ] as const;
 
-export default function ProductManager() {
+function ProductManagerContent() {
   const supabase = useMemo(() => createSupabaseClient(), []);
   const [products, setProducts] = useState<Product[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [legacyBrandNames, setLegacyBrandNames] = useState<string[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -102,6 +120,7 @@ export default function ProductManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<(typeof productStatusFilters)[number]["value"]>("all");
   const [categoryFilter, setCategoryFilter] = useState<(typeof productCategoryFilters)[number]["value"]>("all");
+  const [brandFilter, setBrandFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -173,6 +192,7 @@ export default function ProductManager() {
   const [formData, setFormData] = useState({
     name: "",
     brand: "",
+    brand_id: "",
     price: "",
     description: "",
     image: "",
@@ -193,6 +213,92 @@ export default function ProductManager() {
   });
   const isAccessoryForm = formData.category === "Accessories";
 
+  const brandOptions = useMemo(() => {
+    const currentBrand = editingProduct?.brands || null;
+    const options = brands.map((brand) => ({
+      label: brand.is_active ? brand.name : `${brand.name} (inactive)`,
+      value: brand.id,
+    }));
+
+    if (
+      currentBrand &&
+      !currentBrand.is_active &&
+      !options.some((option) => option.value === currentBrand.id)
+    ) {
+      options.push({
+        label: `${currentBrand.name} (inactive)`,
+        value: currentBrand.id,
+      });
+    }
+
+    legacyBrandNames.forEach((brandName) => {
+      if (!brands.some((brand) => brand.name.toLowerCase() === brandName.toLowerCase())) {
+        options.push({
+          label: brandName,
+          value: `legacy:${brandName}`,
+        });
+      }
+    });
+
+    return options;
+  }, [brands, editingProduct, legacyBrandNames]);
+
+  const brandFilterOptions = useMemo(
+    () => [
+      { label: "All Brands", value: "all" },
+      ...brands.map((brand) => ({
+        label: brand.is_active ? brand.name : `${brand.name} (inactive)`,
+        value: brand.id,
+      })),
+      ...legacyBrandNames.map((brandName) => ({
+        label: brandName,
+        value: `legacy:${brandName}`,
+      })),
+      { label: "Unlinked Brand", value: "unlinked" },
+    ],
+    [brands, legacyBrandNames]
+  );
+
+  const selectedBrand = brands.find((brand) => brand.id === formData.brand_id) || null;
+  const legacyBrand = !formData.brand_id && formData.brand?.trim() ? formData.brand.trim() : "";
+
+  const loadBrands = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("id, name, slug, description, is_active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error loading brands:", error);
+      return;
+    }
+
+    const loadedBrands = (data || []) as Brand[];
+    setBrands(loadedBrands);
+
+    const { data: productData, error: productError } = await supabase
+      .from("products")
+      .select("brand, brand_id")
+      .not("brand", "is", null);
+
+    if (!productError && productData) {
+      const savedBrandNames = new Set(loadedBrands.map((brand) => brand.name.toLowerCase()));
+      const legacyNames = Array.from(
+        new Set(
+          (productData as LegacyProductBrandRow[])
+            .map((product) => ({
+              brand: typeof product.brand === "string" ? product.brand.trim() : "",
+              brandId: product.brand_id,
+            }))
+            .filter((product) => product.brand && !product.brandId && !savedBrandNames.has(product.brand.toLowerCase()))
+            .map((product) => product.brand)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+
+      setLegacyBrandNames(legacyNames);
+    }
+  }, [supabase]);
+
   const loadProducts = useCallback(async () => {
     try {
       setListLoading(true);
@@ -203,7 +309,7 @@ export default function ProductManager() {
 
       let query = supabase
         .from("products")
-        .select("*", { count: "exact" })
+        .select("*, brands(id, name, slug, description, is_active)", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -223,6 +329,18 @@ export default function ProductManager() {
         query = query.eq("category", "Accessories");
       }
 
+      if (brandFilter !== "all") {
+        if (brandFilter === "unlinked") {
+          query = query.is("brand_id", null);
+        } else if (brandFilter.startsWith("legacy:")) {
+          query = query
+            .is("brand_id", null)
+            .eq("brand", brandFilter.replace(/^legacy:/, ""));
+        } else {
+          query = query.eq("brand_id", brandFilter);
+        }
+      }
+
       if (search) {
         const escapedSearch = search.replace(/[%_]/g, "\\$&");
         query = query.or(`name.ilike.%${escapedSearch}%,brand.ilike.%${escapedSearch}%,category.ilike.%${escapedSearch}%`);
@@ -235,22 +353,31 @@ export default function ProductManager() {
         return;
       }
 
-      setProducts(data || []);
+      setProducts(
+        ((data || []) as Product[]).map((product) => ({
+          ...product,
+          brand: product.brands?.name || product.brand || "",
+        }))
+      );
       setTotalProducts(count || 0);
     } catch (error) {
       console.error("Error loading products:", error);
     } finally {
       setListLoading(false);
     }
-  }, [currentPage, searchQuery, statusFilter, categoryFilter, supabase]);
+  }, [currentPage, searchQuery, statusFilter, categoryFilter, brandFilter, supabase]);
 
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
 
   useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, categoryFilter]);
+  }, [searchQuery, statusFilter, categoryFilter, brandFilter]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -267,6 +394,7 @@ export default function ProductManager() {
     setFormData({
       name: "",
       brand: "",
+      brand_id: "",
       price: "",
       description: "",
       image: "",
@@ -294,7 +422,8 @@ export default function ProductManager() {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      brand: product.brand,
+      brand: product.brands?.name || product.brand || "",
+      brand_id: product.brand_id || "",
       price: product.price.toString(),
       description: product.description,
       image: product.image,
@@ -391,10 +520,13 @@ export default function ProductManager() {
         }
       }
 
+      const selectedBrandName = selectedBrand?.name || formData.brand?.trim() || "";
+
       // Build product payload matching actual Supabase schema
       const productPayload = {
         name: formData.name.trim(),
-        brand: formData.brand?.trim() || null,
+        brand_id: formData.brand_id || null,
+        brand: selectedBrandName || null,
         description: formData.description?.trim() || null,
         image: imageUrl || null,
         category: formData.category || null,
@@ -428,6 +560,7 @@ export default function ProductManager() {
       setFormData({
         name: "",
         brand: "",
+        brand_id: "",
         price: "",
         description: "",
         image: "",
@@ -535,7 +668,14 @@ export default function ProductManager() {
           <h2 className="text-xl font-bold text-black">Product Inventory</h2>
           <p className="text-sm text-zinc-600">{totalProducts} products in inventory</p>
         </div>
-        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto">
+        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto lg:grid-cols-3">
+          <a
+            href="/admin/brands"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+          >
+            <Tags className="h-4 w-4" />
+            Manage Brands
+          </a>
           <button
             type="button"
             onClick={() => openAddProductForm()}
@@ -602,6 +742,16 @@ export default function ProductManager() {
             </button>
           ))}
         </div>
+
+        <div className="w-full max-w-[320px] border-t border-yellow-100 pt-3">
+          <PremiumSelect
+            label="Filter by Brand"
+            value={brandFilter}
+            placeholder="All Brands"
+            options={brandFilterOptions}
+            onChange={setBrandFilter}
+          />
+        </div>
       </div>
 
       {!listLoading && (
@@ -653,10 +803,16 @@ export default function ProductManager() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg"
+              className={`group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg ${
+                product.category === "Accessories" ? "w-full max-w-[350px] justify-self-start" : ""
+              }`}
             >
               {/* Product Image */}
-              <div className="relative aspect-square overflow-hidden bg-zinc-50">
+              <div
+                className={`relative overflow-hidden bg-zinc-50 ${
+                  product.category === "Accessories" ? "aspect-[4/3]" : "aspect-square"
+                }`}
+              >
                 <img
                   src={getSafeProductImage(product.image)}
                   alt={product.name}
@@ -683,17 +839,43 @@ export default function ProductManager() {
               </div>
 
               {/* Product Info */}
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-yellow-600">{product.brand}</p>
-                  {product.category === "Accessories" && (
-                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700">
-                      Accessory
-                    </span>
-                  )}
+              <div className={product.category === "Accessories" ? "p-4" : "p-4"}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-yellow-600">
+                    {product.brands?.name || product.brand || "Unlinked brand"}
+                  </p>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {product.brands && (
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${
+                          product.brands.is_active
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-zinc-100 text-zinc-500"
+                        }`}
+                      >
+                        {product.brands.is_active ? "Brand active" : "Brand inactive"}
+                      </span>
+                    )}
+                    {!product.brand_id && (
+                      <span className="rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black uppercase text-yellow-700">
+                        Legacy
+                      </span>
+                    )}
+                    {product.category === "Accessories" && (
+                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700">
+                        Accessory
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <h3 className="mt-1 text-lg font-bold text-black">{product.name}</h3>
-                <p className="mt-1 text-sm text-zinc-600">{product.description}</p>
+                <p
+                  className={`mt-1 text-sm text-zinc-600 ${
+                    product.category === "Accessories" ? "line-clamp-2 min-h-[40px]" : ""
+                  }`}
+                >
+                  {product.description}
+                </p>
                 
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xl font-black text-yellow-600">{formatPrice(product.price)}</span>
@@ -701,7 +883,7 @@ export default function ProductManager() {
                 </div>
 
                 {/* Decant Sizes */}
-                {product.decants && (
+                {product.category !== "Accessories" && product.decants && product.decants.length > 0 && (
                   <div className="mt-3">
                     <p className="text-xs font-semibold text-zinc-500">Decant Sizes:</p>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -833,17 +1015,35 @@ export default function ProductManager() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-neutral-800">
-                      {isAccessoryForm ? "Brand / Maker" : "Brand"}
-                    </label>
-                    <input
-                      type="text"
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleInputChange}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                      placeholder={isAccessoryForm ? "GOSH PERFUME" : "Dior"}
+                    <PremiumSelect
+                      label={isAccessoryForm ? "Brand / Maker" : "Brand"}
+                      value={formData.brand_id || (legacyBrand ? `legacy:${legacyBrand}` : "")}
+                      placeholder={brandOptions.length > 0 ? "Select brand" : "Add brands first"}
+                      options={brandOptions}
+                      onChange={(value) => {
+                        if (value.startsWith("legacy:")) {
+                          const legacyName = value.replace(/^legacy:/, "");
+                          setFormData((prev) => ({
+                            ...prev,
+                            brand_id: "",
+                            brand: legacyName,
+                          }));
+                          return;
+                        }
+
+                        const nextBrand = brands.find((brand) => brand.id === value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          brand_id: value,
+                          brand: nextBrand?.name || prev.brand,
+                        }));
+                      }}
                     />
+                    {legacyBrand && (
+                      <p className="mt-2 text-xs font-bold text-yellow-700">
+                        Legacy brand: {legacyBrand}. Choose a brand to link this product.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1290,5 +1490,13 @@ export default function ProductManager() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProductManager() {
+  return (
+    <ComponentErrorBoundary context="product-manager">
+      <ProductManagerContent />
+    </ComponentErrorBoundary>
   );
 }

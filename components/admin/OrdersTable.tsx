@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, Package, Search, XCircle } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import PremiumStatusSelect from "@/components/admin/PremiumStatusSelect";
+import { ComponentErrorBoundary } from "../ErrorBoundaries";
 
 interface OrderItem {
   id: string;
@@ -52,7 +53,7 @@ const paymentStatusGuidance: Record<string, string> = {
   Refunded: "Customer payment has been returned or refund was completed.",
 };
 
-export default function OrdersTable() {
+function OrdersTableContent() {
   const supabase = useMemo(() => createSupabaseClient(), []);
   const searchParams = useSearchParams();
   const orderIdFromNotification = searchParams.get("orderId");
@@ -750,5 +751,13 @@ export default function OrdersTable() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrdersTable() {
+  return (
+    <ComponentErrorBoundary context="orders-table">
+      <OrdersTableContent />
+    </ComponentErrorBoundary>
   );
 }
