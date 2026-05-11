@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Star, ShoppingBag, Users } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import LuxuryHeroEffects from "@/components/LuxuryHeroEffects";
 
 export default function Hero() {
   return (
@@ -10,107 +12,74 @@ export default function Hero() {
       role="region"
       aria-label="Hero banner"
       id="home"
-      className="relative overflow-hidden bg-white px-4 py-8 sm:px-6 lg:px-8 lg:py-12"
+      className="relative isolate -mt-px min-h-[560px] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.22),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.14),transparent_42%),linear-gradient(135deg,#fffaf0_0%,#f8eeee_48%,#ffffff_100%)] px-4 pb-16 pt-0 sm:px-6 lg:px-8 lg:pb-20 lg:pt-0"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.14),transparent_25%),radial-gradient(circle_at_bottom_left,rgba(250,204,21,0.08),transparent_30%)]" />
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[58%] [mask-image:linear-gradient(90deg,transparent_0%,black_14%,black_100%)] md:block"
+        aria-hidden="true"
+      >
+        <Image
+          src="/images/hero/wmremove-transformed.png"
+          alt=""
+          fill
+          priority
+          sizes="58vw"
+          className="object-cover object-[48%_center]"
+        />
+      </div>
 
-      <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-2">
+      <div className="pointer-events-none absolute right-[19%] top-[8%] z-10 hidden h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(247,231,179,0.72)_0%,rgba(212,175,55,0.24)_42%,transparent_72%)] blur-2xl md:block" />
+
+      <LuxuryHeroEffects />
+
+      <div className="mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-[0.95fr_1.05fr]">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative z-10"
+          className="relative z-30 pt-12 lg:pt-12"
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-50 px-4 py-2 text-sm text-yellow-600">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#6f1d1b]/20 bg-[#f8eeee] px-4 py-2 text-sm text-[#6f1d1b] shadow-[0_10px_24px_rgba(212,175,55,0.12)]"
+          >
+            <Star className="h-4 w-4 fill-[#d4af37] text-[#d4af37]" />
             Premium Luxury Perfume
-          </div>
+          </motion.div>
 
-          <h1 className="max-w-2xl text-5xl font-black leading-none text-black sm:text-6xl lg:text-7xl">
+          <motion.h1 className="max-w-2xl text-4xl font-black leading-none text-[#1f1a14] sm:text-5xl lg:text-6xl">
             Discover the
-            <span className="mt-3 block text-yellow-400">Scent of</span>
-            <span className="mt-3 block text-yellow-400">Elegance</span>
-          </h1>
+            <span className="mt-3 block whitespace-nowrap text-[#b88705]">
+              Scent of Elegance
+            </span>
+          </motion.h1>
 
-          <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-600">
+          <motion.p className="mt-6 max-w-xl text-lg leading-8 text-[#7a6a55]">
             Experience premium perfumes crafted with style, depth, and luxury.
             A modern perfume brand with clean elegance and golden highlights.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <motion.div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Link href="/products">
-              <button className="group inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-8 py-4 text-lg font-semibold text-black transition hover:scale-105 hover:bg-yellow-300">
+              <button className="group inline-flex items-center justify-center gap-3 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-8 py-4 text-lg font-bold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.22)] transition hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.32)] active:scale-95">
                 Shop Now
                 <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
               </button>
             </Link>
 
             <Link href="/products">
-              <button className="rounded-full border border-zinc-200 bg-white px-8 py-4 text-lg font-semibold text-black transition hover:border-yellow-300 hover:bg-yellow-50">
+              <button className="rounded-full bg-[#1f1a14] px-8 py-4 text-lg font-bold text-white shadow-[0_12px_28px_rgba(31,26,20,0.18)] transition hover:-translate-y-0.5 hover:bg-[#2a2018]">
                 Explore Collection
               </button>
             </Link>
-          </div>
-
-          <div className="mt-8 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-50 text-yellow-500">
-                <ShoppingBag className="h-6 w-6" />
-              </div>
-              <p className="text-4xl font-bold text-yellow-400">120+</p>
-              <p className="mt-2 text-lg text-zinc-600">Perfumes</p>
-            </div>
-
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-50 text-yellow-500">
-                <Users className="h-6 w-6" />
-              </div>
-              <p className="text-4xl font-bold text-yellow-400">8.5K</p>
-              <p className="mt-2 text-lg text-zinc-600">Customers</p>
-            </div>
-
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-50 text-yellow-500">
-                <Star className="h-6 w-6" />
-              </div>
-              <p className="text-4xl font-bold text-yellow-400">4.9</p>
-              <p className="mt-2 text-lg text-zinc-600">Rating</p>
-            </div>
-          </div>
+          </motion.div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92, rotate: -2 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.9, delay: 0.15 }}
-          className="relative"
-        >
-          <div className="absolute -inset-4 rounded-[36px] bg-yellow-100 blur-3xl" />
-
-          <div className="relative overflow-hidden rounded-[32px] border border-zinc-200 bg-white p-3 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-            <img
-              src="https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?q=80&w=1400&auto=format&fit=crop"
-              alt="Luxury Perfume"
-              className="h-[520px] w-full rounded-[24px] object-cover"
-            />
-
-            <div className="absolute bottom-8 left-8 right-8 rounded-[28px] border border-zinc-200 bg-white/90 p-6 backdrop-blur-xl shadow-lg">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-zinc-500">Featured Collection</p>
-                  <h3 className="mt-2 text-3xl font-bold text-black">
-                    Golden Essence
-                  </h3>
-                </div>
-
-                <div className="rounded-full bg-yellow-400 px-6 py-3 text-lg font-semibold text-black">
-                  New
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <div className="hidden lg:block" aria-hidden="true" />
       </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-transparent to-[#fffaf0]" aria-hidden="true" />
     </section>
   );
 }

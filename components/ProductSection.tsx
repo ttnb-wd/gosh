@@ -376,10 +376,10 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
 
   const getBadgeColor = (badge: string | null) => {
     if (!badge) return "";
-    if (badge === "Best Seller") return "bg-yellow-400 text-black";
-    if (badge === "New") return "bg-black text-white";
-    if (badge === "Limited") return "bg-yellow-600 text-white";
-    return "bg-zinc-800 text-white";
+    if (badge === "Best Seller") return "bg-[#d4af37] text-[#1f1a14]";
+    if (badge === "New") return "border border-[#6f1d1b]/20 bg-[#f8eeee] text-[#6f1d1b]";
+    if (badge === "Limited") return "bg-[#6f1d1b] text-white";
+    return "bg-[#1f1a14] text-white";
   };
 
   if (isAccessory) {
@@ -389,10 +389,10 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="group relative h-full min-w-0"
       >
-        <div className="group flex h-full min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-yellow-200/70 bg-white shadow-[0_16px_45px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300 hover:shadow-[0_24px_70px_rgba(234,179,8,0.15)] sm:min-h-[390px] sm:rounded-[28px]">
-          <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
+        <div className="group flex h-full min-h-[280px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[310px] sm:rounded-[28px]">
+          <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
 
-          <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 via-white to-zinc-100">
+          <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
             <Image
               src={imageSrc}
               alt={product.name}
@@ -412,26 +412,26 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             )}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
-            <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
+          <div className="flex min-w-0 flex-1 flex-col p-4">
+            <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
               {product.brand || "GOSH PERFUME"}
             </p>
-            <h3 className="mt-2 line-clamp-1 text-lg font-black leading-tight text-black sm:text-xl">
+            <h3 className="mt-2 line-clamp-1 text-lg font-black leading-tight text-[#1f1a14] sm:text-xl">
               {product.name}
             </h3>
-            <p className="mt-2 line-clamp-2 min-h-[44px] text-sm leading-6 text-zinc-600">
+            <p className="mt-2 line-clamp-2 min-h-[38px] text-sm leading-5 text-[#7a6a55]">
               {product.description || "Premium accessory for your fragrance routine."}
             </p>
 
             <div className="mt-auto space-y-3 pt-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="shrink-0 text-xl font-black text-yellow-600 sm:text-2xl">
+                <span className="shrink-0 text-xl font-black text-[#b88705] sm:text-2xl">
                   {formatMmk(product.price)}
                 </span>
                 <button
                   type="button"
                   onClick={handleQuickView}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
                   aria-label={`Quick view ${product.name}`}
                   title={`Quick view ${product.name}`}
                 >
@@ -443,7 +443,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
                 type="button"
                 onClick={handleAddToBag}
                 aria-label={`Add ${product.name} to bag`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-2.5 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
               >
                 <ShoppingBag className="h-4 w-4" aria-hidden="true" />
                 Add to Bag
@@ -461,12 +461,12 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="group relative h-full min-w-0"
     >
-      <div className="group flex h-full min-h-[500px] min-w-0 flex-col overflow-hidden rounded-[26px] border border-yellow-200/60 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300 hover:shadow-[0_26px_80px_rgba(234,179,8,0.16)] sm:min-h-[560px] sm:rounded-[32px]">
+      <div className="group flex h-full min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[26px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[410px] sm:rounded-[32px]">
         {/* Gold glow effect on hover */}
-        <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-yellow-400/0 via-yellow-400/0 to-yellow-400/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
+        <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
         
         {/* Image Container - Fixed Square Ratio */}
-        <div className="relative z-0 aspect-square w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-yellow-50 to-zinc-100">
+        <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
           <Image
             src={imageSrc}
             alt={product.name}
@@ -492,19 +492,19 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         </div>
 
         {/* Content - Flex Column with Fixed Heights */}
-        <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+        <div className="flex min-w-0 flex-1 flex-col p-4">
           {/* Brand - Truncate */}
-          <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
+          <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
             {product.brand || product.category || "GOSH PERFUME"}
           </p>
           
           {/* Product Name - Line Clamp 2 with Min Height */}
-          <h3 className="mt-2 line-clamp-2 min-h-[48px] text-lg font-black leading-tight text-black sm:min-h-[56px] sm:text-xl">
+          <h3 className="mt-2 line-clamp-2 min-h-[40px] text-lg font-black leading-tight text-[#1f1a14] sm:min-h-[42px] sm:text-xl">
             {product.name}
           </h3>
           
           {/* Description - Line Clamp 3 with Min Height */}
-          <p className="mt-3 line-clamp-3 min-h-[66px] text-sm leading-6 text-zinc-600 sm:min-h-[72px]">
+          <p className="mt-2 line-clamp-2 min-h-[36px] text-sm leading-5 text-[#7a6a55] sm:min-h-[38px]">
             {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
           </p>
           
@@ -535,16 +535,16 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
           )}
           
           {/* Price and Buttons - Push to Bottom with mt-auto */}
-          <div className="mt-auto space-y-3 pt-5">
+          <div className="mt-auto space-y-2.5 pt-3">
             <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
-              <span className="shrink-0 text-2xl font-black text-yellow-600">
+              <span className="shrink-0 text-2xl font-black text-[#b88705]">
                 {formatMmk(isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price))}
               </span>
               
               <button 
                 type="button"
                 onClick={handleQuickView}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-zinc-200 bg-white text-black transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
                 aria-label={`Quick view ${product.name}`}
                 title={`Quick view ${product.name}`}
               >
@@ -556,7 +556,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
               type="button"
               onClick={handleAddToBag}
               aria-label={`Add ${product.name} to bag`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-2.5 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
             >
               <ShoppingBag className="h-4 w-4" aria-hidden="true" />
               Add to Bag
@@ -1024,10 +1024,10 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         transition={{ duration: 0.6 }}
         className="mb-6 text-center sm:mb-8"
       >
-        <p className="text-xs uppercase tracking-[0.32em] text-yellow-600 sm:text-sm sm:tracking-[0.35em]">
+        <p className="text-xs uppercase tracking-[0.32em] text-[#6f1d1b] sm:text-sm sm:tracking-[0.35em]">
           Our Collection
         </p>
-        <h2 className="mt-3 text-3xl font-black text-black sm:mt-4 sm:text-5xl">
+        <h2 className="mt-3 text-3xl font-black text-[#1f1a14] sm:mt-4 sm:text-5xl">
           {getBrandTitle()}
         </h2>
       </motion.div>
@@ -1035,12 +1035,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       {/* Filter Bar with Product Count and Filters */}
       <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
-          <p className="text-sm font-semibold text-neutral-500">
+          <p className="text-sm font-semibold text-[#7a6a55]">
             {getProductCount()}
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[26px] border border-yellow-100 bg-white/85 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+        <div className="flex flex-col gap-3 rounded-[26px] border border-[#d4af37]/20 bg-white/85 p-3 shadow-[0_18px_45px_rgba(212,175,55,0.1)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           {/* Category Filter Pills */}
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:overflow-x-auto sm:pb-0">
             {["Perfumes", "Accessories"].map((category) => (
@@ -1050,8 +1050,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                 onClick={() => setSelectedCategory(category)}
                 className={`min-w-0 rounded-full px-3 py-2.5 text-sm font-bold transition-all duration-300 sm:shrink-0 sm:px-5 ${
                   selectedCategory === category
-                    ? "bg-yellow-400 text-black shadow-[0_10px_25px_rgba(234,179,8,0.28)]"
-                    : "border border-yellow-300 bg-white text-neutral-700 hover:bg-yellow-50"
+                    ? "bg-[linear-gradient(135deg,#d4af37,#f7d774)] text-[#1f1a14] shadow-[0_10px_25px_rgba(212,175,55,0.28)]"
+                    : "border border-[#d4af37]/35 bg-white text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
                 }`}
               >
                 <span className="block truncate whitespace-nowrap">{category}</span>
@@ -1073,7 +1073,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               onClick={() => {
                 setIsBrandMenuOpen((prev) => !prev);
               }}
-              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-yellow-300 bg-yellow-400 px-6 text-sm font-black text-black shadow-[0_16px_40px_rgba(234,179,8,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(234,179,8,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-yellow-300"
+              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
               aria-haspopup="listbox"
               aria-expanded={isBrandMenuOpen}
             >
@@ -1097,13 +1097,13 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 22 }}
                   transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute right-0 top-[calc(100%+10px)] z-[999] hidden w-[250px] overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-2 shadow-[0_18px_45px_rgba(0,0,0,0.14),0_0_24px_rgba(234,179,8,0.16)] backdrop-blur sm:block"
+                  className="absolute right-0 top-[calc(100%+10px)] z-[999] hidden w-[250px] overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur sm:block"
                 >
                   <div className="mb-1 flex justify-end">
                     <button
                       type="button"
                       onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-yellow-100 text-xs font-black text-black transition hover:bg-yellow-200"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
                       aria-label="Close brands menu"
                     >
                       ×
@@ -1127,8 +1127,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
                           selectedBrand === brand.id
-                            ? "bg-yellow-400 text-black shadow-[0_8px_18px_rgba(234,179,8,0.20)]"
-                            : "bg-neutral-50 text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
+                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
+                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
                         }`}
                       >
                         <span className="truncate">{brand.name || "Unbranded"}</span>

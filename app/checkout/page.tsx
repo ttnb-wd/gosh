@@ -574,7 +574,7 @@ function CheckoutPageContent() {
   }, [showPaymentModal]);
 
   return (
-    <main role="main" className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}

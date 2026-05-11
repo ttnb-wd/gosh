@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import BrandMarqueeSlider from "@/components/BrandMarqueeSlider";
 import CollectionPreview from "@/components/CollectionPreview";
 import ScentQuiz from "@/components/ScentQuiz";
 import IngredientShowcase from "@/components/IngredientShowcase";
@@ -47,12 +48,21 @@ export default function Page() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
       />
       <Hero />
+      <section
+        role="region"
+        aria-label="Brand gallery"
+        className="bg-[#fffaf0] pb-3 pt-5"
+      >
+        <div>
+          <BrandMarqueeSlider />
+        </div>
+      </section>
       <CollectionPreview />
       <ScentQuiz />
       <IngredientShowcase />

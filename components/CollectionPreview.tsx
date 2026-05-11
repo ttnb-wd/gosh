@@ -25,24 +25,26 @@ const collections = [
   }
 ];
 
+const cardStartOffset = [260, 0, -260];
+
 export default function CollectionPreview() {
   return (
-    <section role="region" aria-label="Collection preview" className="py-16 lg:py-24 bg-white">
+    <section role="region" aria-label="Collection preview" className="bg-white pb-8 pt-8 lg:pb-10 lg:pt-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: -80, scale: 0.96 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-9 text-center"
         >
-          <p className="text-sm uppercase tracking-[0.35em] text-yellow-600 mb-4">
+          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
             Explore Collections
           </p>
-          <h2 className="text-4xl font-black text-black sm:text-5xl">
+          <h2 className="text-4xl font-black text-[#1f1a14] sm:text-5xl">
             Luxury Collections
           </h2>
-          <p className="mt-4 text-lg text-zinc-600 max-w-2xl mx-auto">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-[#7a6a55]">
             Discover our curated collections of premium fragrances
           </p>
         </motion.div>
@@ -51,13 +53,24 @@ export default function CollectionPreview() {
           {collections.map((collection, index) => (
             <motion.div
               key={collection.title}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{
+                opacity: 0,
+                y: -120,
+                x: cardStartOffset[index],
+                scale: 0.92,
+              }}
+              whileInView={{ opacity: 1, y: 0, x: 0, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
+              transition={{
+                type: "spring",
+                stiffness: 92,
+                damping: 18,
+                mass: 0.9,
+                delay: 0.14 + index * 0.12,
+              }}
             >
               <Link href="/products">
-                <div className="group relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+                <div className="group relative overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-white shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
                   <div className="relative h-80 overflow-hidden">
                     <img
                       src={collection.image}

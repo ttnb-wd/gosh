@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function BrandStory() {
   return (
-    <section role="region" aria-label="Brand story" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
+    <section role="region" aria-label="Brand story" className="bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] pb-8 pt-8 lg:pb-10 lg:pt-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <motion.div
@@ -14,14 +14,14 @@ export default function BrandStory() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <p className="text-sm uppercase tracking-[0.35em] text-yellow-600 mb-4">
+            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
               Our Story
             </p>
-            <h2 className="text-4xl font-black text-black sm:text-5xl mb-6">
+            <h2 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-5xl">
               The Art of
-              <span className="block text-yellow-600">Perfumery</span>
+              <span className="block text-[#b88705]">Perfumery</span>
             </h2>
-            <div className="space-y-4 text-lg text-zinc-600 leading-relaxed">
+            <div className="space-y-4 text-lg leading-relaxed text-[#7a6a55]">
               <p>
                 Since 2018, GOSH PERFUME has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.
               </p>
@@ -41,8 +41,8 @@ export default function BrandStory() {
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="absolute -inset-4 rounded-3xl bg-yellow-400/20 blur-3xl" />
-            <div className="relative h-[500px] overflow-hidden rounded-3xl border border-zinc-200 shadow-2xl">
+            <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/50 blur-3xl" />
+            <div className="relative h-[500px] overflow-hidden rounded-3xl border border-[#d4af37]/25 shadow-2xl">
               <Image
                 src="https://images.unsplash.com/photo-1594735982593-1b0f3e4e5e5e?q=80&w=1200&auto=format&fit=crop"
                 alt="Perfume craftsmanship"

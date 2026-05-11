@@ -65,33 +65,33 @@ function NewsletterContent() {
   };
 
   return (
-    <section role="region" aria-label="Newsletter signup" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-50 to-white">
+    <section role="region" aria-label="Newsletter signup" className="bg-[#fffaf0] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative overflow-hidden rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-400 p-12 shadow-2xl"
+          className="relative overflow-hidden rounded-3xl border border-[#d4af37]/35 bg-[linear-gradient(135deg,#d4af37,#f7d774_55%,#d4af37)] p-12 shadow-[0_24px_70px_rgba(212,175,55,0.25),0_8px_24px_rgba(111,29,27,0.1)]"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.3),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.36),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.12),transparent_42%)]" />
           
           <div className="relative mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-black/10 text-black">
+            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6f1d1b]/10 text-[#1f1a14]">
               <Gift className="h-8 w-8" />
             </div>
             
-            <h2 className="text-4xl font-black text-black sm:text-5xl mb-4">
+            <h2 className="mb-4 text-4xl font-black text-[#1f1a14] sm:text-5xl">
               Join Our VIP Club
             </h2>
-            <p className="text-lg text-black/80 mb-8">
+            <p className="mb-8 text-lg text-[#1f1a14]/80">
               Get exclusive access to new releases, special offers, and perfume tips. Plus, enjoy 15% off your first order!
             </p>
 
             <form onSubmit={handleSubmit} className="mx-auto max-w-md">
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="relative flex-1">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a6a55]" />
                   <input
                     id="vip-email"
                     name="vip_email"
@@ -102,13 +102,13 @@ function NewsletterContent() {
                     required
                     autoComplete="email"
                     aria-label="Email address for VIP club signup"
-                    className="w-full rounded-full border-2 border-white/50 bg-white/90 py-4 pl-12 pr-4 text-black placeholder-zinc-400 backdrop-blur-sm transition focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                    className="w-full rounded-full border-2 border-white/60 bg-white/95 py-4 pl-12 pr-4 text-[#1f1a14] placeholder-[#7a6a55]/70 backdrop-blur-sm transition focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-full bg-black px-8 py-4 font-semibold text-white transition hover:bg-black/90 hover:scale-105"
+                  className="rounded-full bg-[#1f1a14] px-8 py-4 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#2a2018]"
                 >
                   {submitting ? "Subscribing..." : "Subscribe"}
                 </button>
@@ -127,14 +127,14 @@ function NewsletterContent() {
               <p
                 role="alert"
                 className={`mt-4 text-sm font-semibold ${
-                  status.type === "success" ? "text-black" : "text-red-800"
+                  status.type === "success" ? "text-[#1f1a14]" : "text-red-800"
                 }`}
               >
                 {status.text}
               </p>
             )}
 
-            <p className="mt-4 text-sm text-black/70">
+            <p className="mt-4 text-sm text-[#1f1a14]/70">
               No spam, unsubscribe anytime. Your privacy is protected.
             </p>
           </div>

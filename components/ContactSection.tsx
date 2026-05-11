@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Phone, Mail, MapPin, Clock, Send, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Mail, MapPin, Phone, Send, ShieldCheck, Star } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { policies } from "@/lib/policies";
@@ -23,6 +23,13 @@ function ContactSectionContent() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [commentForm, setCommentForm] = useState({
+    name: "",
+    rating: 5,
+    comment: "",
+  });
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentStatus, setCommentStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
@@ -52,6 +59,17 @@ function ContactSectionContent() {
         return newErrors;
       });
     }
+  };
+
+  const handleCommentInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setCommentForm((prev) => ({
+      ...prev,
+      [name]: name === "rating" ? Number(value) : value,
+    }));
+    setCommentStatus(null);
   };
 
   const validateForm = (): boolean => {
@@ -135,6 +153,60 @@ function ContactSectionContent() {
     }
   };
 
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCommentStatus(null);
+
+    const cleanName = commentForm.name.trim();
+    const cleanComment = commentForm.comment.trim();
+
+    if (!cleanName) {
+      setCommentStatus({ type: "error", text: "Name is required." });
+      return;
+    }
+
+    if (!cleanComment) {
+      setCommentStatus({ type: "error", text: "Comment is required." });
+      return;
+    }
+
+    if (commentForm.rating < 1 || commentForm.rating > 5) {
+      setCommentStatus({ type: "error", text: "Rating must be between 1 and 5." });
+      return;
+    }
+
+    try {
+      setCommentSubmitting(true);
+      const response = await fetch("/api/testimonials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: sanitizeInput(cleanName),
+          rating: commentForm.rating,
+          comment: sanitizeInput(cleanComment),
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error || "Could not submit your comment.");
+      }
+
+      setCommentForm({
+        name: "",
+        rating: 5,
+        comment: "",
+      });
+      setCommentStatus({ type: "success", text: "Thank you for your comment!" });
+    } catch (error) {
+      console.error("Testimonial comment submit error:", error);
+      setCommentStatus({ type: "error", text: "Could not submit your comment. Please try again." });
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
   const cardVariants = {
     hidden: { opacity: 0, y: 30, scale: 0.95 },
     visible: { opacity: 1, y: 0, scale: 1 }
@@ -150,8 +222,8 @@ function ContactSectionContent() {
   };
 
   return (
-    <section role="region" aria-label="Contact form" className="relative overflow-hidden bg-white py-8 lg:py-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_50%)]" />
+    <section role="region" aria-label="Contact form" className="relative overflow-hidden bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] py-8 lg:py-12">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_50%)]" />
       
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -161,14 +233,14 @@ function ContactSectionContent() {
           transition={{ duration: 0.8 }}
           className="text-center mb-10"
         >
-          <p className="text-sm uppercase tracking-[0.35em] text-yellow-600 mb-4">
+          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
             Get In Touch
           </p>
-          <h1 className="text-3xl font-black text-black sm:text-5xl lg:text-6xl mb-6">
+          <h1 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-5xl lg:text-6xl">
             Contact
-            <span className="block text-yellow-600">Our Team</span>
+            <span className="block text-[#b88705]">Our Team</span>
           </h1>
-          <p className="mx-auto max-w-2xl text-lg text-zinc-600">
+          <p className="mx-auto max-w-2xl text-lg text-[#7a6a55]">
             Experience luxury perfumes crafted with passion. Reach out to discover your perfect scent or learn more about our exclusive collections.
           </p>
         </motion.div>
@@ -184,7 +256,7 @@ function ContactSectionContent() {
           <motion.div 
             variants={cardVariants} 
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="space-y-6"
+            className="flex h-full flex-col gap-4"
           >
             <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
               <div className="mb-6">
@@ -250,7 +322,7 @@ function ContactSectionContent() {
             <motion.div 
               variants={cardVariants}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-50 to-yellow-100 p-8"
+              className="rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-50 to-yellow-100 p-6"
             >
               <h3 className="text-xl font-bold text-black mb-4">Why Choose {storeName}?</h3>
               <ul className="space-y-3 text-zinc-700">
@@ -271,6 +343,35 @@ function ContactSectionContent() {
                   Personalized scent matching
                 </li>
               </ul>
+            </motion.div>
+
+            <motion.div
+              variants={cardVariants}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="mt-auto rounded-3xl border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]"
+            >
+              <div className="flex gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-300 bg-yellow-100 text-yellow-700">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-neutral-950">Shop Policies</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                    Review our Myanmar shop policies for privacy, orders, refunds, and delivery.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {policies.map((policy) => (
+                  <Link
+                    key={policy.href}
+                    href={policy.href}
+                    className="rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
+                  >
+                    {policy.title}
+                  </Link>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
 
@@ -399,40 +500,98 @@ function ContactSectionContent() {
                 </motion.button>
               </form>
             </div>
-          </motion.div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7 }}
-          className="mt-8 rounded-[28px] border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.06)] sm:p-6"
-        >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-300 bg-yellow-100 text-yellow-700">
-                <ShieldCheck className="h-5 w-5" />
+            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]">
+              <div className="mb-4">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">Share Your Experience</p>
+                <h2 className="mt-1 text-xl font-bold text-black">Leave a Comment</h2>
               </div>
-              <div>
-                <h2 className="text-lg font-black text-neutral-950">Shop Policies</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-600">
-                  Review our Myanmar shop policies for privacy, orders, refunds, and delivery before placing an order or sending an inquiry.
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[420px]">
-              {policies.map((policy) => (
-                <Link
-                  key={policy.href}
-                  href={policy.href}
-                  className="rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
+
+              <form onSubmit={handleCommentSubmit} className="space-y-4">
+                {commentStatus && (
+                  <div
+                    role="alert"
+                    className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
+                      commentStatus.type === "success"
+                        ? "border-yellow-200 bg-yellow-50 text-black"
+                        : "border-red-200 bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {commentStatus.type === "success" ? (
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                    ) : (
+                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                    )}
+                    <p>{commentStatus.text}</p>
+                  </div>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+                  <div>
+                    <label htmlFor="testimonial-name" className="mb-2 block text-sm font-semibold text-black">
+                      Name *
+                    </label>
+                    <input
+                      id="testimonial-name"
+                      name="name"
+                      value={commentForm.name}
+                      onChange={handleCommentInputChange}
+                      required
+                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                      placeholder="Enter your name"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="testimonial-rating" className="mb-2 block text-sm font-semibold text-black">
+                      Rating
+                    </label>
+                    <select
+                      id="testimonial-rating"
+                      name="rating"
+                      value={commentForm.rating}
+                      onChange={handleCommentInputChange}
+                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    >
+                      {[5, 4, 3, 2, 1].map((value) => (
+                        <option key={value} value={value}>
+                          {value} star{value === 1 ? "" : "s"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="testimonial-comment" className="mb-2 block text-sm font-semibold text-black">
+                    Comment *
+                  </label>
+                  <textarea
+                    id="testimonial-comment"
+                    name="comment"
+                    value={commentForm.comment}
+                    onChange={handleCommentInputChange}
+                    required
+                    rows={3}
+                    className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    placeholder="Tell us about your GOSH PERFUME experience"
+                  />
+                </div>
+
+                <motion.button
+                  type="submit"
+                  disabled={commentSubmitting}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
-                  {policy.title}
-                </Link>
-              ))}
+                  <Star className="h-4 w-4 transition group-hover:scale-110" />
+                  {commentSubmitting ? "Submitting..." : "Submit Comment"}
+                </motion.button>
+              </form>
             </div>
-          </div>
+          </motion.div>
+
         </motion.div>
       </div>
     </section>

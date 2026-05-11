@@ -155,6 +155,21 @@ CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
   CONSTRAINT newsletter_subscribers_email_not_blank CHECK (length(trim(email)) > 3)
 );
 
+-- Testimonials Table
+CREATE TABLE IF NOT EXISTS public.testimonials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  role TEXT,
+  comment TEXT NOT NULL,
+  rating INTEGER NOT NULL DEFAULT 5 CHECK (rating BETWEEN 1 AND 5),
+  avatar_url TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  CONSTRAINT testimonials_name_not_blank CHECK (length(trim(name)) >= 2),
+  CONSTRAINT testimonials_comment_not_blank CHECK (length(trim(comment)) >= 3)
+);
+
 -- Admin Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -208,6 +223,8 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_mes
 CREATE INDEX IF NOT EXISTS idx_contact_messages_email ON public.contact_messages(email);
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_status ON public.newsletter_subscribers(status);
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at ON public.newsletter_subscribers(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_testimonials_public ON public.testimonials(is_active, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_testimonials_created_at ON public.testimonials(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at ON public.admin_audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_entity ON public.admin_audit_logs(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_actor_id ON public.admin_audit_logs(actor_id);
@@ -342,6 +359,12 @@ CREATE TRIGGER update_newsletter_subscribers_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_testimonials_updated_at ON public.testimonials;
+CREATE TRIGGER update_testimonials_updated_at
+  BEFORE UPDATE ON public.testimonials
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -368,6 +391,7 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
 
@@ -385,6 +409,9 @@ GRANT INSERT ON public.contact_messages TO authenticated;
 GRANT SELECT, UPDATE, DELETE ON public.contact_messages TO authenticated;
 REVOKE INSERT, UPDATE ON public.newsletter_subscribers FROM anon;
 GRANT SELECT, UPDATE, DELETE ON public.newsletter_subscribers TO authenticated;
+REVOKE UPDATE, DELETE ON public.testimonials FROM anon;
+GRANT SELECT, INSERT ON public.testimonials TO anon, authenticated;
+GRANT UPDATE, DELETE ON public.testimonials TO authenticated;
 
 -- Profiles Policies
 DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
@@ -649,6 +676,38 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.subscribe_newsletter(TEXT, TEXT) TO anon, authenticated;
+
+-- Testimonials Policies
+DROP POLICY IF EXISTS "testimonials_public_select_active" ON public.testimonials;
+CREATE POLICY "testimonials_public_select_active"
+  ON public.testimonials FOR SELECT
+  TO public
+  USING (is_active = true);
+
+DROP POLICY IF EXISTS "testimonials_public_insert" ON public.testimonials;
+CREATE POLICY "testimonials_public_insert"
+  ON public.testimonials FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (is_active = true);
+
+DROP POLICY IF EXISTS "testimonials_admin_select_all" ON public.testimonials;
+CREATE POLICY "testimonials_admin_select_all"
+  ON public.testimonials FOR SELECT
+  TO authenticated
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "testimonials_admin_update" ON public.testimonials;
+CREATE POLICY "testimonials_admin_update"
+  ON public.testimonials FOR UPDATE
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "testimonials_admin_delete" ON public.testimonials;
+CREATE POLICY "testimonials_admin_delete"
+  ON public.testimonials FOR DELETE
+  TO authenticated
+  USING (public.is_admin());
 
 DROP FUNCTION IF EXISTS public.place_order(
   TEXT,

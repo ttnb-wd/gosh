@@ -1,35 +1,53 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, UserCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
-const testimonials = [
-  {
-    name: "Sarah Johnson",
-    role: "Fashion Designer",
-    content: "GOSH perfumes are absolutely divine! The quality is unmatched and the scents last all day. My signature scent gets compliments everywhere I go.",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop"
-  },
-  {
-    name: "Michael Chen",
-    role: "Business Executive",
-    content: "I've tried many luxury brands, but GOSH stands out. The attention to detail and the sophisticated fragrances make it my go-to choice.",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop"
-  },
-  {
-    name: "Emma Williams",
-    role: "Lifestyle Blogger",
-    content: "The perfect blend of elegance and modernity. GOSH perfumes have become an essential part of my daily routine. Highly recommended!",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop"
-  }
-];
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string | null;
+  comment: string;
+  rating: number;
+  avatar_url: string | null;
+}
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 export default function Testimonials() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+
+  const supabase = useMemo(() => createSupabaseClient(), []);
+
+  useEffect(() => {
+    const loadTestimonials = async () => {
+      const { data, error: fetchError } = await supabase
+        .from("testimonials")
+        .select("id, name, role, comment, rating, avatar_url")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (fetchError) {
+        console.error("Testimonials fetch error:", fetchError);
+        return;
+      }
+
+      setTestimonials((data || []) as Testimonial[]);
+    };
+
+    loadTestimonials();
+  }, [supabase]);
+
   return (
-    <section role="region" aria-label="Customer testimonials" className="py-16 lg:py-24 bg-white">
+    <section role="region" aria-label="Customer testimonials" className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -38,13 +56,13 @@ export default function Testimonials() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <p className="text-sm uppercase tracking-[0.35em] text-yellow-600 mb-4">
+          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
             Testimonials
           </p>
-          <h2 className="text-4xl font-black text-black sm:text-5xl">
+          <h2 className="text-4xl font-black text-[#1f1a14] sm:text-5xl">
             What Our Customers Say
           </h2>
-          <p className="mt-4 text-lg text-zinc-600 max-w-2xl mx-auto">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-[#7a6a55]">
             Join thousands of satisfied customers who trust GOSH
           </p>
         </motion.div>
@@ -52,37 +70,44 @@ export default function Testimonials() {
         <div className="grid gap-8 md:grid-cols-3">
           {testimonials.map((testimonial, index) => (
             <motion.div
-              key={testimonial.name}
+              key={testimonial.id}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
               className="relative"
             >
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-lg transition-all duration-500 hover:shadow-2xl">
+              <div className="rounded-3xl border border-[#d4af37]/20 bg-white p-8 shadow-lg transition-all duration-500 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
                 <div className="mb-4 flex gap-1">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star key={i} className="h-5 w-5 fill-[#d4af37] text-[#d4af37]" />
                   ))}
                 </div>
                 
-                <p className="mb-6 text-zinc-600 leading-relaxed">&quot;{testimonial.content}&quot;</p>
+                <p className="mb-6 leading-relaxed text-[#7a6a55]">&quot;{testimonial.comment}&quot;</p>
                 
                 <div className="flex items-center gap-4">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
+                  {testimonial.avatar_url ? (
+                    <img
+                      src={testimonial.avatar_url}
+                      alt={testimonial.name}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#fff7e6] to-[#f8eeee] text-sm font-black text-[#6f1d1b]">
+                      {getInitials(testimonial.name) || <UserCircle className="h-7 w-7" />}
+                    </div>
+                  )}
                   <div>
-                    <h4 className="font-bold text-black">{testimonial.name}</h4>
-                    <p className="text-sm text-zinc-500">{testimonial.role}</p>
+                    <h4 className="font-bold text-[#1f1a14]">{testimonial.name}</h4>
+                    {testimonial.role && <p className="text-sm text-[#7a6a55]">{testimonial.role}</p>}
                   </div>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+
       </div>
     </section>
   );

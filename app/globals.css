@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #ffffff;
+  --background: #fffaf0;
+  --foreground: #1f1a14;
+  --gosh-ivory: #fffaf0;
+  --gosh-white: #ffffff;
+  --gosh-cream: #fff7e6;
+  --gosh-gold: #d4af37;
+  --gosh-gold-soft: #f7e7b3;
+  --gosh-burgundy: #6f1d1b;
+  --gosh-burgundy-soft: #f8eeee;
+  --gosh-text: #1f1a14;
+  --gosh-muted: #7a6a55;
   --gosh-gold-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M6 3.8 21.8 14 15.2 15.3 18.9 23.1 15.2 24.8 11.6 17.1 7.1 21.8Z' fill='%23facc15' stroke='%23000' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M8.2 6.9 17.3 12.8 12.8 13.7 15.6 19.8 14.6 20.3 11.7 14.1 8.6 17.3Z' fill='%23fff8db' opacity='.75'/%3E%3C/svg%3E") 6 4, pointer;
 }
 
@@ -196,6 +205,52 @@ select:disabled {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@keyframes brand-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.brand-marquee-track {
+  animation: brand-marquee 35s linear infinite;
+}
+
+.brand-marquee-wrapper:hover .brand-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes hero-bottle-shine {
+  0% {
+    transform: translateX(0) rotate(12deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.55;
+  }
+  48% {
+    transform: translateX(430%) rotate(12deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(430%) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+.hero-bottle-shine {
+  animation: hero-bottle-shine 5.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-marquee-track,
+  .hero-bottle-shine {
+    animation: none;
+  }
 }
 
 .admin-premium-type {

@@ -14,6 +14,7 @@ type EmailPayload = {
 
 type OrderEmailItem = {
   product_name: string;
+  
   selected_size?: string | null;
   quantity: number;
   price: number;

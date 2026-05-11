@@ -11,7 +11,7 @@ const stats = [
 
 export default function LuxuryStats() {
   return (
-    <section role="region" aria-label="Luxury statistics" className="py-16 lg:py-24 bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-400">
+    <section role="region" aria-label="Luxury statistics" className="bg-[linear-gradient(135deg,#d4af37_0%,#f7d774_52%,#d4af37_100%)] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
@@ -24,9 +24,9 @@ export default function LuxuryStats() {
               className="text-center"
             >
               <div className="mb-2">
-                <span className="text-6xl font-black text-black">{stat.value}</span>
+                <span className="text-6xl font-black text-[#1f1a14]">{stat.value}</span>
               </div>
-              <p className="text-lg font-semibold text-black/80">{stat.label}</p>
+              <p className="text-lg font-semibold text-[#1f1a14]/80">{stat.label}</p>
             </motion.div>
           ))}
         </div>

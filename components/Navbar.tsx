@@ -101,7 +101,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
   
   return (
     <>
-    <header role="banner" className="fixed inset-x-0 top-0 z-[1000] border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
+    <header role="banner" className="fixed inset-x-0 top-0 z-[1000] bg-white/90 backdrop-blur-xl">
       <style jsx>{`
         @keyframes navbar-drop {
           0% {
@@ -428,7 +428,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
         </div>
       )}
     </header>
-    <div aria-hidden="true" className="h-[89px] sm:h-[113px]" />
+    <div aria-hidden="true" className="h-[89px] bg-[#fef5e7] sm:h-[113px]" />
     </>
   );
 }

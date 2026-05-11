@@ -104,9 +104,9 @@ const toBreakdown = <T,>(items: T[], getLabel: (item: T) => string | null | unde
 
 function DashboardPanel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
+    <section className="min-w-0 rounded-2xl border border-[#d4af37]/20 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-black leading-none text-black">{title}</h2>
+        <h2 className="text-xl font-black leading-none text-[#1f1a14]">{title}</h2>
         {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
@@ -118,7 +118,7 @@ function BreakdownList({ items, emptyText }: { items: BreakdownItem[]; emptyText
   const maxValue = Math.max(...items.map((item) => item.value), 1);
 
   if (items.length === 0) {
-    return <p className="text-sm font-semibold text-zinc-500">{emptyText}</p>;
+    return <p className="text-sm font-semibold text-[#7a6a55]">{emptyText}</p>;
   }
 
   return (
@@ -126,12 +126,12 @@ function BreakdownList({ items, emptyText }: { items: BreakdownItem[]; emptyText
       {items.slice(0, 6).map((item) => (
         <div key={item.label}>
           <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span className="truncate font-bold text-zinc-700">{item.label}</span>
-            <span className="font-black text-black">{item.value}</span>
+            <span className="truncate font-bold text-[#7a6a55]">{item.label}</span>
+            <span className="font-black text-[#1f1a14]">{item.value}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
+          <div className="h-2 overflow-hidden rounded-full bg-[#fff7e6]">
             <div
-              className="h-full rounded-full bg-yellow-400"
+              className="h-full rounded-full bg-[linear-gradient(135deg,#d4af37,#f7d774)]"
               style={{ width: `${Math.max((item.value / maxValue) * 100, 8)}%` }}
             />
           </div>
@@ -145,7 +145,7 @@ function ActionLink({ href, icon: Icon, label }: { href: string; icon: LucideIco
   return (
     <Link
       href={href}
-      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-black transition hover:border-yellow-300 hover:bg-yellow-50"
+      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[#d4af37]/25 bg-white px-4 py-2 text-sm font-black text-[#1f1a14] transition hover:border-[#d4af37] hover:bg-[#fff7e6]"
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -169,14 +169,14 @@ function OperationalFlag({
   tone?: "neutral" | "warning" | "danger";
 }) {
   const styles = {
-    neutral: "border-zinc-100 hover:border-zinc-300",
-    warning: "border-yellow-200 bg-yellow-50/40 hover:border-yellow-400",
+    neutral: "border-[#d4af37]/15 bg-white hover:border-[#d4af37]/35",
+    warning: "border-[#d4af37]/30 bg-[#fff7e6]/70 hover:border-[#d4af37]",
     danger: "border-red-200 bg-red-50/40 hover:border-red-300",
   };
 
   const iconStyles = {
-    neutral: "bg-zinc-100 text-zinc-700",
-    warning: "bg-yellow-100 text-yellow-700",
+    neutral: "bg-[#fff7e6] text-[#7a6a55]",
+    warning: "bg-[#f7e7b3] text-[#6f1d1b]",
     danger: "bg-red-100 text-red-700",
   };
 
@@ -190,14 +190,14 @@ function OperationalFlag({
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="font-black text-black">{title}</p>
-          <p className="mt-1 text-xs font-semibold leading-snug text-zinc-500 sm:truncate">{detail}</p>
+          <p className="font-black text-[#1f1a14]">{title}</p>
+          <p className="mt-1 text-xs font-semibold leading-snug text-[#7a6a55] sm:truncate">{detail}</p>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
-        <span className="text-xl font-black text-black">{value}</span>
-        <ArrowRight className="h-4 w-4 text-zinc-400 transition group-hover:translate-x-1 group-hover:text-yellow-700" />
+        <span className="text-xl font-black text-[#1f1a14]">{value}</span>
+        <ArrowRight className="h-4 w-4 text-[#7a6a55] transition group-hover:translate-x-1 group-hover:text-[#6f1d1b]" />
       </div>
     </Link>
   );
@@ -368,11 +368,11 @@ function AdminDashboardContent() {
       </div>
 
       <main role="main" className="overflow-hidden p-4 sm:p-6">
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#d4af37]/20 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-600">Live Summary</p>
-            <h2 className="mt-1 text-xl font-black text-black">Today&apos;s Store Snapshot</h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">Live Summary</p>
+            <h2 className="mt-1 text-xl font-black text-[#1f1a14]">Today&apos;s Store Snapshot</h2>
+            <p className="mt-1 text-sm text-[#7a6a55]">
               Orders, payment work, product health, customers, and inbox items from Supabase.
             </p>
           </div>
@@ -381,7 +381,7 @@ function AdminDashboardContent() {
             type="button"
             onClick={loadDashboard}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-3 text-sm font-black text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.20)] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh Dashboard
@@ -411,7 +411,7 @@ function AdminDashboardContent() {
         <div className="mt-6 grid gap-6">
           <DashboardPanel
             title="Quick Actions"
-            action={<BarChart3 className="h-5 w-5 text-yellow-600" />}
+            action={<BarChart3 className="h-5 w-5 text-[#d4af37]" />}
           >
             <div className="grid gap-3">
               <ActionLink href="/admin/orders" icon={ShoppingBag} label="Manage Orders" />
@@ -449,10 +449,10 @@ function AdminDashboardContent() {
             ) : (
               <div className="space-y-3">
                 {dashboardData.lowStockList.map((product) => (
-                  <div key={product.id} className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border border-zinc-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={product.id} className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border border-[#d4af37]/15 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate font-black text-black">{product.name}</p>
-                      <p className="text-sm font-semibold text-zinc-500">
+                      <p className="truncate font-black text-[#1f1a14]">{product.name}</p>
+                      <p className="text-sm font-semibold text-[#7a6a55]">
                         {[product.brand, product.category].filter(Boolean).join(" · ") || "No category"}
                       </p>
                     </div>

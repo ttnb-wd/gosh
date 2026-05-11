@@ -74,7 +74,7 @@ export default function AboutPage() {
   return (
     <motion.main 
       role="main"
-      className="min-h-screen bg-white text-black"
+      className="min-h-screen bg-[#fffaf0] text-[#1f1a14]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -82,8 +82,8 @@ export default function AboutPage() {
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       
       {/* Hero Section */}
-      <section role="region" aria-label="About us hero" className="relative overflow-hidden bg-white py-8 lg:py-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_50%)]" />
+      <section role="region" aria-label="About us hero" className="relative overflow-hidden bg-[linear-gradient(135deg,#fffaf0_0%,#f8eeee_52%,#ffffff_100%)] py-8 lg:py-12">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_50%)]" />
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -93,14 +93,14 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <p className="text-sm uppercase tracking-[0.35em] text-yellow-600 mb-4">
+            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
               Our Story
             </p>
-            <h1 className="text-4xl font-black text-black sm:text-6xl lg:text-7xl mb-6">
+            <h1 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-6xl lg:text-7xl">
               About
-              <span className="block text-yellow-600">GOSH PERFUME</span>
+              <span className="block text-[#b88705]">GOSH PERFUME</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-zinc-600 leading-relaxed">
+            <p className="mx-auto max-w-3xl text-xl leading-relaxed text-[#7a6a55]">
               Where luxury meets artistry. We create exceptional fragrances that tell stories, 
               evoke emotions, and define moments. Each bottle represents our commitment to 
               excellence and our passion for the art of perfumery.
@@ -120,11 +120,11 @@ export default function AboutPage() {
               variants={fadeInUp}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-3xl font-black text-black sm:text-4xl mb-6">
+              <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
                 Our Journey
-                <span className="block text-yellow-600">Since 2018</span>
+                <span className="block text-[#b88705]">Since 2018</span>
               </h2>
-              <div className="space-y-4 text-zinc-600 leading-relaxed">
+              <div className="space-y-4 leading-relaxed text-[#7a6a55]">
                 <p>
                   Founded in the heart of Beverly Hills, GOSH PERFUME began as a dream to create
                   fragrances that transcend the ordinary. Our founder, inspired by travels across
@@ -152,16 +152,16 @@ export default function AboutPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="absolute -inset-4 rounded-3xl bg-yellow-400/10 blur-2xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
+              <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/45 blur-2xl" />
+              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/25 bg-white p-8 shadow-[0_20px_80px_rgba(31,26,20,0.08)]">
                 <img
                   src="https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=1400&auto=format&fit=crop"
                   alt="Luxury perfume craftsmanship"
                   className="h-80 w-full rounded-2xl object-cover"
                 />
                 <div className="mt-6 text-center">
-                  <p className="text-sm font-medium text-yellow-600">Handcrafted Excellence</p>
-                  <p className="mt-2 text-zinc-600">Every fragrance tells a unique story</p>
+                  <p className="text-sm font-medium text-[#6f1d1b]">Handcrafted Excellence</p>
+                  <p className="mt-2 text-[#7a6a55]">Every fragrance tells a unique story</p>
                 </div>
               </div>
             </motion.div>
@@ -170,7 +170,7 @@ export default function AboutPage() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="bg-gradient-to-br from-yellow-50 to-yellow-100 py-10 lg:py-16">
+      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] py-10 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
@@ -180,11 +180,11 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl font-black text-black sm:text-4xl mb-6">
+            <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
               Why Choose
-              <span className="block text-yellow-600">GOSH PERFUME</span>
+              <span className="block text-[#b88705]">GOSH PERFUME</span>
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-zinc-600">
+            <p className="mx-auto max-w-2xl text-lg text-[#7a6a55]">
               We don&apos;t just create perfumes; we craft experiences that become part of your identity.
             </p>
           </motion.div>
@@ -201,13 +201,13 @@ export default function AboutPage() {
                 key={index}
                 variants={fadeInUp}
                 transition={{ duration: 0.6 }}
-                className="rounded-3xl border border-yellow-400/30 bg-white p-6 shadow-[0_20px_80px_rgba(0,0,0,0.08)] text-center"
+                className="rounded-3xl border border-[#d4af37]/25 bg-white p-6 text-center shadow-[0_18px_45px_rgba(212,175,55,0.12),0_6px_18px_rgba(111,29,27,0.06)]"
               >
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d4af37]/30 bg-[#fff7e6] text-[#d4af37]">
                   {value.icon}
                 </div>
-                <h3 className="mb-3 text-lg font-bold text-black">{value.title}</h3>
-                <p className="text-sm text-zinc-600 leading-relaxed">{value.description}</p>
+                <h3 className="mb-3 text-lg font-bold text-[#1f1a14]">{value.title}</h3>
+                <p className="text-sm leading-relaxed text-[#7a6a55]">{value.description}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -215,8 +215,8 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-white py-10 lg:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(250,204,21,0.08),transparent_50%)]" />
+      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] py-10 lg:py-16">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.08),transparent_50%)]" />
         
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -227,11 +227,11 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h2 className="text-3xl font-black text-black sm:text-4xl mb-6">
+            <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
               Ready to Discover
-              <span className="block text-yellow-600">Your Signature Scent?</span>
+              <span className="block text-[#b88705]">Your Signature Scent?</span>
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-zinc-600 mb-8">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-[#7a6a55]">
               Explore our exclusive collection of luxury fragrances or visit our boutique 
               for a personalized fragrance consultation.
             </p>
@@ -241,7 +241,7 @@ export default function AboutPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group inline-flex items-center gap-2 rounded-full bg-yellow-400 px-8 py-4 font-semibold text-black transition hover:bg-yellow-300"
+                  className="group inline-flex items-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-8 py-4 font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.22)] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
                 >
                   Explore Collection
                   <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
@@ -252,7 +252,7 @@ export default function AboutPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-8 py-4 font-semibold text-black transition hover:border-yellow-300 hover:bg-yellow-50"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-8 py-4 font-semibold text-[#1f1a14] transition hover:border-[#6f1d1b]/25 hover:bg-[#fff7e6]"
                 >
                   Book Consultation
                 </motion.button>

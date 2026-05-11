@@ -34,7 +34,7 @@ export default function ContactPage() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-white text-black">
+    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       <ContactSection />
       <Footer />

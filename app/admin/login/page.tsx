@@ -138,33 +138,33 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main role="main" className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-yellow-50/30 px-4 py-12">
+    <main role="main" className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.16),transparent_34%),linear-gradient(135deg,#fffaf0_0%,#ffffff_52%,#fff7e6_100%)] px-4 py-12">
       {/* Background decoration */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-yellow-400/10 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-yellow-400/10 blur-3xl" />
+        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-[#f7e7b3]/40 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-[#f8eeee]/70 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Logo/Brand */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-block">
-            <h1 className="text-4xl font-black text-black">
-              GOSH <span className="text-yellow-600">ADMIN</span>
+            <h1 className="text-4xl font-black text-[#1f1a14]">
+              GOSH <span className="text-[#b88705]">ADMIN</span>
             </h1>
-            <p className="mt-2 text-sm text-zinc-600">Perfume Dashboard</p>
+            <p className="mt-2 text-sm text-[#7a6a55]">Perfume Dashboard</p>
           </Link>
         </div>
 
         {/* Login Card */}
-        <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-white shadow-2xl">
           {/* Header */}
-          <div className="border-b border-zinc-100 bg-gradient-to-br from-yellow-50 to-white p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-400 shadow-lg shadow-yellow-400/30">
-              <Lock className="h-8 w-8 text-black" />
+          <div className="border-b border-[#d4af37]/15 bg-gradient-to-br from-[#fff7e6] to-white p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#d4af37,#f7d774)] shadow-lg shadow-[#d4af37]/30">
+              <Lock className="h-8 w-8 text-[#1f1a14]" />
             </div>
-            <h2 className="text-2xl font-bold text-black">Admin Login</h2>
-            <p className="mt-2 text-sm text-zinc-600">Sign in to access the dashboard</p>
+            <h2 className="text-2xl font-bold text-[#1f1a14]">Admin Login</h2>
+            <p className="mt-2 text-sm text-[#7a6a55]">Sign in to access the dashboard</p>
           </div>
 
           {/* Form */}
@@ -178,11 +178,11 @@ export default function AdminLoginPage() {
 
             {/* Email Field */}
             <div className="mb-6">
-              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-zinc-700">
+              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#7a6a55]">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a6a55]/70" />
                 <input
                   id="email"
                   name="email"
@@ -200,7 +200,7 @@ export default function AdminLoginPage() {
                   }}
                   required
                   placeholder="admin@goshperfume.com"
-                  className={`w-full rounded-xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white py-3 pl-12 pr-4 text-sm font-medium text-black transition focus:outline-none focus:ring-4`}
+                  className={`w-full rounded-xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-[#d4af37]/25 focus:border-[#d4af37] focus:ring-[#f7e7b3]/70'} bg-white py-3 pl-12 pr-4 text-sm font-medium text-[#1f1a14] transition focus:outline-none focus:ring-4`}
                   aria-invalid={!!fieldErrors.email}
                   aria-describedby={fieldErrors.email ? "email-error" : undefined}
                 />
@@ -212,11 +212,11 @@ export default function AdminLoginPage() {
 
             {/* Password Field */}
             <div className="mb-6">
-              <label htmlFor="password" className="mb-2 block text-sm font-semibold text-zinc-700">
+              <label htmlFor="password" className="mb-2 block text-sm font-semibold text-[#7a6a55]">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a6a55]/70" />
                 <input
                   id="password"
                   name="password"
@@ -234,14 +234,14 @@ export default function AdminLoginPage() {
                   }}
                   required
                   placeholder="Enter your password"
-                  className={`w-full rounded-xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white py-3 pl-12 pr-12 text-sm font-medium text-black transition focus:outline-none focus:ring-4`}
+                  className={`w-full rounded-xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-[#d4af37]/25 focus:border-[#d4af37] focus:ring-[#f7e7b3]/70'} bg-white py-3 pl-12 pr-12 text-sm font-medium text-[#1f1a14] transition focus:outline-none focus:ring-4`}
                   aria-invalid={!!fieldErrors.password}
                   aria-describedby={fieldErrors.password ? "password-error" : undefined}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a6a55]/70 transition hover:text-[#1f1a14]"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -264,17 +264,17 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-yellow-400 py-3 text-sm font-bold text-black shadow-lg shadow-yellow-400/30 transition hover:bg-yellow-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full rounded-xl bg-[linear-gradient(135deg,#d4af37,#f7d774)] py-3 text-sm font-bold text-[#1f1a14] shadow-lg shadow-[#d4af37]/30 transition hover:scale-[1.02] hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
           {/* Footer */}
-          <div className="border-t border-zinc-100 bg-zinc-50 px-8 py-4 text-center">
+          <div className="border-t border-[#d4af37]/15 bg-[#fffaf0] px-8 py-4 text-center">
             <Link
               href="/"
-              className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600"
+              className="text-sm font-medium text-[#7a6a55] transition hover:text-[#6f1d1b]"
             >
               ← Back to Website
             </Link>
@@ -282,7 +282,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Security Note */}
-        <p className="mt-6 text-center text-xs text-zinc-500">
+        <p className="mt-6 text-center text-xs text-[#7a6a55]">
           Protected by Supabase Authentication
         </p>
       </div>

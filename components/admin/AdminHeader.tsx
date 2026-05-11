@@ -247,11 +247,11 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   };
 
   return (
-    <header role="banner" className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <header role="banner" className="sticky top-0 z-30 border-b border-[#d4af37]/20 bg-white/90 backdrop-blur">
       <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <div className="min-w-0 pl-14 lg:pl-0">
-          <h1 className="break-words text-[2rem] font-black leading-[0.98] text-black sm:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm font-medium leading-6 text-zinc-600 sm:text-base">{subtitle}</p>}
+          <h1 className="break-words text-[2rem] font-black leading-[0.98] text-[#1f1a14] sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-2 text-sm font-medium leading-6 text-[#7a6a55] sm:text-base">{subtitle}</p>}
         </div>
 
         <div className="flex shrink-0 items-center gap-3 sm:gap-4">
@@ -260,12 +260,12 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             <button
               type="button"
               onClick={() => setNotiOpen((prev) => !prev)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full border border-yellow-200 bg-white text-black shadow-sm transition duration-300 hover:scale-105 hover:bg-yellow-50"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white text-[#1f1a14] shadow-sm transition duration-300 hover:scale-105 hover:bg-[#fff7e6]"
               aria-label="Admin notifications"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-yellow-400 px-1 text-[10px] font-black text-black shadow">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-[#d4af37] px-1 text-[10px] font-black text-[#1f1a14] shadow">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -278,20 +278,20 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/95 shadow-[0_24px_70px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.12)] backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
+                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-[#fffaf0]/95 shadow-[0_24px_70px_rgba(31,26,20,0.16),0_0_30px_rgba(212,175,55,0.12)] backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
                 >
-                  <div className="flex items-center justify-between border-b border-yellow-100 bg-white px-4 py-3">
+                  <div className="flex items-center justify-between border-b border-[#d4af37]/20 bg-white px-4 py-3">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-600">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
                         Notifications
                       </p>
-                      <h3 className="text-base font-black text-black">Admin Alerts</h3>
+                      <h3 className="text-base font-black text-[#1f1a14]">Admin Alerts</h3>
                     </div>
                     {unreadCount > 0 && (
                       <button
                         type="button"
                         onClick={markAllNotificationsRead}
-                        className="text-xs font-black text-yellow-700 hover:text-yellow-900"
+                        className="text-xs font-black text-[#6f1d1b] hover:text-[#1f1a14]"
                       >
                         Mark all read
                       </button>
@@ -301,7 +301,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-2 sm:max-h-[360px]">
                     {notifications.length === 0 ? (
                       <div className="p-6 text-center">
-                        <p className="text-sm font-bold text-zinc-500">No notifications yet.</p>
+                        <p className="text-sm font-bold text-[#7a6a55]">No notifications yet.</p>
                       </div>
                     ) : (
                       notifications.map((notification, index) => (
@@ -329,20 +329,20 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           }}
                           className={`mb-2 w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${
                             notification.is_read
-                              ? "border-zinc-100 bg-white"
-                              : "border-yellow-200 bg-yellow-50"
+                              ? "border-[#d4af37]/15 bg-white"
+                              : "border-[#6f1d1b]/20 bg-[#f8eeee]"
                           }`}
                         >
                           <div className="flex gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-700">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff7e6] text-[#d4af37]">
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-black text-black">{notification.title}</p>
-                              <p className="mt-1 line-clamp-2 text-xs font-medium text-zinc-600">
+                              <p className="text-sm font-black text-[#1f1a14]">{notification.title}</p>
+                              <p className="mt-1 line-clamp-2 text-xs font-medium text-[#7a6a55]">
                                 {notification.message}
                               </p>
-                              <p className="mt-2 text-[11px] font-bold text-zinc-400">
+                              <p className="mt-2 text-[11px] font-bold text-[#7a6a55]/70">
                                 {new Date(notification.created_at).toLocaleString()}
                               </p>
                             </div>
@@ -352,7 +352,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     )}
                   </div>
 
-                  <div className="border-t border-yellow-100 bg-white p-3">
+                  <div className="border-t border-[#d4af37]/20 bg-white p-3">
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -360,7 +360,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           router.push("/admin/orders");
                           setNotiOpen(false);
                         }}
-                        className="rounded-full bg-yellow-400 px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-300"
+                        className="rounded-full bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-3 text-sm font-black text-[#1f1a14] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
                       >
                         Orders
                       </button>
@@ -370,7 +370,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           router.push("/admin/messages");
                           setNotiOpen(false);
                         }}
-                        className="rounded-full border border-yellow-200 bg-white px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-50"
+                        className="rounded-full border border-[#d4af37]/25 bg-white px-4 py-3 text-sm font-black text-[#1f1a14] transition hover:bg-[#fff7e6]"
                       >
                         Messages
                       </button>
@@ -385,7 +385,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:border-yellow-400 hover:bg-yellow-50"
+              className="flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-3 py-2 text-sm font-medium text-[#7a6a55] transition hover:border-[#d4af37] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user?.email?.split("@")[0] || "Admin"}</span>
@@ -398,12 +398,12 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
-                  <div className="border-b border-zinc-100 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-[#d4af37]/20 bg-white shadow-xl">
+                  <div className="border-b border-[#d4af37]/15 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#7a6a55]">
                       Signed in as
                     </p>
-                    <p className="mt-1 truncate text-sm font-semibold text-black">
+                    <p className="mt-1 truncate text-sm font-semibold text-[#1f1a14]">
                       {user?.email}
                     </p>
                   </div>

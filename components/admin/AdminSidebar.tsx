@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare, Tags } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare, Tags, Star } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const menuItems = [
@@ -12,6 +12,7 @@ const menuItems = [
   { icon: Package, label: "Products", href: "/admin/products" },
   { icon: Tags, label: "Brands", href: "/admin/brands" },
   { icon: MessageSquare, label: "Messages", href: "/admin/messages" },
+  { icon: Star, label: "Testimonials", href: "/admin/testimonials" },
   { icon: Users, label: "Customers", href: "/admin/customers" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
@@ -51,7 +52,7 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className={`fixed left-4 top-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-300/80 bg-[#fffdf6] text-yellow-700 shadow-[0_16px_38px_rgba(234,179,8,0.22)] transition-all duration-300 hover:bg-yellow-50 active:scale-95 lg:hidden ${
+        className={`fixed left-4 top-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#d4af37]/45 bg-[#fffaf0] text-[#6f1d1b] shadow-[0_16px_38px_rgba(212,175,55,0.22)] transition-all duration-300 hover:bg-[#fff7e6] active:scale-95 lg:hidden ${
           isScrolling && !isMobileMenuOpen
             ? "pointer-events-none -translate-y-2 opacity-0"
             : "translate-y-0 opacity-100"
@@ -78,17 +79,17 @@ export default function AdminSidebar() {
       <aside
         role="navigation"
         aria-label="Admin sidebar navigation"
-        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-yellow-100/80 bg-white shadow-[18px_0_60px_rgba(0,0,0,0.12)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:opacity-100 lg:shadow-none ${
+        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-[#d4af37]/20 bg-white/95 shadow-[18px_0_60px_rgba(31,26,20,0.10)] backdrop-blur transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:opacity-100 lg:shadow-none ${
           isMobileMenuOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-95"
         }`}
       >
         <div className="flex h-full flex-col overflow-y-auto px-3 py-4">
           {/* Logo */}
           <Link href="/admin" className="mb-8 pl-16 pr-3 lg:px-3" onClick={() => setIsMobileMenuOpen(false)}>
-            <h1 className="text-[1.7rem] font-black leading-none text-black">
-              GOSH <span className="text-yellow-600">ADMIN</span>
+            <h1 className="text-[1.7rem] font-black leading-none text-[#1f1a14]">
+              GOSH <span className="text-[#b88705]">ADMIN</span>
             </h1>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Perfume Dashboard</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#7a6a55]">Perfume Dashboard</p>
           </Link>
 
           {/* Navigation */}
@@ -104,8 +105,8 @@ export default function AdminSidebar() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200 ${
                     isActive
-                      ? "bg-yellow-400 text-black shadow-md"
-                      : "text-zinc-700 hover:bg-yellow-50 hover:text-yellow-700"
+                      ? "bg-[linear-gradient(135deg,#d4af37,#f7d774)] text-[#1f1a14] shadow-[0_10px_24px_rgba(212,175,55,0.24)]"
+                      : "text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -116,11 +117,11 @@ export default function AdminSidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="mt-auto border-t border-zinc-200 pt-4">
+          <div className="mt-auto border-t border-[#d4af37]/20 pt-4">
             <Link
               href="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 hover:text-black"
+              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-[#7a6a55] transition hover:bg-[#fff7e6] hover:text-[#1f1a14]"
             >
               <span>← Back to Website</span>
             </Link>

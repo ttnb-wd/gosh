@@ -127,7 +127,7 @@ function ProductsPageContent() {
   return (
     <motion.main 
       role="main"
-      className="min-h-screen bg-white text-black"
+      className="min-h-screen bg-[#fffaf0] text-[#1f1a14]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
