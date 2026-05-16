@@ -421,7 +421,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
               <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
                 {product.brand || "GOSH PERFUME"}
               </p>
-              {product.scent_collection && (
+              {product?.scent_collection && (
                 <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
                   {product.scent_collection}
                 </span>
@@ -509,7 +509,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
               {product.brand || product.category || "GOSH PERFUME"}
             </p>
-            {product.scent_collection && (
+            {product?.scent_collection && (
               <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
                 {product.scent_collection}
               </span>
@@ -996,7 +996,9 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
   };
 
-  const filteredProducts = products.filter((product) => {
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const filteredProducts = safeProducts.filter((product) => {
     // Normalize category for comparison
     const normalizedCategory = String(product.category || "").toLowerCase().trim();
     const isAccessory = normalizedCategory === "accessories" || normalizedCategory === "accessory";
