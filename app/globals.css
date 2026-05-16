@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fffaf0;
+  --site-bg: #fbf6ed;
+  --background: var(--site-bg);
   --foreground: #1f1a14;
   --gosh-ivory: #fffaf0;
   --gosh-white: #ffffff;
@@ -246,9 +247,27 @@ select:disabled {
   animation: hero-bottle-shine 5.8s ease-in-out infinite;
 }
 
+@keyframes luxury-decor-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) rotate(1.5deg);
+  }
+}
+
+.luxury-decor-float {
+  animation: luxury-decor-float 20s ease-in-out infinite;
+  filter: drop-shadow(0 10px 24px rgba(214, 168, 79, 0.08));
+  opacity: 0.34 !important;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-marquee-track,
-  .hero-bottle-shine {
+  .hero-bottle-shine,
+  .luxury-decor-float {
     animation: none;
   }
 }

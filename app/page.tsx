@@ -5,13 +5,13 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import BrandMarqueeSlider from "@/components/BrandMarqueeSlider";
 import CollectionPreview from "@/components/CollectionPreview";
+import FragranceCreationSection from "@/components/FragranceCreationSection";
 import ScentQuiz from "@/components/ScentQuiz";
 import IngredientShowcase from "@/components/IngredientShowcase";
 import BrandStory from "@/components/BrandStory";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import LuxuryStats from "@/components/LuxuryStats";
 import Testimonials from "@/components/Testimonials";
-import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -25,6 +25,11 @@ export interface CartItem {
   qty: number;
   selectedSize?: string;
 }
+
+// Temporarily hidden. Set to true when we want to show this section again.
+const SHOW_SIGNATURE_SCENT_SECTION = false;
+// Temporarily hidden. Set to true when we want to show this section again.
+const SHOW_BRAND_GALLERY_SECTION = false;
 
 export default function Page() {
   const [cartOpen, setCartOpen] = useState(false);
@@ -48,29 +53,31 @@ export default function Page() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
+    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
       />
       <Hero />
-      <section
-        role="region"
-        aria-label="Brand gallery"
-        className="bg-[#fffaf0] pb-3 pt-5"
-      >
-        <div>
-          <BrandMarqueeSlider />
-        </div>
-      </section>
       <CollectionPreview />
-      <ScentQuiz />
+      <FragranceCreationSection />
+      {SHOW_BRAND_GALLERY_SECTION && (
+        <section
+          role="region"
+          aria-label="Brand gallery"
+          className="bg-[var(--site-bg)] pb-3 pt-5"
+        >
+          <div>
+            <BrandMarqueeSlider />
+          </div>
+        </section>
+      )}
+      {SHOW_SIGNATURE_SCENT_SECTION && <ScentQuiz />}
       <IngredientShowcase />
       <BrandStory />
       <WhyChooseUs />
       <LuxuryStats />
       <Testimonials />
-      <Newsletter />
       <Footer />
       
       {/* Cart Drawer - Rendered once at page level */}

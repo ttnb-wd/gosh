@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import ContactSection from "@/components/ContactSection";
+import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -34,9 +35,10 @@ export default function ContactPage() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
+    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       <ContactSection />
+      <Newsletter />
       <Footer />
       
       {/* Cart Drawer - Rendered once at page level */}

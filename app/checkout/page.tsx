@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
@@ -75,11 +76,23 @@ type PaymentDetail = {
   message?: string;
   accountName?: string;
   phone?: string;
+  qrImage?: string;
   instruction?: string;
+  secondaryInstruction?: string;
   note?: string;
   bankName?: string;
   accountNumber?: string;
 };
+
+const KBZPAY_ACCOUNT_NAME = "Khant Lin Htet";
+const KBZPAY_PHONE = "09777460056";
+const KBZPAY_QR_IMAGE = "/images/payment/kbz-qr.jpg.jpg";
+const WAVEPAY_ACCOUNT_NAME = "Khant Lin Htet";
+const WAVEPAY_PHONE = "09777460056";
+const WAVEPAY_QR_IMAGE = "/images/payment/wavepay-qr.jpg.jpg";
+const AYAPAY_ACCOUNT_NAME = "Khant Lin Htet";
+const AYAPAY_PHONE = "09777460056";
+const AYAPAY_QR_IMAGE = "/images/payment/ayapay-qr.jpg.jpg";
 
 // Payment Icon Component with Fallback
 function PaymentIcon({
@@ -107,7 +120,7 @@ function PaymentIcon({
       <img
         src={src}
         alt={alt}
-        className="h-14 w-14 object-contain"
+        className="h-14 w-14 rounded-full object-cover"
         loading="lazy"
         onError={() => setFailed(true)}
       />
@@ -239,20 +252,7 @@ function CheckoutPageContent() {
 
   // Dynamic grid class based on available payment methods count
   const paymentGridClass = useMemo(() => {
-    const count = availablePaymentMethods.length;
-    if (count <= 1) {
-      return "grid w-full grid-cols-1 justify-items-center gap-5";
-    }
-    if (count === 2) {
-      return "grid w-full grid-cols-1 justify-items-center gap-5 sm:grid-cols-2 sm:justify-center lg:mx-auto lg:max-w-3xl";
-    }
-    if (count === 3) {
-      return "grid w-full grid-cols-1 justify-items-center gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:mx-auto lg:max-w-5xl";
-    }
-    if (count === 4) {
-      return "grid w-full grid-cols-1 justify-items-center gap-5 sm:grid-cols-2 xl:grid-cols-4";
-    }
-    return "grid w-full grid-cols-1 justify-items-center gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
+    return "grid w-full grid-cols-2 gap-5 justify-items-center sm:grid-cols-3 sm:gap-6 lg:grid-cols-5 lg:gap-8";
   }, [availablePaymentMethods.length]);
 
   // Auto-select first available payment method if current selection is disabled
@@ -275,22 +275,25 @@ function CheckoutPageContent() {
     },
     kbzpay: {
       title: "KBZPay Payment Details",
-      accountName: settings.kbzpay_account_name || "GOSH PERFUME",
-      phone: settings.kbzpay_phone || "",
-      instruction: "Please send payment to this KBZPay number and keep your transaction screenshot.",
-      note: "QR payment will be available soon.",
+      accountName: KBZPAY_ACCOUNT_NAME,
+      phone: KBZPAY_PHONE,
+      qrImage: KBZPAY_QR_IMAGE,
+      instruction: "Scan this QR with KBZPay and complete your payment.",
+      secondaryInstruction: "After payment, please send the payment screenshot or transaction ID.",
     },
     wavepay: {
       title: "WavePay Payment Details",
-      accountName: settings.wavepay_account_name || "GOSH PERFUME",
-      phone: settings.wavepay_phone || "",
+      accountName: WAVEPAY_ACCOUNT_NAME,
+      phone: WAVEPAY_PHONE,
+      qrImage: WAVEPAY_QR_IMAGE,
       instruction: "Please send payment to this WavePay number and keep your transaction screenshot.",
       note: "QR payment will be available soon.",
     },
     ayapay: {
       title: "AYA Pay Payment Details",
-      accountName: settings.ayapay_account_name || "GOSH PERFUME",
-      phone: settings.ayapay_phone || "",
+      accountName: AYAPAY_ACCOUNT_NAME,
+      phone: AYAPAY_PHONE,
+      qrImage: AYAPAY_QR_IMAGE,
       instruction: "Please send payment to this AYA Pay number and keep your transaction screenshot.",
       note: "QR payment will be available soon.",
     },
@@ -393,22 +396,22 @@ function CheckoutPageContent() {
         kbzpay: {
           payment_method: "kbzpay",
           payment_status: "Verifying",
-          payment_account_name: settings.kbzpay_account_name || "GOSH PERFUME",
-          payment_phone: settings.kbzpay_phone || null,
+          payment_account_name: KBZPAY_ACCOUNT_NAME,
+          payment_phone: KBZPAY_PHONE,
           payment_account_number: null,
         },
         wavepay: {
           payment_method: "wavepay",
           payment_status: "Verifying",
-          payment_account_name: settings.wavepay_account_name || "GOSH PERFUME",
-          payment_phone: settings.wavepay_phone || null,
+          payment_account_name: WAVEPAY_ACCOUNT_NAME,
+          payment_phone: WAVEPAY_PHONE,
           payment_account_number: null,
         },
         ayapay: {
           payment_method: "ayapay",
           payment_status: "Verifying",
-          payment_account_name: settings.ayapay_account_name || "GOSH PERFUME",
-          payment_phone: settings.ayapay_phone || null,
+          payment_account_name: AYAPAY_ACCOUNT_NAME,
+          payment_phone: AYAPAY_PHONE,
           payment_account_number: null,
         },
         bank: {
@@ -574,7 +577,7 @@ function CheckoutPageContent() {
   }, [showPaymentModal]);
 
   return (
-    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
+    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
@@ -750,128 +753,119 @@ function CheckoutPageContent() {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     whileHover={{ y: -8, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="group relative w-full max-w-[280px]"
+                    className="group relative flex w-full justify-center"
                   >
-                    {/* Rounded White Card with Gold Border */}
-                    <div className={`relative flex h-[320px] w-full flex-col items-center overflow-visible rounded-2xl border-2 bg-white p-6 transition-all duration-300 ${
+                    <div className={`relative aspect-square w-[150px] overflow-hidden rounded-full border border-yellow-400/70 bg-white text-center shadow-[0_14px_40px_rgba(234,179,8,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(234,179,8,0.30)] sm:w-[180px] lg:w-[210px] ${
                       isSelected
-                        ? "border-yellow-400 shadow-2xl shadow-yellow-400/40"
-                        : "border-yellow-300/50 shadow-lg hover:border-yellow-400 hover:shadow-2xl hover:shadow-yellow-400/30"
+                        ? "ring-2 ring-yellow-400 shadow-[0_20px_60px_rgba(234,179,8,0.38)]"
+                        : ""
                     }`}>
-                      {/* Soft ambient glow */}
-                      <div className={`pointer-events-none absolute -inset-3 rounded-2xl bg-gradient-to-br from-yellow-400/0 via-yellow-300/30 to-yellow-400/0 opacity-0 blur-2xl transition-opacity duration-500 ${
+                      <div className={`pointer-events-none absolute -inset-3 rounded-full bg-gradient-to-br from-yellow-400/0 via-yellow-300/30 to-yellow-400/0 opacity-0 blur-2xl transition-opacity duration-500 ${
                         isSelected ? "opacity-100" : "group-hover:opacity-80"
                       }`} />
 
-                      {/* Selected check badge */}
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -180 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                          className="absolute -right-2 -top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-lg shadow-yellow-400/60"
-                        >
-                          <Check className="h-4 w-4 text-black font-bold" />
-                        </motion.div>
-                      )}
+                      <div className="relative flex h-full w-full flex-col items-center justify-center px-4 py-5 sm:px-5 sm:py-6">
 
-                      {/* Circular Icon Area */}
-                      <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center">
-                        {/* Outer glow ring */}
-                        <motion.div
-                          animate={{ 
-                            rotate: isSelected ? 360 : 0,
-                            scale: isSelected ? [1, 1.08, 1] : 1
-                          }}
-                          transition={{ 
-                            rotate: { duration: 25, repeat: Infinity, ease: "linear" },
-                            scale: { duration: 2.5, repeat: Infinity }
-                          }}
-                          className={`pointer-events-none absolute inset-0 rounded-full border border-dashed transition-colors duration-300 ${
-                            isSelected ? "border-yellow-400/60" : "border-yellow-300/40 group-hover:border-yellow-400/60"
-                          }`}
-                        />
+                        {/* Selected check badge */}
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                            className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-lg shadow-yellow-400/60 sm:h-7 sm:w-7"
+                          >
+                            <Check className="h-3.5 w-3.5 text-black font-bold sm:h-4 sm:w-4" />
+                          </motion.div>
+                        )}
 
-                        {/* Soft glow effect */}
-                        <div className={`pointer-events-none absolute inset-1 rounded-full transition-all duration-300 ${
-                          isSelected 
-                            ? "bg-gradient-to-br from-yellow-400/30 to-yellow-500/30 blur-lg" 
-                            : "bg-gradient-to-br from-yellow-200/20 to-yellow-300/20 blur-lg group-hover:from-yellow-400/30 group-hover:to-yellow-500/30"
-                        }`} />
+                        {/* Circular Icon Area */}
+                        <div className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center sm:mb-3.5 sm:h-14 sm:w-14">
+                          <motion.div
+                            animate={{ 
+                              rotate: isSelected ? 360 : 0,
+                              scale: isSelected ? [1, 1.08, 1] : 1
+                            }}
+                            transition={{ 
+                              rotate: { duration: 25, repeat: Infinity, ease: "linear" },
+                              scale: { duration: 2.5, repeat: Infinity }
+                            }}
+                            className={`pointer-events-none absolute inset-0 rounded-full border border-dashed transition-colors duration-300 ${
+                              isSelected ? "border-yellow-400/60" : "border-yellow-300/40 group-hover:border-yellow-400/60"
+                            }`}
+                          />
 
-                        {/* Icon circle container */}
-                        <div className={`relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 transition-all duration-300 ${
-                          isSelected
-                            ? "border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-50 shadow-xl shadow-yellow-400/50"
-                            : "border-yellow-300/30 bg-gradient-to-br from-white via-yellow-50/30 to-white shadow-lg group-hover:border-yellow-400/50 group-hover:shadow-xl group-hover:shadow-yellow-400/40"
-                        }`}>
-                          {/* Inner shine overlay */}
-                          <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/70 via-transparent to-transparent" />
-                          
-                          {/* Payment Icon with Fallback */}
-                          <PaymentIcon
-                            src={method.icon}
-                            alt={method.name}
-                            type={method.id as "cod" | "kbzpay" | "wavepay" | "ayapay" | "bank"}
+                          <div className={`pointer-events-none absolute inset-1 rounded-full transition-all duration-300 ${
+                            isSelected 
+                              ? "bg-gradient-to-br from-yellow-400/30 to-yellow-500/30 blur-lg" 
+                              : "bg-gradient-to-br from-yellow-200/20 to-yellow-300/20 blur-lg group-hover:from-yellow-400/30 group-hover:to-yellow-500/30"
+                          }`} />
+
+                          <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-12 sm:w-12 ${
+                            isSelected
+                              ? "border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-50 shadow-xl shadow-yellow-400/50"
+                              : "border-yellow-300/30 bg-gradient-to-br from-white via-yellow-50/30 to-white shadow-lg group-hover:border-yellow-400/50 group-hover:shadow-xl group-hover:shadow-yellow-400/40"
+                          }`}>
+                            <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/70 via-transparent to-transparent" />
+                            
+                            <PaymentIcon
+                              src={method.icon}
+                              alt={method.name}
+                              type={method.id as "cod" | "kbzpay" | "wavepay" | "ayapay" | "bank"}
+                            />
+                          </div>
+
+                          <motion.div
+                            animate={{ 
+                              scale: [1, 1.4, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                            className="pointer-events-none absolute -right-1 -top-1 h-2 w-2 rounded-full bg-yellow-400 shadow-md shadow-yellow-400/70 sm:h-2.5 sm:w-2.5"
+                          />
+                          <motion.div
+                            animate={{ 
+                              scale: [1, 1.3, 1],
+                              opacity: [0.4, 0.9, 0.4]
+                            }}
+                            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                            className="pointer-events-none absolute -bottom-1 -left-1 h-1.5 w-1.5 rounded-full bg-yellow-300 shadow-sm shadow-yellow-300/70 sm:h-2 sm:w-2"
                           />
                         </div>
 
-                        {/* Sparkle decorations */}
-                        <motion.div
-                          animate={{ 
-                            scale: [1, 1.4, 1],
-                            opacity: [0.5, 1, 0.5]
-                          }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                          className="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-yellow-400 shadow-md shadow-yellow-400/70"
-                        />
-                        <motion.div
-                          animate={{ 
-                            scale: [1, 1.3, 1],
-                            opacity: [0.4, 0.9, 0.4]
-                          }}
-                          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                          className="pointer-events-none absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-yellow-300 shadow-sm shadow-yellow-300/70"
-                        />
-                      </div>
+                        <div className="relative text-center">
+                          <h3 className={`mb-2 flex min-h-[32px] items-center justify-center text-xs font-semibold transition-colors duration-300 sm:text-sm ${
+                            isSelected ? "text-black" : "text-zinc-800 group-hover:text-black"
+                          }`}>
+                            {method.name}
+                          </h3>
+                          
+                          <div className="mx-auto mb-2 flex items-center justify-center gap-1">
+                            <div className={`h-px w-4 rounded-full transition-all duration-300 sm:w-5 ${
+                              isSelected 
+                                ? "bg-gradient-to-r from-transparent via-yellow-400 to-yellow-400" 
+                                : "bg-gradient-to-r from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
+                            }`} />
+                            <div className={`h-1 w-1 rounded-full transition-all duration-300 ${
+                              isSelected ? "bg-yellow-400" : "bg-yellow-300 group-hover:bg-yellow-400"
+                            }`} />
+                            <div className={`h-px w-4 rounded-full transition-all duration-300 sm:w-5 ${
+                              isSelected 
+                                ? "bg-gradient-to-l from-transparent via-yellow-400 to-yellow-400" 
+                                : "bg-gradient-to-l from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
+                            }`} />
+                          </div>
 
-                      {/* Payment Label */}
-                      <div className="relative text-center">
-                        <h3 className={`mb-2.5 min-h-[48px] flex items-center justify-center text-base font-bold transition-colors duration-300 ${
-                          isSelected ? "text-black" : "text-zinc-800 group-hover:text-black"
-                        }`}>
-                          {method.name}
-                        </h3>
-                        
-                        {/* Small Gold Underline */}
-                        <div className="mx-auto mb-3 flex items-center justify-center gap-1">
-                          <div className={`h-px w-6 rounded-full transition-all duration-300 ${
-                            isSelected 
-                              ? "bg-gradient-to-r from-transparent via-yellow-400 to-yellow-400" 
-                              : "bg-gradient-to-r from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
-                          }`} />
-                          <div className={`h-1 w-1 rounded-full transition-all duration-300 ${
-                            isSelected ? "bg-yellow-400" : "bg-yellow-300 group-hover:bg-yellow-400"
-                          }`} />
-                          <div className={`h-px w-6 rounded-full transition-all duration-300 ${
-                            isSelected 
-                              ? "bg-gradient-to-l from-transparent via-yellow-400 to-yellow-400" 
-                              : "bg-gradient-to-l from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
-                          }`} />
+                          <p className="text-[10px] leading-4 text-gray-500 sm:text-xs">
+                            {method.description}
+                          </p>
                         </div>
 
-                        {/* Description */}
-                        <p className="min-h-[32px] text-xs text-zinc-500 leading-relaxed">
-                          {method.description}
-                        </p>
+                        <div className={`pointer-events-none absolute bottom-3 left-1/2 h-10 w-2/3 -translate-x-1/2 rounded-full transition-opacity duration-300 sm:bottom-4 sm:h-12 ${
+                          isSelected 
+                            ? "bg-gradient-to-t from-yellow-400/25 to-transparent blur-xl opacity-100" 
+                            : "bg-gradient-to-t from-yellow-300/15 to-transparent blur-xl opacity-0 group-hover:opacity-100"
+                        }`} />
                       </div>
-
-                      {/* Bottom soft glow */}
-                      <div className={`pointer-events-none absolute bottom-0 left-1/2 h-16 w-2/3 -translate-x-1/2 rounded-full transition-opacity duration-300 ${
-                        isSelected 
-                          ? "bg-gradient-to-t from-yellow-400/25 to-transparent blur-xl opacity-100" 
-                          : "bg-gradient-to-t from-yellow-300/15 to-transparent blur-xl opacity-0 group-hover:opacity-100"
-                      }`} />
                     </div>
                   </motion.button>
                 );
@@ -987,27 +981,35 @@ function CheckoutPageContent() {
             className="relative z-[10000] mx-auto flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-[28px] border border-yellow-300/70 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.28),0_0_45px_rgba(234,179,8,0.28)]"
           >
             {/* Header */}
-            <div className="relative z-[10001] shrink-0 border-b border-yellow-200/70 bg-[#fffdf6]/95 px-6 py-5 backdrop-blur">
+            <div className={`relative z-[10001] shrink-0 border-b border-yellow-200/70 bg-[#fffdf6]/95 backdrop-blur ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "px-5 py-4 sm:px-6 sm:py-4" : "px-6 py-5"}`}>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowPaymentModal(false);
                 }}
-                className="absolute right-4 top-4 z-[10002] flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 text-lg font-bold text-black shadow-[0_8px_24px_rgba(234,179,8,0.45)] transition hover:scale-105 hover:bg-yellow-300"
+                className={`absolute z-[10002] flex items-center justify-center rounded-full bg-yellow-400 font-bold text-black shadow-[0_8px_24px_rgba(234,179,8,0.45)] transition hover:scale-105 hover:bg-yellow-300 ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "right-3 top-3 h-7 w-7 text-base sm:right-4 sm:top-4 sm:h-8 sm:w-8 sm:text-lg" : "right-4 top-4 h-8 w-8 text-lg"}`}
                 aria-label="Close payment details"
               >
                 ×
               </button>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-yellow-600">Secure Payment</p>
-              <h2 className="mt-2 pr-12 text-2xl font-bold leading-tight text-neutral-950 sm:text-3xl">
+              <p className={`font-semibold uppercase text-yellow-600 ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "text-[11px] tracking-[0.22em] sm:text-xs sm:tracking-[0.28em]" : "text-xs tracking-[0.28em]"}`}>Secure Payment</p>
+              <h2 className={`pr-12 font-bold leading-tight text-neutral-950 ${
+                selectedPayment === "kbzpay"
+                  ? "mt-1 text-[1.45rem] sm:mt-1.5 sm:text-[1.75rem]"
+                  : selectedPayment === "wavepay"
+                    ? "mt-1 text-[1.25rem] sm:mt-1.5 sm:text-[1.55rem]"
+                    : selectedPayment === "ayapay"
+                      ? "mt-1 text-[1.25rem] sm:mt-1.5 sm:text-[1.55rem]"
+                    : "mt-2 text-2xl sm:text-3xl"
+              }`}>
                 {paymentDetails[selectedPayment].title}
               </h2>
-              <div className="pointer-events-none mt-4 h-px w-20 bg-gradient-to-r from-yellow-400 to-transparent" />
+              <div className={`pointer-events-none h-px bg-gradient-to-r from-yellow-400 to-transparent ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 w-14 sm:mt-3 sm:w-16" : "mt-4 w-20"}`} />
             </div>
 
             {/* Body */}
-            <div className="scrollbar-auto-hide min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain">
+            <div className="scrollbar-auto-hide min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 overscroll-contain sm:px-6 sm:py-5">
               {/* Cash on Delivery */}
               {selectedPayment === "cod" && (
                 <>
@@ -1027,32 +1029,85 @@ function CheckoutPageContent() {
               {/* Mobile Payment Methods (KBZPay, WavePay, AYA Pay) */}
               {(selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay") && (
                 <>
-                  <div className="rounded-2xl border border-yellow-200/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(234,179,8,0.08)]">
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Account Name</span>
-                        <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Phone</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].phone}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
-                            className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
-                          >
-                            {copiedField === "phone" ? "Copied!" : "Copy"}
-                          </button>
+                  {(selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay") && paymentDetails[selectedPayment].qrImage && (
+                    <div className="mb-4 flex justify-center">
+                      <div className="w-full max-w-[188px] rounded-[26px] border border-yellow-200/80 bg-white/90 p-2.5 shadow-[0_14px_36px_rgba(234,179,8,0.12)] sm:max-w-[250px] sm:p-3">
+                        <div className="overflow-hidden rounded-2xl border border-yellow-200/70 bg-[#fffaf0] shadow-[0_10px_26px_rgba(212,175,55,0.14)]">
+                          <Image
+                            src={paymentDetails[selectedPayment].qrImage ?? (selectedPayment === "wavepay" ? WAVEPAY_QR_IMAGE : selectedPayment === "ayapay" ? AYAPAY_QR_IMAGE : KBZPAY_QR_IMAGE)}
+                            alt={selectedPayment === "wavepay" ? "WavePay QR code" : selectedPayment === "ayapay" ? "AYA Pay QR code" : "KBZPay QR code"}
+                            width={720}
+                            height={720}
+                            className="h-auto w-full object-contain"
+                            sizes="(max-width: 640px) 188px, 250px"
+                            priority
+                          />
+                        </div>
+                        <div className="mt-2.5 rounded-2xl bg-yellow-50/60 px-2.5 py-2 text-center sm:mt-3 sm:px-3 sm:py-2.5">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                            {selectedPayment === "wavepay" ? "Scan With WavePay" : selectedPayment === "ayapay" ? "Scan With AYA Pay" : "Scan With KBZPay"}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-neutral-950 sm:mt-1.5 sm:text-sm">
+                            {paymentDetails[selectedPayment].accountName}
+                          </p>
+                          <div className="mt-1 flex translate-x-4 items-center justify-center gap-1.5 sm:mt-1.5 sm:gap-2">
+                            <span className="text-[11px] font-bold text-neutral-950 sm:text-xs">
+                              {paymentDetails[selectedPayment].phone}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
+                              className="rounded-full border border-yellow-300 bg-yellow-50 px-1.5 py-0.5 text-[9px] font-bold text-yellow-700 transition hover:bg-yellow-100 sm:px-2 sm:text-[10px]"
+                            >
+                              {copiedField === "phone" ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 rounded-2xl bg-yellow-50/60 p-4">
-                    <p className="text-sm leading-6 text-neutral-600">
+                  )}
+                  {selectedPayment !== "kbzpay" && selectedPayment !== "wavepay" && selectedPayment !== "ayapay" && (
+                    <div className="rounded-2xl border border-yellow-200/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(234,179,8,0.08)]">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Account Name</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(paymentDetails[selectedPayment].accountName ?? "", "accountName")}
+                              className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
+                            >
+                              {copiedField === "accountName" ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 text-center">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Phone</span>
+                          <div className="flex translate-x-4 items-center justify-center gap-2">
+                            <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].phone}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
+                              className="rounded-full border border-yellow-300 bg-yellow-50 px-2 py-0.5 text-[10px] font-bold text-yellow-700 transition hover:bg-yellow-100 sm:px-2.5 sm:text-[11px]"
+                            >
+                              {copiedField === "phone" ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className={`rounded-2xl bg-yellow-50/60 ${selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 p-2.5 sm:mt-3 sm:p-3" : "mt-3 p-3"}`}>
+                    <p className="text-sm leading-5 text-neutral-600">
                       <span className="font-bold text-yellow-700">Instruction: </span>
                       {paymentDetails[selectedPayment].instruction}
                     </p>
+                    {paymentDetails[selectedPayment].secondaryInstruction && (
+                      <p className="mt-1.5 text-sm leading-5 text-neutral-600">
+                        {paymentDetails[selectedPayment].secondaryInstruction}
+                      </p>
+                    )}
                   </div>
                   {paymentDetails[selectedPayment].note && (
                     <p className="mt-4 text-center text-xs italic text-neutral-400">{paymentDetails[selectedPayment].note}</p>
@@ -1099,7 +1154,7 @@ function CheckoutPageContent() {
 
               {/* Payment Screenshot Upload */}
               {selectedPayment && ["kbzpay", "wavepay", "ayapay", "bank"].includes(selectedPayment) && (
-                <div className="mt-5 rounded-2xl border border-yellow-200/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(234,179,8,0.08)]">
+                <div className={`rounded-2xl border border-yellow-200/80 bg-white/80 shadow-[0_10px_30px_rgba(234,179,8,0.08)] ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-3 p-3" : "mt-5 p-4"}`}>
                   <p className="text-sm font-bold text-neutral-950">Upload payment screenshot</p>
                   <p className="mt-1 text-xs text-neutral-500">Attach your transaction screenshot after payment.</p>
                   
@@ -1214,13 +1269,6 @@ function CheckoutPageContent() {
                     {availablePaymentMethods.length === 0 && (
                       <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                         No payment methods are currently available.
-                      </div>
-                    )}
-
-                    {/* Helper message for screenshot requirement */}
-                    {requiresScreenshot && !selectedPaymentScreenshot && (
-                      <div role="alert" className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
-                        Upload your payment screenshot to continue.
                       </div>
                     )}
 

@@ -65,7 +65,7 @@ function NewsletterContent() {
   };
 
   return (
-    <section role="region" aria-label="Newsletter signup" className="bg-[#fffaf0] py-16 lg:py-24">
+    <section role="region" aria-label="Newsletter signup" className="bg-[var(--site-bg)] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

@@ -36,7 +36,7 @@ export default function IngredientShowcase() {
   }
 
   return (
-    <section role="region" aria-label="Ingredient showcase" className="bg-white py-16 lg:py-24">
+    <section role="region" aria-label="Ingredient showcase" className="bg-[var(--site-bg)] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

@@ -47,7 +47,7 @@ export default function Testimonials() {
   }, [supabase]);
 
   return (
-    <section role="region" aria-label="Customer testimonials" className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] py-16 lg:py-24">
+    <section role="region" aria-label="Customer testimonials" className="bg-[var(--site-bg)] py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

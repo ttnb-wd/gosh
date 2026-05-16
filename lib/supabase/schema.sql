@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   discount DECIMAL(10,2) NOT NULL DEFAULT 0,
   total DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
   status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Confirmed', 'Processing', 'Delivered', 'Cancelled')),
+  stock_restored BOOLEAN NOT NULL DEFAULT false,
   admin_note TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -76,8 +77,25 @@ CREATE TABLE IF NOT EXISTS public.products (
   price DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (price >= 0),
   description TEXT,
   image TEXT,
+  badge TEXT,
   stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
   category TEXT,
+  scent_collection TEXT CHECK (
+    scent_collection IS NULL
+    OR scent_collection IN (
+      'Fresh',
+      'Woody',
+      'Floral',
+      'Oriental',
+      'Citrus',
+      'Aquatic',
+      'Sweet',
+      'Oud',
+      'Musk',
+      'Amber',
+      'Spicy'
+    )
+  ),
   decants JSONB NOT NULL DEFAULT '[]'::jsonb,
   notes JSONB NOT NULL DEFAULT '{}'::jsonb,
   is_active BOOLEAN NOT NULL DEFAULT true,
@@ -217,6 +235,8 @@ CREATE INDEX IF NOT EXISTS idx_brands_is_active ON public.brands(is_active);
 CREATE INDEX IF NOT EXISTS idx_products_brand ON public.products(brand);
 CREATE INDEX IF NOT EXISTS idx_products_brand_id ON public.products(brand_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
+CREATE INDEX IF NOT EXISTS idx_products_scent_collection ON public.products(scent_collection);
+CREATE INDEX IF NOT EXISTS idx_products_active_scent_collection ON public.products(is_active, scent_collection);
 CREATE INDEX IF NOT EXISTS idx_products_is_active ON public.products(is_active);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON public.contact_messages(status);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_messages(created_at DESC);
@@ -1025,7 +1045,6 @@ DECLARE
   previous_order public.orders;
   updated_order public.orders;
   actor_email TEXT;
-  stock_item RECORD;
   uuid_pattern CONSTANT TEXT := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 BEGIN
   IF public.is_admin() IS NOT TRUE THEN
@@ -1046,7 +1065,9 @@ BEGIN
   END IF;
 
   IF previous_order.status IS DISTINCT FROM p_status THEN
-    IF p_status = 'Cancelled' AND previous_order.status <> 'Cancelled' THEN
+    IF p_status = 'Cancelled'
+      AND previous_order.status <> 'Cancelled'
+      AND COALESCE(previous_order.stock_restored, FALSE) = FALSE THEN
       UPDATE public.products AS product
       SET
         stock = product.stock + restored.quantity,
@@ -1058,37 +1079,26 @@ BEGIN
         FROM public.order_items
         WHERE order_items.order_id = previous_order.id
           AND order_items.product_id ~* uuid_pattern
+          AND (
+            NULLIF(trim(COALESCE(order_items.selected_size, '')), '') IS NULL
+            OR lower(trim(order_items.selected_size)) IN ('full size', 'full_size')
+          )
         GROUP BY order_items.product_id
       ) AS restored
       WHERE product.id = restored.product_id;
-    ELSIF previous_order.status = 'Cancelled' AND p_status <> 'Cancelled' THEN
-      FOR stock_item IN
-        SELECT
-          order_items.product_id::UUID AS product_id,
-          COALESCE(NULLIF(trim(order_items.product_name), ''), 'product') AS product_name,
-          SUM(order_items.quantity)::INTEGER AS quantity
-        FROM public.order_items
-        WHERE order_items.order_id = previous_order.id
-          AND order_items.product_id ~* uuid_pattern
-        GROUP BY order_items.product_id, order_items.product_name
-      LOOP
-        UPDATE public.products AS product
-        SET
-          stock = product.stock - stock_item.quantity,
-          updated_at = NOW()
-        WHERE product.id = stock_item.product_id
-          AND product.stock >= stock_item.quantity;
-
-        IF NOT FOUND THEN
-          RAISE EXCEPTION 'Not enough stock to reopen cancelled order for %.', stock_item.product_name USING ERRCODE = '22000';
-        END IF;
-      END LOOP;
     END IF;
   END IF;
 
   UPDATE public.orders
   SET
     status = p_status,
+    stock_restored = CASE
+      WHEN p_status = 'Cancelled'
+        AND previous_order.status <> 'Cancelled'
+        AND COALESCE(previous_order.stock_restored, FALSE) = FALSE
+      THEN TRUE
+      ELSE orders.stock_restored
+    END,
     updated_at = NOW()
   WHERE orders.id = p_order_id
   RETURNING * INTO updated_order;
@@ -1232,7 +1242,9 @@ DECLARE
   next_brand_id UUID;
   next_description TEXT;
   next_image TEXT;
+  next_badge TEXT;
   next_category TEXT;
+  next_scent_collection TEXT;
   next_price NUMERIC;
   next_stock INTEGER;
   next_is_active BOOLEAN;
@@ -1262,7 +1274,26 @@ BEGIN
   END IF;
   next_description := nullif(trim(COALESCE(p_product ->> 'description', '')), '');
   next_image := nullif(trim(COALESCE(p_product ->> 'image', '')), '');
+  next_badge := nullif(trim(COALESCE(p_product ->> 'badge', '')), '');
   next_category := nullif(trim(COALESCE(p_product ->> 'category', '')), '');
+  next_scent_collection := nullif(trim(COALESCE(p_product ->> 'scent_collection', '')), '');
+  IF next_scent_collection IS NOT NULL
+    AND next_scent_collection NOT IN (
+      'Fresh',
+      'Woody',
+      'Floral',
+      'Oriental',
+      'Citrus',
+      'Aquatic',
+      'Sweet',
+      'Oud',
+      'Musk',
+      'Amber',
+      'Spicy'
+    )
+  THEN
+    RAISE EXCEPTION 'Invalid scent collection.' USING ERRCODE = '22000';
+  END IF;
   next_price := GREATEST(COALESCE((p_product ->> 'price')::NUMERIC, 0), 0);
   next_stock := GREATEST(COALESCE((p_product ->> 'stock')::INTEGER, 0), 0);
   next_is_active := COALESCE((p_product ->> 'is_active')::BOOLEAN, true);
@@ -1278,7 +1309,9 @@ BEGIN
       brand_id,
       description,
       image,
+      badge,
       category,
+      scent_collection,
       price,
       stock,
       is_active,
@@ -1292,7 +1325,9 @@ BEGIN
       next_brand_id,
       next_description,
       next_image,
+      next_badge,
       next_category,
+      next_scent_collection,
       next_price,
       next_stock,
       next_is_active,
@@ -1320,7 +1355,9 @@ BEGIN
       brand_id = next_brand_id,
       description = next_description,
       image = next_image,
+      badge = next_badge,
       category = next_category,
+      scent_collection = next_scent_collection,
       price = next_price,
       stock = next_stock,
       is_active = next_is_active,
@@ -1357,9 +1394,11 @@ BEGIN
         'name', previous_product.name,
         'brand', previous_product.brand,
         'brand_id', previous_product.brand_id,
+        'badge', previous_product.badge,
         'price', previous_product.price,
         'stock', previous_product.stock,
         'category', previous_product.category,
+        'scent_collection', previous_product.scent_collection,
         'is_active', previous_product.is_active
       )
     END,
@@ -1367,9 +1406,11 @@ BEGIN
       'name', saved_product.name,
       'brand', saved_product.brand,
       'brand_id', saved_product.brand_id,
+      'badge', saved_product.badge,
       'price', saved_product.price,
       'stock', saved_product.stock,
       'category', saved_product.category,
+      'scent_collection', saved_product.scent_collection,
       'is_active', saved_product.is_active
     )
   );

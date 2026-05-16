@@ -206,7 +206,7 @@ function LoginForm() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-[#fffdf6] px-4 py-10 text-neutral-950">
+    <main role="main" className="min-h-screen bg-[var(--site-bg)] px-4 py-10 text-neutral-950">
       <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center">
         <div className="w-full rounded-[28px] border border-yellow-300/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(234,179,8,0.18)] sm:p-8">
           <div className="text-center">
@@ -353,7 +353,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <main role="main" className="min-h-screen bg-[#fffdf6] px-4 py-10 text-neutral-950">
+      <main role="main" className="min-h-screen bg-[var(--site-bg)] px-4 py-10 text-neutral-950">
         <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent"></div>

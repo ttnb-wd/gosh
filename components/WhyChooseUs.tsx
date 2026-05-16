@@ -28,7 +28,7 @@ const features = [
 
 export default function WhyChooseUs() {
   return (
-    <section role="region" aria-label="Why choose us" className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] pb-16 pt-8 lg:pb-24 lg:pt-10">
+    <section role="region" aria-label="Why choose us" className="bg-[var(--site-bg)] pb-16 pt-8 lg:pb-24 lg:pt-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

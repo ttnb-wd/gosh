@@ -195,7 +195,7 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <main role="main" className="min-h-screen bg-[#fffaf0]">
+      <main role="main" className="min-h-screen bg-[var(--site-bg)]">
         <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
         {/* Screen Reader Loading Announcement */}
         <div 
@@ -221,7 +221,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <main role="main" className="min-h-screen bg-[#fffaf0] text-[#1f1a14]">
+    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
       <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
 
       {/* Screen Reader Orders Loaded Announcement */}

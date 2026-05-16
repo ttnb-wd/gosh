@@ -23,7 +23,7 @@ export default function ScentQuiz() {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <section role="region" aria-label="Product catalog" className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] pb-8 pt-8 lg:pb-10 lg:pt-10">
+    <section role="region" aria-label="Product catalog" className="bg-[var(--site-bg)] pb-8 pt-8 lg:pb-10 lg:pt-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -80, scale: 0.96 }}

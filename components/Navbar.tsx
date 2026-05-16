@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut } from "lucide-react";
+import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
@@ -15,22 +15,24 @@ interface NavbarProps {
 export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = false }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [profileName, setProfileName] = useState("");
 
   const loadUserProfile = async (currentUser: User | null) => {
     if (!currentUser) {
       setProfileName("");
+      setIsAdmin(false);
       return;
     }
 
-    let profile: { full_name?: string | null; email?: string | null } | null = null;
+    let profile: { full_name?: string | null; email?: string | null; role?: string | null } | null = null;
 
     try {
       const supabase = createSupabaseClient();
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, email")
+        .select("full_name, email, role")
         .eq("id", currentUser.id)
         .maybeSingle();
 
@@ -38,6 +40,8 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
     } catch {
       profile = null;
     }
+
+    setIsAdmin(profile?.role === "admin");
 
     const displayName =
       profile?.full_name ||
@@ -95,6 +99,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
     const supabase = createSupabaseClient();
     await supabase.auth.signOut();
     setUser(null);
+    setIsAdmin(false);
     setProfileName("");
     setShowAccountMenu(false);
   };
@@ -178,8 +183,8 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
             <h1 className="truncate text-[15px] font-black tracking-wide text-black sm:text-lg">
               GOSH PERFUME
             </h1>
-            <p className="truncate text-[9px] uppercase tracking-[0.2em] text-yellow-500 sm:text-[11px] sm:tracking-[0.3em]">
-              Luxury Perfume
+            <p className="truncate text-[12px] font-black uppercase tracking-[0.32em] text-yellow-500 sm:text-sm sm:tracking-[0.42em]">
+              STUDIO
             </p>
           </div>
         </Link>
@@ -212,6 +217,19 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              aria-label="Admin Dashboard"
+              title="Admin Dashboard"
+              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20"
+            >
+              <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
+              <LayoutDashboard className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-600" />
+              <div className="absolute -inset-1 rounded-2xl bg-yellow-400/20 opacity-0 blur-sm transition-all duration-300 group-hover:opacity-100" />
+            </Link>
+          )}
+
           {/* Premium Auth Button */}
           {!user ? (
             <Link
@@ -297,6 +315,18 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              aria-label="Admin Dashboard"
+              title="Admin Dashboard"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95"
+            >
+              <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
+              <LayoutDashboard className="relative h-[18px] w-[18px]" />
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={onCartOpen}

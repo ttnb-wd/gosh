@@ -58,6 +58,7 @@ CREATE TABLE public.orders (
   discount numeric NOT NULL DEFAULT 0,
   total numeric NOT NULL DEFAULT 0 CHECK (total >= 0::numeric),
   status text NOT NULL DEFAULT 'Pending'::text CHECK (status = ANY (ARRAY['Pending'::text, 'Confirmed'::text, 'Processing'::text, 'Delivered'::text, 'Cancelled'::text])),
+  stock_restored boolean NOT NULL DEFAULT false,
   payment_status text NOT NULL DEFAULT 'Unpaid'::text CHECK (payment_status = ANY (ARRAY['Unpaid'::text, 'Paid'::text, 'Verifying'::text, 'Failed'::text, 'Refunded'::text])),
   admin_note text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),

@@ -130,13 +130,13 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative mx-auto my-2 grid w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-4 sm:rounded-[28px] lg:my-0 lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
+              className="relative mx-auto my-1 grid max-h-[calc(100dvh-1rem)] w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-4 sm:rounded-[28px] lg:my-0 lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
             >
               {/* Close Button */}
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-4 top-4 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-yellow-400 text-xl font-bold text-black shadow-[0_8px_24px_rgba(234,179,8,0.45)] transition hover:scale-105 hover:bg-yellow-300"
+                className="absolute right-3 top-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 text-lg font-bold text-black shadow-[0_8px_24px_rgba(234,179,8,0.45)] transition hover:scale-105 hover:bg-yellow-300 sm:right-4 sm:top-4 sm:h-9 sm:w-9 sm:text-xl"
                 aria-label="Close quick view"
               >
                 ×
@@ -166,23 +166,23 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               )}
 
               {/* RIGHT DETAILS SECTION - ONLY THIS SCROLLS */}
-              <div className="scrollbar-auto-hide overflow-visible p-6 sm:p-8 md:max-h-[86vh] md:overflow-y-auto md:overflow-x-visible md:overscroll-contain md:p-10">
+              <div className="scrollbar-auto-hide max-h-[calc(100dvh-1rem)] overflow-y-auto overflow-x-visible overscroll-contain p-4 pr-5 sm:p-8 md:max-h-[86vh] md:p-10">
                   {/* Brand & Name */}
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-yellow-600">
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-yellow-600 sm:mb-2 sm:text-xs sm:tracking-[0.2em]">
                     {product.brand}
                   </p>
-                  <h2 className="mb-6 text-3xl font-black text-black">
+                  <h2 className="mb-4 pr-10 text-2xl font-black leading-tight text-black sm:mb-6 sm:pr-0 sm:text-3xl">
                     {product.name}
                   </h2>
 
                   {/* Description */}
-                  <p className="mb-6 text-zinc-600 leading-relaxed">
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-600 sm:mb-6 sm:text-base">
                     {product.description}
                   </p>
 
                   {/* The Story */}
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">{isAccessory ? "Product Details" : "The Story"}</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">{isAccessory ? "Product Details" : "The Story"}</h3>
                     <p className="text-sm text-zinc-600 leading-relaxed">
                       {quickViewNotes.story ||
                         (isAccessory
@@ -192,16 +192,16 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   </div>
 
                   {/* Scent Notes */}
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">{isAccessory ? "Accessory Notes" : "Scent Notes"}</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">{isAccessory ? "Accessory Notes" : "Scent Notes"}</h3>
                     
                     {/* Tabs */}
-                    <div className="mb-4 flex gap-2">
+                    <div className="mb-3 flex gap-1.5 sm:mb-4 sm:gap-2">
                       {(["top", "heart", "base"] as const).map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setActiveTab(tab)}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                          className={`rounded-lg px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                             activeTab === tab
                               ? "bg-yellow-400 text-black"
                               : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
@@ -226,8 +226,8 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   </div>
 
                   {/* Made With */}
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">Made With</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">Made With</h3>
                     <p className="text-sm text-zinc-600">
                       {quickViewNotes.madeWith ||
                         (isAccessory
@@ -237,8 +237,8 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   </div>
 
                   {/* Best For */}
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-lg font-bold text-black">Best For</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">Best For</h3>
                     <p className="text-sm text-zinc-600">
                       {quickViewNotes.bestFor ||
                         (isAccessory
@@ -249,8 +249,8 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
                   {/* How to Use */}
                   {!isAccessory && (
-                    <div className="mb-6">
-                      <h3 className="mb-3 text-lg font-bold text-black">How to Use</h3>
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">How to Use</h3>
                       <p className="text-sm text-zinc-600">
                         Apply to pulse points: wrists, neck, and behind ears. For best results, apply to moisturized skin. Do not rub after application.
                       </p>

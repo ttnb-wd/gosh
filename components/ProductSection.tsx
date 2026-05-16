@@ -3,16 +3,20 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import QuickViewModal from "./QuickViewModal";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { SCENT_COLLECTIONS, isScentCollection } from "@/lib/collections";
 
 interface Product {
   id: string | number;
   name: string;
   brand: string;
   brand_id?: string | null;
+  scent_collection?: string | null;
   brands?: BrandOption | null;
   price: number;
   description: string;
@@ -242,7 +246,7 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
   }, [isOpen, onClose]);
 
   return (
-    <div className="relative z-[1000] mt-4 min-h-[48px] w-full">
+    <div className="relative z-[1000] mt-3 min-h-[42px] w-full">
       <button
         ref={triggerRef}
         type="button"
@@ -252,7 +256,7 @@ function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, on
           updatePosition();
           onToggle();
         }}
-        className="flex w-full items-center justify-between rounded-full border border-yellow-300 bg-white/95 px-5 py-3 text-left text-sm font-bold text-neutral-900 shadow-[0_12px_30px_rgba(234,179,8,0.14)] transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50/70 focus:outline-none focus:ring-4 focus:ring-yellow-200/70"
+        className="flex w-full items-center justify-between rounded-full border border-yellow-300 bg-white/95 px-4 py-2.5 text-left text-sm font-bold text-neutral-900 shadow-[0_12px_30px_rgba(234,179,8,0.14)] transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50/70 focus:outline-none focus:ring-4 focus:ring-yellow-200/70"
       >
         <span className="truncate">
           {selectedDecant?.label || "Select decant size"}
@@ -389,10 +393,10 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="group relative h-full min-w-0"
       >
-        <div className="group flex h-full min-h-[280px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[310px] sm:rounded-[28px]">
+        <div className="group flex h-full min-h-[250px] min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[285px] sm:rounded-[26px]">
           <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
 
-          <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
+          <div className="relative z-0 h-[150px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[175px] lg:h-[190px]">
             <Image
               src={imageSrc}
               alt={product.name}
@@ -412,26 +416,33 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             )}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col p-4">
-            <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
-              {product.brand || "GOSH PERFUME"}
-            </p>
-            <h3 className="mt-2 line-clamp-1 text-lg font-black leading-tight text-[#1f1a14] sm:text-xl">
+          <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
+                {product.brand || "GOSH PERFUME"}
+              </p>
+              {product.scent_collection && (
+                <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
+                  {product.scent_collection}
+                </span>
+              )}
+            </div>
+            <h3 className="mt-1.5 line-clamp-1 text-base font-black leading-tight text-[#1f1a14] sm:text-lg">
               {product.name}
             </h3>
-            <p className="mt-2 line-clamp-2 min-h-[38px] text-sm leading-5 text-[#7a6a55]">
+            <p className="mt-1.5 line-clamp-1 min-h-[20px] text-xs leading-5 text-[#7a6a55] sm:text-sm">
               {product.description || "Premium accessory for your fragrance routine."}
             </p>
 
-            <div className="mt-auto space-y-3 pt-4">
+            <div className="mt-auto space-y-2.5 pt-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="shrink-0 text-xl font-black text-[#b88705] sm:text-2xl">
+                <span className="shrink-0 text-lg font-black text-[#b88705] sm:text-xl">
                   {formatMmk(product.price)}
                 </span>
                 <button
                   type="button"
                   onClick={handleQuickView}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
                   aria-label={`Quick view ${product.name}`}
                   title={`Quick view ${product.name}`}
                 >
@@ -443,7 +454,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
                 type="button"
                 onClick={handleAddToBag}
                 aria-label={`Add ${product.name} to bag`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-2.5 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-2 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
               >
                 <ShoppingBag className="h-4 w-4" aria-hidden="true" />
                 Add to Bag
@@ -461,12 +472,12 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="group relative h-full min-w-0"
     >
-      <div className="group flex h-full min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[26px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[410px] sm:rounded-[32px]">
+      <div className="group flex h-full min-h-[315px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[350px] sm:rounded-[28px]">
         {/* Gold glow effect on hover */}
         <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
         
         {/* Image Container - Fixed Square Ratio */}
-        <div className="relative z-0 aspect-[4/3] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
+        <div className="relative z-0 h-[155px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[185px] lg:h-[205px]">
           <Image
             src={imageSrc}
             alt={product.name}
@@ -492,19 +503,26 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         </div>
 
         {/* Content - Flex Column with Fixed Heights */}
-        <div className="flex min-w-0 flex-1 flex-col p-4">
+        <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
           {/* Brand - Truncate */}
-          <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
-            {product.brand || product.category || "GOSH PERFUME"}
-          </p>
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
+              {product.brand || product.category || "GOSH PERFUME"}
+            </p>
+            {product.scent_collection && (
+              <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
+                {product.scent_collection}
+              </span>
+            )}
+          </div>
           
           {/* Product Name - Line Clamp 2 with Min Height */}
-          <h3 className="mt-2 line-clamp-2 min-h-[40px] text-lg font-black leading-tight text-[#1f1a14] sm:min-h-[42px] sm:text-xl">
+          <h3 className="mt-1.5 line-clamp-2 min-h-[38px] text-base font-black leading-tight text-[#1f1a14] sm:min-h-[40px] sm:text-lg">
             {product.name}
           </h3>
           
           {/* Description - Line Clamp 3 with Min Height */}
-          <p className="mt-2 line-clamp-2 min-h-[36px] text-sm leading-5 text-[#7a6a55] sm:min-h-[38px]">
+          <p className="mt-1.5 line-clamp-1 min-h-[20px] text-xs leading-5 text-[#7a6a55] sm:text-sm">
             {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
           </p>
           
@@ -531,20 +549,20 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
           
           {/* Spacer for accessories to maintain card height */}
           {(isAccessory || !hasDecants) && (
-            <div className="mt-4 min-h-[48px]" />
+            <div className="mt-3 min-h-[24px]" />
           )}
           
           {/* Price and Buttons - Push to Bottom with mt-auto */}
-          <div className="mt-auto space-y-2.5 pt-3">
-            <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
-              <span className="shrink-0 text-2xl font-black text-[#b88705]">
+          <div className="mt-auto space-y-2 pt-2.5">
+            <div className="flex min-w-0 flex-col gap-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
+              <span className="shrink-0 text-xl font-black text-[#b88705] sm:text-2xl">
                 {formatMmk(isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price))}
               </span>
               
               <button 
                 type="button"
                 onClick={handleQuickView}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
                 aria-label={`Quick view ${product.name}`}
                 title={`Quick view ${product.name}`}
               >
@@ -556,7 +574,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
               type="button"
               onClick={handleAddToBag}
               aria-label={`Add ${product.name} to bag`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-2.5 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-2 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
             >
               <ShoppingBag className="h-4 w-4" aria-hidden="true" />
               Add to Bag
@@ -574,8 +592,13 @@ interface ProductSectionProps {
   onAddToBag: (product: Product) => void;
 }
 
+const scentCollectionOptions = SCENT_COLLECTIONS;
+
 export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
   const supabase = createSupabaseClient();
+  const searchParams = useSearchParams();
+  const collectionParam = searchParams.get("collection");
+  const urlCollection = isScentCollection(collectionParam) ? collectionParam : null;
   
   // Original fallback products - NEVER remove these, they are the main products
   const fallbackProducts: Product[] = [
@@ -759,9 +782,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const [selectedDecants, setSelectedDecants] = useState<Record<string, { label: string; price: number }>>({});
   const [openDecantDropdown, setOpenDecantDropdown] = useState<string | null>(null);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
+  const [isCollectionMenuOpen, setIsCollectionMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Perfumes");
+  const [selectedCollection, setSelectedCollection] = useState<string>(urlCollection || "All Collections");
   const [isMounted, setIsMounted] = useState(false);
   const brandMenuRef = useRef<HTMLDivElement>(null);
+  const collectionMenuRef = useRef<HTMLDivElement>(null);
   
   // Normalize Supabase product to match original product shape
   const normalizeProduct = (product: SupabaseProduct): Product => {
@@ -798,6 +824,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       image: imageUrl,
       badge: product.badge || null,
       category: product.category || "",
+      scent_collection: product.scent_collection || null,
       notes: normalizeQuickViewNotes(product.notes),
       decants: Array.isArray(product.decants) && product.decants.length > 0
         ? product.decants
@@ -814,8 +841,18 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   useEffect(() => {
     setIsMounted(true);
     loadActiveBrands();
-    loadProducts();
   }, []);
+
+  useEffect(() => {
+    setSelectedCollection(urlCollection || "All Collections");
+    if (urlCollection) {
+      setSelectedCategory("Perfumes");
+    }
+  }, [urlCollection]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [selectedCollection]);
 
   const loadActiveBrands = async () => {
     const { data, error } = await supabase
@@ -833,18 +870,26 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     try {
       setLoading(true);
       
-      let loadedProducts = [...fallbackProducts];
+      const hasCollectionFilter =
+        selectedCollection !== "All Collections" && isScentCollection(selectedCollection);
+      let loadedProducts = hasCollectionFilter ? [] : [...fallbackProducts];
       
       // Use Supabase as the production source of truth.
       // Fallback products are only for empty/failing Supabase projects.
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("products")
           .select("*, brands(id, name, slug, is_active)")
           .eq("is_active", true)
           .order("created_at", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (hasCollectionFilter) {
+          query = query.eq("scent_collection", selectedCollection);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data) {
           loadedProducts = (data as SupabaseProduct[])
             .filter((product) => {
               const brandRelation =
@@ -864,7 +909,11 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       setProducts(loadedProducts);
     } catch {
       // Error loading products, using fallback products
-      setProducts(fallbackProducts);
+      setProducts(
+        selectedCollection !== "All Collections" && isScentCollection(selectedCollection)
+          ? []
+          : fallbackProducts
+      );
     } finally {
       setLoading(false);
     }
@@ -907,22 +956,25 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
   }, [brands, onBrandSelect, selectedBrand]);
   
-  // Close brand menu when clicking outside
+  // Close filter menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isBrandMenuOpen && brandMenuRef.current && !brandMenuRef.current.contains(event.target as Node)) {
         setIsBrandMenuOpen(false);
       }
+      if (isCollectionMenuOpen && collectionMenuRef.current && !collectionMenuRef.current.contains(event.target as Node)) {
+        setIsCollectionMenuOpen(false);
+      }
     };
     
-    if (isBrandMenuOpen) {
+    if (isBrandMenuOpen || isCollectionMenuOpen) {
       document.addEventListener('click', handleClickOutside);
     }
     
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isBrandMenuOpen]);
+  }, [isBrandMenuOpen, isCollectionMenuOpen]);
   
   const handleQuickView = (product: typeof products[0]) => {
     setQuickViewProduct(product);
@@ -948,6 +1000,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     // Normalize category for comparison
     const normalizedCategory = String(product.category || "").toLowerCase().trim();
     const isAccessory = normalizedCategory === "accessories" || normalizedCategory === "accessory";
+    const normalizedScentCollection = String(product.scent_collection || "").trim();
     
     // Filter by brand
     const selectedBrandRecord = brands.find((brand) => brand.id === selectedBrand);
@@ -973,13 +1026,18 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       // Should NOT show accessories
       matchesCategory = !isAccessory && normalizedCategory === selectedCategory.toLowerCase();
     }
+
+    const matchesCollection =
+      selectedCollection === "All Collections" ||
+      normalizedScentCollection === selectedCollection;
     
-    return matchesBrand && matchesCategory;
+    return matchesBrand && matchesCategory && matchesCollection;
   });
 
   const getBrandTitle = () => {
     const selectedBrandName = brands.find((brand) => brand.id === selectedBrand)?.name || selectedBrand;
     if (selectedCategory === "Accessories") return "Accessories";
+    if (selectedCollection !== "All Collections") return `${selectedCollection} Collection`;
     if (selectedCategory === "Perfumes") {
       return selectedBrand === "All" ? "All Perfumes" : `${selectedBrandName} Perfumes`;
     }
@@ -998,6 +1056,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     selectedBrand === "All"
       ? "All"
       : brands.find((brand) => brand.id === selectedBrand)?.name || "this brand";
+  const isCollectionFilterActive = selectedCollection !== "All Collections";
 
   return (
     <section
@@ -1030,34 +1089,116 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         <h2 className="mt-3 text-3xl font-black text-[#1f1a14] sm:mt-4 sm:text-5xl">
           {getBrandTitle()}
         </h2>
+        {isCollectionFilterActive && (
+          <Link
+            href="/products"
+            onClick={() => setSelectedCollection("All Collections")}
+            className="mt-4 inline-flex rounded-full border border-[#d4af37]/35 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#b88700] shadow-[0_10px_25px_rgba(212,175,55,0.12)] transition hover:bg-[#fff7e6]"
+          >
+            Clear Collection
+          </Link>
+        )}
       </motion.div>
 
       {/* Filter Bar with Product Count and Filters */}
       <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <div>
-          <p className="text-sm font-semibold text-[#7a6a55]">
-            {getProductCount()}
-          </p>
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:overflow-x-auto sm:pb-0">
+          {["Perfumes", "Accessories"].map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setSelectedCategory(category)}
+              className={`min-w-0 rounded-full px-3 py-2.5 text-sm font-bold transition-all duration-300 sm:shrink-0 sm:px-5 ${
+                selectedCategory === category
+                  ? "bg-[linear-gradient(135deg,#d4af37,#f7d774)] text-[#1f1a14] shadow-[0_10px_25px_rgba(212,175,55,0.28)]"
+                  : "border border-[#d4af37]/35 bg-white text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
+              }`}
+            >
+              <span className="block truncate whitespace-nowrap">{category}</span>
+            </button>
+          ))}
         </div>
 
         <div className="flex flex-col gap-3 rounded-[26px] border border-[#d4af37]/20 bg-white/85 p-3 shadow-[0_18px_45px_rgba(212,175,55,0.1)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-          {/* Category Filter Pills */}
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:overflow-x-auto sm:pb-0">
-            {["Perfumes", "Accessories"].map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`min-w-0 rounded-full px-3 py-2.5 text-sm font-bold transition-all duration-300 sm:shrink-0 sm:px-5 ${
-                  selectedCategory === category
-                    ? "bg-[linear-gradient(135deg,#d4af37,#f7d774)] text-[#1f1a14] shadow-[0_10px_25px_rgba(212,175,55,0.28)]"
-                    : "border border-[#d4af37]/35 bg-white text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
+          <motion.div
+            ref={collectionMenuRef}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.16 }}
+            className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setIsBrandMenuOpen(false);
+                setIsCollectionMenuOpen((prev) => !prev);
+              }}
+              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[190px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
+              aria-haspopup="listbox"
+              aria-expanded={isCollectionMenuOpen}
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />
+                Collection
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-300 ${
+                  isCollectionMenuOpen ? "rotate-180" : ""
                 }`}
-              >
-                <span className="block truncate whitespace-nowrap">{category}</span>
-              </button>
-            ))}
-          </div>
+              />
+            </button>
+
+            <AnimatePresence>
+              {isCollectionMenuOpen && (
+                <motion.div
+                  key="desktop-collection-dropdown"
+                  initial={{ opacity: 0, x: 22 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 22 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute right-0 top-[calc(100%+10px)] z-[999] hidden w-[250px] overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur sm:block"
+                >
+                  <div className="mb-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsCollectionMenuOpen(false)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
+                      aria-label="Close collection menu"
+                    >
+                      Ã—
+                    </button>
+                  </div>
+                  <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
+                    {["All Collections", ...scentCollectionOptions].map((collection, index) => (
+                      <motion.button
+                        key={`desktop-collection-${isCollectionMenuOpen}-${collection}-${index}`}
+                        type="button"
+                        initial={{ opacity: 0, x: 22 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.52,
+                          delay: index * 0.09,
+                          ease: [0.22, 1, 0.36, 1]
+                        }}
+                        onClick={() => {
+                          setSelectedCollection(collection);
+                          setIsCollectionMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
+                          selectedCollection === collection
+                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
+                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
+                        }`}
+                      >
+                        <span className="truncate">{collection}</span>
+                        {selectedCollection === collection && <Check className="h-3.5 w-3.5 shrink-0" />}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Brand Filter Dropdown */}
           {onBrandSelect && brands.length > 1 && (
@@ -1071,6 +1212,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             <button
               type="button"
               onClick={() => {
+                setIsCollectionMenuOpen(false);
                 setIsBrandMenuOpen((prev) => !prev);
               }}
               className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
@@ -1147,7 +1289,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       <AnimatePresence mode="wait">
         {filteredProducts.length > 0 ? (
           <motion.div
-            key={selectedBrand}
+            key={`${selectedBrand}-${selectedCollection}`}
             variants={container}
             initial="hidden"
             animate="show"
@@ -1182,9 +1324,15 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                 <ShoppingBag className="h-8 w-8" />
               </div>
               <h3 className="mb-2 text-xl font-bold text-black">No perfumes found</h3>
-              <p className="text-zinc-600">
-                No perfumes available for <span className="font-medium text-yellow-600">{selectedBrandLabel}</span> yet.
-              </p>
+              {isCollectionFilterActive ? (
+                <p className="text-zinc-600">
+                  No products found in <span className="font-medium text-yellow-600">{selectedCollection} Collection</span> yet.
+                </p>
+              ) : (
+                <p className="text-zinc-600">
+                  No perfumes available for <span className="font-medium text-yellow-600">{selectedBrandLabel}</span> in this collection yet.
+                </p>
+              )}
               <p className="mt-2 text-sm text-zinc-500">
                 Check back soon for new arrivals!
               </p>
@@ -1264,6 +1412,81 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                           }`}
                         >
                           <span className="truncate">{label}</span>
+                          {active && <Check className="h-4 w-4 shrink-0" />}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+            {isCollectionMenuOpen && (
+              <motion.div
+                key="mobile-collection-popup"
+                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                onClick={() => setIsCollectionMenuOpen(false)}
+              >
+                <motion.div
+                  role="listbox"
+                  aria-label="Choose collection"
+                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
+                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
+                        Filter by collection
+                      </p>
+                      <h3 className="mt-1 text-xl font-black text-neutral-950">
+                        Choose Collection
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCollectionMenuOpen(false)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
+                      aria-label="Close collection popup"
+                    >
+                      Ã—
+                    </button>
+                  </div>
+
+                  <div className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1">
+                    {["All Collections", ...scentCollectionOptions].map((collection, index) => {
+                      const active = selectedCollection === collection;
+
+                      return (
+                        <motion.button
+                          key={`mobile-popup-collection-${collection}-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.24,
+                            delay: Math.min(index * 0.025, 0.18),
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          onClick={() => {
+                            setSelectedCollection(collection);
+                            setIsCollectionMenuOpen(false);
+                          }}
+                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
+                            active
+                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
+                              : "bg-white text-neutral-700 active:bg-yellow-50"
+                          }`}
+                        >
+                          <span className="truncate">{collection}</span>
                           {active && <Check className="h-4 w-4 shrink-0" />}
                         </motion.button>
                       );

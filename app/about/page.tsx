@@ -7,6 +7,7 @@ import { Sparkles, Heart, Award, Leaf, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import AdsBanner from "@/components/AdsBanner";
 
 // Cart item type definition
 interface CartItem {
@@ -74,7 +75,7 @@ export default function AboutPage() {
   return (
     <motion.main 
       role="main"
-      className="min-h-screen bg-[#fffaf0] text-[#1f1a14]"
+      className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -82,9 +83,7 @@ export default function AboutPage() {
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       
       {/* Hero Section */}
-      <section role="region" aria-label="About us hero" className="relative overflow-hidden bg-[linear-gradient(135deg,#fffaf0_0%,#f8eeee_52%,#ffffff_100%)] py-8 lg:py-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_50%)]" />
-        
+      <section role="region" aria-label="About us hero" className="relative overflow-hidden bg-[var(--site-bg)] py-8 lg:py-12">
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
@@ -110,7 +109,7 @@ export default function AboutPage() {
       </section>
 
       {/* Brand Story Section */}
-      <section className="py-10 lg:py-16">
+      <section className="-mt-px bg-[var(--site-bg)] py-10 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <motion.div
@@ -169,8 +168,10 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <AdsBanner />
+
       {/* Why Choose Us Section */}
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#fff7e6_100%)] py-10 lg:py-16">
+      <section className="-mt-px bg-[var(--site-bg)] py-10 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
@@ -215,9 +216,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fffaf0_0%,#ffffff_100%)] py-10 lg:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.08),transparent_50%)]" />
-        
+      <section className="relative -mt-px overflow-hidden bg-[var(--site-bg)] py-10 lg:py-16">
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"

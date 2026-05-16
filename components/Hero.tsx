@@ -12,23 +12,29 @@ export default function Hero() {
       role="region"
       aria-label="Hero banner"
       id="home"
-      className="relative isolate -mt-px min-h-[560px] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.22),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.14),transparent_42%),linear-gradient(135deg,#fffaf0_0%,#f8eeee_48%,#ffffff_100%)] px-4 pb-16 pt-0 sm:px-6 lg:px-8 lg:pb-20 lg:pt-0"
+      className="relative isolate -mt-px min-h-[560px] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(111,29,27,0.08),transparent_44%),linear-gradient(135deg,#fffaf0_0%,#fbf1e3_48%,#ffffff_100%)] px-4 pb-16 pt-0 sm:px-6 lg:px-8 lg:pb-20 lg:pt-0"
     >
-      <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[58%] [mask-image:linear-gradient(90deg,transparent_0%,black_14%,black_100%)] md:block"
-        aria-hidden="true"
-      >
-        <Image
-          src="/images/hero/wmremove-transformed.png"
-          alt=""
-          fill
-          priority
-          sizes="58vw"
-          className="object-cover object-[48%_center]"
-        />
-      </div>
+        <motion.div
+          initial={{ opacity: 0, x: -70 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.05, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-0 z-0 block [mask-image:linear-gradient(180deg,black_0%,black_82%,transparent_100%)] md:inset-y-0 md:left-auto md:right-0 md:w-[58%] md:[mask-image:linear-gradient(90deg,transparent_0%,black_14%,black_100%)]"
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0 opacity-60 md:opacity-100">
+            <Image
+              src="/images/hero/wmremove-transformed.png"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 768px) 58vw, 100vw"
+              className="object-cover object-[58%_center] md:object-[48%_center]"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,250,240,0.10)_0%,rgba(255,250,240,0.24)_48%,rgba(255,247,230,0.18)_100%)]" />
+          </div>
+        </motion.div>
 
-      <div className="pointer-events-none absolute right-[19%] top-[8%] z-10 hidden h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(247,231,179,0.72)_0%,rgba(212,175,55,0.24)_42%,transparent_72%)] blur-2xl md:block" />
+      <div className="pointer-events-none absolute right-[19%] top-[8%] z-10 hidden h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(247,231,179,0.46)_0%,rgba(212,175,55,0.13)_44%,transparent_74%)] blur-2xl md:block" />
 
       <LuxuryHeroEffects />
 
@@ -56,10 +62,10 @@ export default function Hero() {
             </span>
           </motion.h1>
 
-          <motion.p className="mt-6 max-w-xl text-lg leading-8 text-[#7a6a55]">
-            Experience premium perfumes crafted with style, depth, and luxury.
-            A modern perfume brand with clean elegance and golden highlights.
-          </motion.p>
+            <motion.p className="mt-6 max-w-xl text-lg font-semibold leading-8 text-[#4f4234] drop-shadow-[0_1px_10px_rgba(255,250,240,0.82)]">
+              Experience premium perfumes crafted with style, depth, and luxury.
+              A modern perfume brand with clean elegance and golden highlights.
+            </motion.p>
 
           <motion.div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Link href="/products">
@@ -75,11 +81,16 @@ export default function Hero() {
               </button>
             </Link>
           </motion.div>
+
+
         </motion.div>
 
         <div className="hidden lg:block" aria-hidden="true" />
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-transparent to-[#fffaf0]" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-[-1px] z-20 h-40 bg-[linear-gradient(to_bottom,rgba(251,246,237,0)_0%,rgba(251,246,237,0.52)_54%,var(--site-bg)_100%)]"
+          aria-hidden="true"
+        />
     </section>
   );
 }

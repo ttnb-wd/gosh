@@ -11,7 +11,11 @@ const stats = [
 
 export default function LuxuryStats() {
   return (
-    <section role="region" aria-label="Luxury statistics" className="bg-[linear-gradient(135deg,#d4af37_0%,#f7d774_52%,#d4af37_100%)] py-16 lg:py-24">
+    <section
+      role="region"
+      aria-label="Luxury statistics"
+      className="bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.22),transparent_34%),linear-gradient(135deg,#fff7e6_0%,#f7e7b3_48%,#e7c98a_100%)] py-16 lg:py-24"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (

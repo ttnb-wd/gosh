@@ -27,7 +27,12 @@ export default function LuxuryHeroEffects() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+    <motion.div
+      className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8, delay: 2, ease: "easeOut" }}
+    >
       <motion.div
         aria-hidden="true"
         className="absolute right-[8%] top-[12%] h-56 w-56 rounded-full bg-yellow-300/20 blur-3xl"
@@ -124,6 +129,6 @@ export default function LuxuryHeroEffects() {
           }}
         />
       ))}
-    </div>
+    </motion.div>
   );
 }

@@ -75,7 +75,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="relative isolate min-h-full flex flex-col overflow-x-hidden" suppressHydrationWarning>
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe 
@@ -88,7 +88,9 @@ export default function RootLayout({
         {/* End Google Tag Manager (noscript) */}
         
         <GoogleAnalytics />
-        {children}
+        <div className="relative flex min-h-screen flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );

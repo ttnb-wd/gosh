@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle, ChevronLeft, ChevronRight, Edit, EyeOff, Package, Plus, Search, Tags, Trash2, Upload, X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { SCENT_COLLECTIONS } from "@/lib/collections";
 import PremiumSelect from "./PremiumSelect";
 import { ComponentErrorBoundary } from "../ErrorBoundaries";
 
@@ -16,6 +17,7 @@ interface Product {
   description: string;
   image: string;
   badge: string | null;
+  scent_collection?: string | null;
   stock: number;
   category: string;
   is_active: boolean;
@@ -107,6 +109,11 @@ const productCategoryFilters = [
   { label: "Accessories Products", value: "accessories" },
 ] as const;
 
+const scentCollectionOptions = SCENT_COLLECTIONS.map((collection) => ({
+  label: collection,
+  value: collection,
+}));
+
 function ProductManagerContent() {
   const supabase = useMemo(() => createSupabaseClient(), []);
   const [products, setProducts] = useState<Product[]>([]);
@@ -197,6 +204,7 @@ function ProductManagerContent() {
     description: "",
     image: "",
     badge: "",
+    scent_collection: "",
     stock: "",
     category: "",
     is_active: true,
@@ -399,6 +407,7 @@ function ProductManagerContent() {
       description: "",
       image: "",
       badge: "",
+      scent_collection: "",
       stock: "",
       category: presetCategory,
       is_active: true,
@@ -428,6 +437,7 @@ function ProductManagerContent() {
       description: product.description,
       image: product.image,
       badge: product.badge || "",
+      scent_collection: product.scent_collection || "",
       stock: product.stock.toString(),
       category: product.category,
       is_active: product.is_active,
@@ -530,6 +540,8 @@ function ProductManagerContent() {
         description: formData.description?.trim() || null,
         image: imageUrl || null,
         category: formData.category || null,
+        badge: formData.badge || null,
+        scent_collection: formData.scent_collection || null,
         price: Number(formData.price || 0),
         stock: Number(formData.stock || 0),
         is_active: Boolean(formData.is_active),
@@ -556,6 +568,30 @@ function ProductManagerContent() {
         return;
       }
 
+      const savedProduct = result.data as Product | null;
+      if (savedProduct?.id) {
+        const { error: productMetaUpdateError } = await supabase
+          .from("products")
+          .update({
+            badge: formData.badge || null,
+            scent_collection: formData.scent_collection || null,
+          })
+          .eq("id", savedProduct.id);
+
+        if (productMetaUpdateError) {
+          const { error: collectionOnlyUpdateError } = await supabase
+            .from("products")
+            .update({ scent_collection: formData.scent_collection || null })
+            .eq("id", savedProduct.id);
+
+          if (collectionOnlyUpdateError) {
+            console.warn("Product collection fallback save skipped:", collectionOnlyUpdateError);
+          } else {
+            console.warn("Product badge save skipped. Add the products.badge column in Supabase to save badges.", productMetaUpdateError);
+          }
+        }
+      }
+
       // Reset form
       setFormData({
         name: "",
@@ -565,6 +601,7 @@ function ProductManagerContent() {
         description: "",
         image: "",
         badge: "",
+        scent_collection: "",
         stock: "",
         category: "",
         is_active: true,
@@ -799,18 +836,18 @@ function ProductManagerContent() {
           <p className="mt-2 text-sm text-zinc-600">Add your first product to get started.</p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <div
               key={product.id}
               className={`group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg ${
-                product.category === "Accessories" ? "w-full max-w-[350px] justify-self-start" : ""
+                product.category === "Accessories" ? "w-full max-w-[320px] justify-self-start" : ""
               }`}
             >
               {/* Product Image */}
               <div
                 className={`relative overflow-hidden bg-zinc-50 ${
-                  product.category === "Accessories" ? "aspect-[4/3]" : "aspect-square"
+                  product.category === "Accessories" ? "h-36 sm:h-40" : "h-40 sm:h-44 lg:h-48"
                 }`}
               >
                 <img
@@ -839,7 +876,7 @@ function ProductManagerContent() {
               </div>
 
               {/* Product Info */}
-              <div className={product.category === "Accessories" ? "p-4" : "p-4"}>
+              <div className="p-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-yellow-600">
                     {product.brands?.name || product.brand || "Unlinked brand"}
@@ -868,25 +905,30 @@ function ProductManagerContent() {
                     )}
                   </div>
                 </div>
-                <h3 className="mt-1 text-lg font-bold text-black">{product.name}</h3>
+                <h3 className="mt-1 line-clamp-1 text-base font-bold leading-tight text-black">{product.name}</h3>
+                {product.scent_collection && (
+                  <div className="mt-1.5">
+                    <span className="inline-flex rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-yellow-700">
+                      {product.scent_collection}
+                    </span>
+                  </div>
+                )}
                 <p
-                  className={`mt-1 text-sm text-zinc-600 ${
-                    product.category === "Accessories" ? "line-clamp-2 min-h-[40px]" : ""
-                  }`}
+                  className="mt-1 line-clamp-1 min-h-[20px] text-sm text-zinc-600"
                 >
                   {product.description}
                 </p>
                 
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-xl font-black text-yellow-600">{formatPrice(product.price)}</span>
+                <div className="mt-2.5 flex items-center justify-between">
+                  <span className="text-lg font-black text-yellow-600">{formatPrice(product.price)}</span>
                   <span className="text-sm font-semibold text-zinc-600">Stock: {product.stock}</span>
                 </div>
 
                 {/* Decant Sizes */}
                 {product.category !== "Accessories" && product.decants && product.decants.length > 0 && (
-                  <div className="mt-3">
+                  <div className="mt-2.5">
                     <p className="text-xs font-semibold text-zinc-500">Decant Sizes:</p>
-                    <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="mt-1 flex max-h-[52px] flex-wrap gap-1 overflow-hidden">
                       {product.decants.map((decant) => (
                         <span
                           key={decant.label}
@@ -900,13 +942,13 @@ function ProductManagerContent() {
                 )}
 
                 {/* Actions */}
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   {/* Toggle Active/Inactive - Full Width */}
                   <button
                     type="button"
                     onClick={() => toggleProductStatus(product.id, product.is_active)}
                     disabled={updatingProducts.has(product.id)}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
                       product.is_active
                         ? "border border-yellow-200 bg-white text-neutral-800 hover:border-yellow-400 hover:bg-yellow-50"
                         : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -932,11 +974,11 @@ function ProductManagerContent() {
                   </button>
 
                   {/* Edit and Delete - Side by Side */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => openEditProductForm(product)}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-yellow-200 bg-white px-5 py-4 text-sm font-bold text-neutral-800 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label="Edit product"
                     >
                       <Edit className="h-4 w-4" />
@@ -945,7 +987,7 @@ function ProductManagerContent() {
                     <button
                       type="button"
                       onClick={() => openDeleteModal(product)}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label="Delete product"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1095,44 +1137,6 @@ function ProductManagerContent() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {isAccessoryForm ? (
-                    <div>
-                      <label className="mb-2 block text-sm font-bold text-neutral-800">
-                        Category
-                      </label>
-                      <div className="flex min-h-[58px] items-center rounded-2xl border border-yellow-300 bg-yellow-50 px-5 text-sm font-black text-neutral-950 shadow-[0_12px_28px_rgba(234,179,8,0.12)]">
-                        Accessories
-                      </div>
-                    </div>
-                  ) : (
-                    <PremiumSelect
-                      label="Category"
-                      value={formData.category || ""}
-                      placeholder="Select category"
-                      options={[
-                        { label: "Woody", value: "Woody" },
-                        { label: "Oriental", value: "Oriental" },
-                        { label: "Floral", value: "Floral" },
-                        { label: "Fresh", value: "Fresh" },
-                        { label: "Citrus", value: "Citrus" },
-                      ]}
-                      onChange={(value) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          category: value,
-                          ...(value === "Accessories"
-                            ? {
-                                decant5ml: "",
-                                decant10ml: "",
-                                decant20ml: "",
-                                decant30ml: "",
-                              }
-                            : {}),
-                        }))
-                      }
-                    />
-                  )}
-
                   <PremiumSelect
                     label="Badge"
                     value={formData.badge || ""}
@@ -1150,6 +1154,24 @@ function ProductManagerContent() {
                       }))
                     }
                   />
+
+                  {!isAccessoryForm && (
+                    <PremiumSelect
+                      label="Scent Collection"
+                      value={formData.scent_collection || ""}
+                      placeholder="Select scent collection"
+                      options={scentCollectionOptions.map((option) => ({
+                        label: option.label,
+                        value: option.value,
+                      }))}
+                      onChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          scent_collection: value,
+                        }))
+                      }
+                    />
+                  )}
                 </div>
 
                 <div>
