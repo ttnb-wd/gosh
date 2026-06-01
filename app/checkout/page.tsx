@@ -10,7 +10,9 @@ import CartDrawer from "@/components/CartDrawer";
 import { Check, CheckCircle, Banknote, Building2, Smartphone } from "lucide-react";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { PageErrorBoundary } from "@/components/ErrorBoundaries";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 
 // Cart item type
 interface CartItem {
@@ -176,6 +178,7 @@ function CheckoutPageContent() {
   const supabase = createSupabaseClient();
   const router = useRouter();
   const { settings } = useSiteSettings();
+  const { settings: websiteSettings } = useWebsiteSettings();
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
@@ -183,6 +186,7 @@ function CheckoutPageContent() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [paymentScreenshots, setPaymentScreenshots] = useState<Record<string, File | null>>({});
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const showSubmitLoading = useDelayedLoading(submittingOrder, 400);
   const [submitError, setSubmitError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successOrder, setSuccessOrder] = useState<SuccessOrder | null>(null);
@@ -227,6 +231,7 @@ function CheckoutPageContent() {
 
   const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
   const subtotal = cartItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+  const deliveryNote = websiteSettings.delivery_note?.trim();
 
   // Minimum order validation
   const minimumOrderAmount = Number(settings.minimum_order_amount || 0);
@@ -624,6 +629,11 @@ function CheckoutPageContent() {
           <div className="mb-16">
             <h2 className="mb-6 text-2xl font-bold text-black">Delivery Information</h2>
             <div className="mx-auto max-w-3xl rounded-3xl border-2 border-yellow-200/40 bg-white p-8 shadow-lg">
+              {deliveryNote && (
+                <p className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50/80 px-4 py-3 text-sm font-semibold text-neutral-700">
+                  {deliveryNote}
+                </p>
+              )}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label htmlFor="customer-fullname" className="mb-2 block text-sm font-bold text-neutral-800">
@@ -1311,7 +1321,7 @@ function CheckoutPageContent() {
                           : "bg-yellow-400 text-black hover:bg-yellow-300"
                       }`}
                     >
-                      {submittingOrder
+                      {showSubmitLoading
                         ? "Placing Order..."
                         : selectedPayment === "cod"
                         ? "Confirm Cash on Delivery"

@@ -149,7 +149,7 @@ export default function CollectionPreview() {
   };
 
   return (
-    <section className="overflow-hidden bg-[var(--site-bg)] px-4 pb-0 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12">
+    <section className="overflow-hidden bg-[var(--site-bg)] px-4 pb-0 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10">
       <div className="mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -176,7 +176,7 @@ export default function CollectionPreview() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.5, ease: "easeOut" }}
-                className="relative grid min-h-0 gap-3 p-3 sm:gap-5 sm:p-5 lg:min-h-[370px] lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-8 lg:p-8"
+                className="relative grid min-h-0 gap-3 p-3 pb-16 sm:gap-5 sm:p-5 sm:pb-20 lg:min-h-[370px] lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-8 lg:p-8"
               >
                 <span className="pointer-events-none absolute -left-4 bottom-[-8px] z-0 select-none text-[3rem] font-black uppercase leading-none tracking-tight text-[#d4af37]/10 sm:bottom-[-14px] sm:text-[4.8rem] lg:left-6 lg:bottom-[-26px] lg:text-[8rem]">
                   {activeCollection.name}
@@ -246,7 +246,7 @@ export default function CollectionPreview() {
             </AnimatePresence>
           </div>
 
-          <div className="mt-3 flex items-center justify-center gap-3 sm:mt-4 sm:gap-4 lg:hidden">
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center gap-3 sm:bottom-5 sm:gap-4 lg:hidden">
             <button
               type="button"
               onClick={goPrev}

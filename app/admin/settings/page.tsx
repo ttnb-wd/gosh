@@ -9,6 +9,12 @@ import {
   SiteSettings,
 } from "@/lib/siteSettings";
 import {
+  defaultWebsiteSettings,
+  getWebsiteSettings,
+  updateWebsiteSettings,
+  type WebsiteSettings,
+} from "@/lib/websiteSettings";
+import {
   Save,
   RotateCcw,
   CheckCircle,
@@ -19,6 +25,9 @@ import {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>(
+    defaultWebsiteSettings
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -34,8 +43,12 @@ export default function AdminSettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const data = await getSiteSettings();
-      setSettings(data);
+      const [siteData, websiteData] = await Promise.all([
+        getSiteSettings(),
+        getWebsiteSettings(),
+      ]);
+      setSettings(siteData);
+      setWebsiteSettings(websiteData);
     } catch (error) {
       console.error("Error loading settings:", error);
       setMessage({ type: "error", text: "Failed to load settings" });
@@ -51,9 +64,18 @@ export default function AdminSettingsPage() {
       setSaving(true);
       setMessage(null);
 
-      const result = await updateSiteSettings(settings);
+      const [siteResult, websiteResult] = await Promise.all([
+        updateSiteSettings(settings),
+        updateWebsiteSettings(websiteSettings),
+      ]);
 
-      if (result.success) {
+      if (siteResult.success && websiteResult.success) {
+        if (websiteResult.data) {
+          setWebsiteSettings({
+            ...defaultWebsiteSettings,
+            ...websiteResult.data,
+          });
+        }
         setMessage({
           type: "success",
           text: "Settings saved successfully!",
@@ -62,7 +84,10 @@ export default function AdminSettingsPage() {
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Failed to save settings",
+          text:
+            siteResult.error ||
+            websiteResult.error ||
+            "Failed to save settings",
         });
       }
     } catch (error) {
@@ -79,6 +104,7 @@ export default function AdminSettingsPage() {
 
   const confirmReset = () => {
     setSettings(getDefaultSettings());
+    setWebsiteSettings(defaultWebsiteSettings);
     setMessage({
       type: "success",
       text: "Settings reset to defaults. Click Save to apply.",
@@ -92,6 +118,13 @@ export default function AdminSettingsPage() {
   ) => {
     if (!settings) return;
     setSettings({ ...settings, [key]: value });
+  };
+
+  const updateWebsiteSetting = <K extends keyof WebsiteSettings>(
+    key: K,
+    value: WebsiteSettings[K]
+  ) => {
+    setWebsiteSettings({ ...websiteSettings, [key]: value });
   };
 
   if (loading) {
@@ -323,6 +356,227 @@ export default function AdminSettingsPage() {
                   onChange={(e) => updateSetting("country", e.target.value)}
                   className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
                   placeholder="Myanmar"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Website Information */}
+          <div className="rounded-[28px] border border-yellow-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                <Store className="h-5 w-5 text-yellow-700" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-black">
+                  Website Information
+                </h2>
+                <p className="text-sm text-zinc-600">
+                  Public website text, contact details, social links, and notes
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Website Name
+                </label>
+                <input
+                  id="website-name"
+                  name="website_name"
+                  type="text"
+                  value={websiteSettings.website_name || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("website_name", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="GOSH PERFUME"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Website Tagline
+                </label>
+                <input
+                  id="website-tagline"
+                  name="tagline"
+                  type="text"
+                  value={websiteSettings.tagline || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("tagline", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Luxury fragrance collection"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Short Description
+                </label>
+                <textarea
+                  id="website-description"
+                  name="description"
+                  value={websiteSettings.description || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("description", e.target.value)
+                  }
+                  rows={3}
+                  className="w-full resize-none rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Premium perfumes and accessories."
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Business Address
+                </label>
+                <input
+                  id="website-address"
+                  name="address"
+                  type="text"
+                  value={websiteSettings.address || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("address", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Business address"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Phone Number
+                </label>
+                <input
+                  id="website-phone"
+                  name="phone"
+                  type="tel"
+                  value={websiteSettings.phone || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("phone", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="09777460056"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Email Address
+                </label>
+                <input
+                  id="website-email"
+                  name="email"
+                  type="email"
+                  value={websiteSettings.email || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("email", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="hello@goshperfume.com"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Opening Hours
+                </label>
+                <input
+                  id="website-opening-hours"
+                  name="opening_hours"
+                  type="text"
+                  value={websiteSettings.opening_hours || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("opening_hours", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Mon - Sat: 9:00 AM - 7:00 PM"
+                />
+              </div>
+
+              {[
+                ["facebook_url", "Facebook Link", "https://facebook.com/..."],
+                ["instagram_url", "Instagram Link", "https://instagram.com/..."],
+                ["tiktok_url", "TikTok Link", "https://tiktok.com/@..."],
+                ["viber_phone", "Viber Phone", "09777460056"],
+                ["whatsapp_phone", "WhatsApp Phone", "09777460056"],
+              ].map(([key, label, placeholder]) => (
+                <div key={key}>
+                  <label className="mb-2 block text-sm font-bold text-neutral-800">
+                    {label}
+                  </label>
+                  <input
+                    id={`website-${key}`}
+                    name={key}
+                    type="text"
+                    value={
+                      (websiteSettings[
+                        key as keyof WebsiteSettings
+                      ] as string | null) || ""
+                    }
+                    onChange={(e) =>
+                      updateWebsiteSetting(
+                        key as keyof WebsiteSettings,
+                        e.target.value
+                      )
+                    }
+                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                    placeholder={placeholder}
+                  />
+                </div>
+              ))}
+
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Delivery Note
+                </label>
+                <textarea
+                  id="website-delivery-note"
+                  name="delivery_note"
+                  value={websiteSettings.delivery_note || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("delivery_note", e.target.value)
+                  }
+                  rows={3}
+                  className="w-full resize-none rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Delivery note shown during checkout"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  Footer Description
+                </label>
+                <textarea
+                  id="website-footer-text"
+                  name="footer_text"
+                  value={websiteSettings.footer_text || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("footer_text", e.target.value)
+                  }
+                  rows={4}
+                  className="w-full resize-none rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Premium perfumes crafted for everyday elegance."
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  About Short Text
+                </label>
+                <textarea
+                  id="website-about-text"
+                  name="about_text"
+                  value={websiteSettings.about_text || ""}
+                  onChange={(e) =>
+                    updateWebsiteSetting("about_text", e.target.value)
+                  }
+                  rows={4}
+                  className="w-full resize-none rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                  placeholder="Short story text for About page"
                 />
               </div>
             </div>

@@ -5,6 +5,7 @@ import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut, LayoutDashboard }
 import Link from "next/link";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 interface NavbarProps {
   onCartOpen: () => void;
@@ -18,6 +19,8 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const { settings: websiteSettings } = useWebsiteSettings();
+  const websiteName = websiteSettings.website_name || "GOSH PERFUME";
 
   const loadUserProfile = async (currentUser: User | null) => {
     if (!currentUser) {
@@ -181,7 +184,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
 
           <div className="min-w-0">
             <h1 className="truncate text-[15px] font-black tracking-wide text-black sm:text-lg">
-              GOSH PERFUME
+              {websiteName}
             </h1>
             <p className="truncate text-[12px] font-black uppercase tracking-[0.32em] text-yellow-500 sm:text-sm sm:tracking-[0.42em]">
               STUDIO
@@ -342,121 +345,8 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
               </span>
             )}
           </button>
-
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={open}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition active:scale-95"
-          >
-            {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
-          </button>
         </div>
       </div>
-
-      {open && (
-        <div className="border-t border-zinc-200 bg-white px-4 py-4 md:hidden">
-          <nav role="navigation" aria-label="Mobile navigation" className="flex flex-col gap-4">
-            <Link
-              href="/"
-              className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
-              onClick={() => setOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/products"
-              className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
-              onClick={() => setOpen(false)}
-            >
-              Products
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
-              onClick={() => setOpen(false)}
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
-              onClick={() => setOpen(false)}
-            >
-              Contact
-            </Link>
-
-            {/* Mobile Auth Section */}
-            <div className="mt-2 space-y-2 border-t border-zinc-200 pt-4">
-              {!user ? (
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="group flex w-full items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-3 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:bg-yellow-50 hover:text-yellow-700"
-                >
-                  <LogIn className="h-4 w-4 text-yellow-600" />
-                  Login / Sign Up
-                </Link>
-              ) : (
-                <div className="space-y-2">
-                  <div className="rounded-2xl border border-yellow-200 bg-white/95 p-3">
-                    <div className="px-2 py-1">
-                      <p className="truncate text-sm font-bold text-neutral-900">
-                        {profileName || "Account"}
-                      </p>
-                      <p className="truncate text-xs font-semibold text-neutral-500">
-                        {user.email}
-                      </p>
-                    </div>
-                    <Link
-                      href="/orders"
-                      onClick={() => setOpen(false)}
-                      className="block rounded-xl px-2 py-2 text-sm font-bold text-neutral-800 transition hover:bg-yellow-50 hover:text-yellow-700"
-                    >
-                      My Orders
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleLogout();
-                        setOpen(false);
-                      }}
-                      aria-label="Logout from account"
-                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
-                    >
-                      <LogOut className="h-4 w-4" aria-hidden="true" />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile Shopping Bag Button */}
-            <button 
-              type="button"
-              onClick={() => {
-                onCartOpen();
-                setOpen(false);
-              }}
-              className="group relative flex w-full items-center justify-center gap-2 rounded-2xl border border-yellow-400/30 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-600 transition-all duration-300 hover:bg-yellow-100 hover:shadow-sm"
-              aria-label="Open shopping bag"
-              title="Open shopping bag"
-            >
-              <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-              Shopping Bag
-              
-              {/* Mobile Cart Item Count Badge */}
-              {cartCount > 0 && (
-                <div className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-xs font-bold text-black">
-                  {cartCount}
-                </div>
-              )}
-            </button>
-          </nav>
-        </div>
-      )}
     </header>
     <div aria-hidden="true" className="h-[89px] bg-[#fef5e7] sm:h-[113px]" />
     </>

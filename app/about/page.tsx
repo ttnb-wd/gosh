@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import AdsBanner from "@/components/AdsBanner";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 // Cart item type definition
 interface CartItem {
@@ -23,6 +24,11 @@ interface CartItem {
 export default function AboutPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { settings } = useWebsiteSettings();
+  const websiteName = settings.website_name || "GOSH PERFUME";
+  const aboutText =
+    settings.about_text ||
+    "Where luxury meets artistry. We create exceptional fragrances that tell stories, evoke emotions, and define moments. Each bottle represents our commitment to excellence and our passion for the art of perfumery.";
 
   const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
     if (newQuantity === 0) {
@@ -97,12 +103,10 @@ export default function AboutPage() {
             </p>
             <h1 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-6xl lg:text-7xl">
               About
-              <span className="block text-[#b88705]">GOSH PERFUME</span>
+              <span className="block text-[#b88705]">{websiteName}</span>
             </h1>
             <p className="mx-auto max-w-3xl text-xl leading-relaxed text-[#7a6a55]">
-              Where luxury meets artistry. We create exceptional fragrances that tell stories, 
-              evoke emotions, and define moments. Each bottle represents our commitment to 
-              excellence and our passion for the art of perfumery.
+              {aboutText}
             </p>
           </motion.div>
         </div>
@@ -125,7 +129,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 leading-relaxed text-[#7a6a55]">
                 <p>
-                  Founded in the heart of Beverly Hills, GOSH PERFUME began as a dream to create
+                  Founded in the heart of Beverly Hills, {websiteName} began as a dream to create
                   fragrances that transcend the ordinary. Our founder, inspired by travels across
                   the world&apos;s most exotic locations, sought to capture the essence of luxury in
                   every bottle.
@@ -183,7 +187,7 @@ export default function AboutPage() {
           >
             <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
               Why Choose
-              <span className="block text-[#b88705]">GOSH PERFUME</span>
+              <span className="block text-[#b88705]">{websiteName}</span>
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-[#7a6a55]">
               We don&apos;t just create perfumes; we craft experiences that become part of your identity.

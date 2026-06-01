@@ -1129,6 +1129,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             transition={{ duration: 0.5, delay: 0.16 }}
             className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
           >
+            {/* Collection Dropdown - Hidden but logic kept intact */}
+            <div className="hidden">
             <button
               type="button"
               onClick={() => {
@@ -1200,6 +1202,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
+            {/* End Collection Dropdown */}
           </motion.div>
 
           {/* Brand Filter Dropdown */}

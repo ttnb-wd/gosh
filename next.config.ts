@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
           // Prevent clickjacking attacks
           {
             key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            value: "DENY",
           },
           // Prevent MIME type sniffing
           {
@@ -39,6 +39,29 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          // XSS Protection (legacy but still useful)
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+          // Content Security Policy
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.sentry.io",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://wfiejzhiuuegfxjbdupq.supabase.co https://challenges.cloudflare.com https://*.sentry.io wss://wfiejzhiuuegfxjbdupq.supabase.co",
+              "frame-src 'self' https://challenges.cloudflare.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+            ].join("; "),
           },
           // Strict Transport Security (HSTS) - only in production
           ...(process.env.NODE_ENV === "production"

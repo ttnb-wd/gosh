@@ -6,6 +6,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import { SCENT_COLLECTIONS } from "@/lib/collections";
 import PremiumSelect from "./PremiumSelect";
 import { ComponentErrorBoundary } from "../ErrorBoundaries";
+import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 
 interface Product {
   id: string;
@@ -124,6 +125,7 @@ function ProductManagerContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [listLoading, setListLoading] = useState(true);
+  const showListLoading = useDelayedLoading(listLoading, 400);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<(typeof productStatusFilters)[number]["value"]>("all");
   const [categoryFilter, setCategoryFilter] = useState<(typeof productCategoryFilters)[number]["value"]>("all");
@@ -131,9 +133,11 @@ function ProductManagerContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
+  const showSaveLoading = useDelayedLoading(loading, 400);
   const [error, setError] = useState("");
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const showDeleteLoading = useDelayedLoading(deletingProduct, 400);
   const [deleteError, setDeleteError] = useState("");
   const formatPrice = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
   const totalPages = Math.max(1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE));
@@ -144,6 +148,7 @@ function ProductManagerContent() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const showImageUploadLoading = useDelayedLoading(uploadingImage, 300);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Upload image to Supabase Storage
@@ -791,7 +796,7 @@ function ProductManagerContent() {
         </div>
       </div>
 
-      {!listLoading && (
+      {!showListLoading && (
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
           <p>
             Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
@@ -824,7 +829,7 @@ function ProductManagerContent() {
       )}
 
       {/* Products Grid */}
-      {listLoading ? (
+      {showListLoading ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
           <p className="mt-4 text-sm text-zinc-600">Loading products...</p>
@@ -1447,9 +1452,9 @@ function ProductManagerContent() {
                 disabled={loading || uploadingImage}
                 className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {uploadingImage
+                {showImageUploadLoading
                   ? "Uploading image..."
-                  : loading
+                  : showSaveLoading
                   ? (editingProduct ? "Saving..." : isAccessoryForm ? "Adding Accessory..." : "Adding...")
                   : editingProduct
                   ? "Save Changes"

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Clock, Mail, MapPin, Phone, Send, ShieldCheck, Star } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { policies } from "@/lib/policies";
 import { validateEmail, validateName, validateSubject, validateMessage, sanitizeInput } from "@/lib/validation";
@@ -12,6 +13,7 @@ import { FormErrorBoundary } from "./ErrorBoundaries";
 
 function ContactSectionContent() {
   const { settings } = useSiteSettings();
+  const { settings: websiteSettings } = useWebsiteSettings();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -37,13 +39,17 @@ function ContactSectionContent() {
   }, []);
 
   // Fallback values
-  const storeName = settings.store_name || "GOSH PERFUME";
-  const storeTagline = settings.store_tagline || "Luxury Perfume Boutique";
-  const email = settings.store_email || "hello@goshperfume.com";
-  const phone = settings.store_phone || "+1 (555) 123-4567";
-  const address = [settings.store_address, settings.city, settings.country]
+  const storeName = websiteSettings.website_name || settings.store_name || "GOSH PERFUME";
+  const storeTagline =
+    websiteSettings.tagline || settings.store_tagline || "Luxury Perfume Boutique";
+  const email = websiteSettings.email || settings.store_email || "hello@goshperfume.com";
+  const phone = websiteSettings.phone || settings.store_phone || "+1 (555) 123-4567";
+  const address = websiteSettings.address || [settings.store_address, settings.city, settings.country]
     .filter(Boolean)
     .join(", ") || "123 Luxury Avenue, Beverly Hills, CA 90210, United States";
+  const openingHours =
+    websiteSettings.opening_hours ||
+    "Monday - Friday: 10:00 AM - 8:00 PM\nSaturday: 10:00 AM - 6:00 PM\nSunday: 12:00 PM - 5:00 PM";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -309,11 +315,9 @@ function ContactSectionContent() {
                   </div>
                   <div>
                     <p className="font-semibold text-black">Working Hours</p>
-                    <div className="text-zinc-600">
-                      <p>Monday - Friday: 10:00 AM - 8:00 PM</p>
-                      <p>Saturday: 10:00 AM - 6:00 PM</p>
-                      <p>Sunday: 12:00 PM - 5:00 PM</p>
-                    </div>
+                    <p className="whitespace-pre-line text-zinc-600">
+                      {openingHours}
+                    </p>
                   </div>
                 </div>
               </div>

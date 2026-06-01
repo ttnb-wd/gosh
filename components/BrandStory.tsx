@@ -3,10 +3,16 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 export default function BrandStory() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
+  const { settings } = useWebsiteSettings();
+  const websiteName = settings.website_name || "GOSH PERFUME";
+  const aboutText =
+    settings.about_text ||
+    `Since 2023, ${websiteName} has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.`;
 
   const slides = [
     {
@@ -77,7 +83,7 @@ export default function BrandStory() {
             </h2>
             <div className="space-y-4 text-lg leading-relaxed text-[#7a6a55]">
               <p>
-                Since 2023, GOSH PERFUME has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.
+                {aboutText}
               </p>
               {/* <p>
                 Our master perfumers blend tradition with innovation, using only the finest ingredients sourced from the world&apos;s most prestigious suppliers. Every fragrance is a masterpiece, designed to become your signature.

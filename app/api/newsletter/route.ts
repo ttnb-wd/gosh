@@ -1,21 +1,55 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
+import { validateEmail } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { email?: string; token?: string };
-    const verification = await verifyTurnstileToken(body.token || "");
+    // Rate limiting: 5 subscriptions per hour per IP
+    const clientIp = getClientIp(request.headers);
+    const rateLimitId = createRateLimitId(clientIp, 'newsletter');
+    const rateLimit = checkRateLimit({
+      identifier: rateLimitId,
+      maxRequests: 5,
+      windowSeconds: 3600, // 1 hour
+    });
 
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429 }
+      );
+    }
+
+    const body = (await request.json()) as { email?: string; token?: string };
+
+    // Verify Turnstile token
+    const verification = await verifyTurnstileToken(body.token || "");
     if (!verification.success) {
-      return NextResponse.json({ error: verification.error }, { status: 400 });
+      return NextResponse.json(
+        { error: verification.error || "Security check failed." },
+        { status: 400 }
+      );
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(body.email || '');
+    if (!emailValidation.isValid) {
+      return NextResponse.json(
+        { error: emailValidation.error },
+        { status: 400 }
+      );
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
+      return NextResponse.json(
+        { error: "Service temporarily unavailable." },
+        { status: 500 }
+      );
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -23,16 +57,25 @@ export async function POST(request: Request) {
     });
 
     const { error } = await supabase.rpc("subscribe_newsletter", {
-      p_email: (body.email || "").trim().toLowerCase(),
+      p_email: body.email!.trim().toLowerCase(),
       p_source: "vip_club",
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      // Don't expose database errors to users
+      return NextResponse.json(
+        { error: "Could not subscribe. Please try again or contact support." },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Could not subscribe right now." }, { status: 400 });
+  } catch (error) {
+    // Log error for debugging but don't expose details
+    console.error('Newsletter subscription error:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json(
+      { error: "Could not subscribe right now. Please try again later." },
+      { status: 500 }
+    );
   }
 }
