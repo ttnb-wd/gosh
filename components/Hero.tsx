@@ -106,10 +106,10 @@ export default function Hero() {
         </div>
 
         {/* Premium Feature Card - Overlapping Hero - Above all gradients */}
-        <div className="relative z-30 -mb-12 mt-4 overflow-hidden rounded-3xl border border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)] sm:-mb-16 sm:mt-2 lg:-mb-20 lg:-mt-4 lg:rounded-[2rem]">
-          <div className="flex flex-col gap-0 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative z-30 -mb-12 -mt-8 overflow-hidden rounded-3xl border border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)] sm:-mb-16 sm:-mt-16 lg:-mb-20 lg:-mt-20 lg:rounded-[2rem]">
+          <div className="grid gap-0 divide-y divide-[#d4af37]/15 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {/* Column 1: Beyond Luxury */}
-            <div className="flex gap-4 p-6 sm:gap-5 sm:p-8 lg:flex-1 lg:p-10">
+            <div className="flex gap-5 p-6 sm:gap-6 sm:p-8 lg:p-10">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-14 sm:w-14">
                 <Diamond className="h-6 w-6 sm:h-7 sm:w-7" />
               </div>
@@ -117,14 +117,14 @@ export default function Hero() {
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
                   BEYOND LUXURY
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#4f4234] sm:mt-2 sm:text-base sm:leading-relaxed">
+                <p className="mt-2.5 text-sm leading-relaxed text-[#4f4234] sm:mt-3 sm:text-base sm:leading-relaxed">
                   Crafted to evoke emotion, designed to leave a lasting impression.
                 </p>
               </div>
             </div>
 
             {/* Column 2: Golden Essence Collection */}
-            <div className="flex gap-4 p-6 sm:gap-5 sm:p-8 lg:flex-1 lg:p-10">
+            <div className="flex gap-5 p-6 sm:gap-6 sm:p-8 lg:p-10">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-14 sm:w-14">
                 <Sparkles className="h-6 w-6 sm:h-7 sm:w-7" />
               </div>
@@ -132,27 +132,27 @@ export default function Hero() {
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
                   GOLDEN ESSENCE COLLECTION
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#4f4234] sm:mt-2 sm:text-base sm:leading-relaxed">
+                <p className="mt-2.5 text-sm leading-relaxed text-[#4f4234] sm:mt-3 sm:text-base sm:leading-relaxed">
                   A radiant expression of timeless elegance and refined craftsmanship.
                 </p>
               </div>
             </div>
 
             {/* Column 3: Discover Scents */}
-            <div className="flex gap-4 p-6 sm:gap-5 sm:p-8 lg:flex-1 lg:p-10">
+            <div className="flex gap-5 p-6 sm:gap-6 sm:p-8 lg:p-10">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-14 sm:w-14">
                 <Gem className="h-6 w-6 sm:h-7 sm:w-7" />
               </div>
               <div className="flex-1">
-                <h2 className="text-sm font-black leading-tight text-[#1f1a14] sm:text-base sm:leading-tight">
+                <h2 className="text-base font-black leading-tight text-[#1f1a14] sm:text-lg sm:leading-tight">
                   Discover scents that define you.
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#4f4234] sm:mt-2 sm:text-base sm:leading-relaxed">
+                <p className="mt-2.5 text-sm leading-relaxed text-[#4f4234] sm:mt-3 sm:text-base sm:leading-relaxed">
                   Explore our signature collection today.
                 </p>
                 <Link
                   href="/products"
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] sm:mt-3 sm:text-base"
+                  className="mt-3.5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] sm:mt-4 sm:text-base"
                 >
                   Explore More
                   <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
