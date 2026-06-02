@@ -253,7 +253,7 @@ function ContactSectionContent() {
 
         {/* Content */}
         <motion.div 
-          className="grid gap-8 lg:grid-cols-2"
+          className="grid gap-6 lg:grid-cols-2 lg:gap-8 lg:items-start"
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
@@ -262,7 +262,7 @@ function ContactSectionContent() {
           <motion.div 
             variants={cardVariants} 
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="flex h-full flex-col gap-4"
+            className="flex flex-col gap-6"
           >
             <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
               <div className="mb-6">
@@ -352,7 +352,7 @@ function ContactSectionContent() {
             <motion.div
               variants={cardVariants}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="mt-auto rounded-3xl border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]"
+              className="rounded-3xl border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]"
             >
               <div className="flex gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-300 bg-yellow-100 text-yellow-700">

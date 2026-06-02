@@ -29,6 +29,8 @@ interface SuccessOrder {
   order_number: string;
   phone: string;
   order_items?: unknown;
+  payment_method?: string;
+  payment_status?: string;
 }
 
 interface SavedOrderItem {
@@ -95,6 +97,12 @@ const WAVEPAY_QR_IMAGE = "/images/payment/wavepay-qr.jpg.jpg";
 const AYAPAY_ACCOUNT_NAME = "Khant Lin Htet";
 const AYAPAY_PHONE = "09777460056";
 const AYAPAY_QR_IMAGE = "/images/payment/ayapay-qr.jpg.jpg";
+
+// Temporarily hide COD payment promo card from UI (can be restored later)
+const SHOW_COD_PAYMENT_CARD = false;
+
+// Temporarily hide Delivery Information form from UI (can be restored later)
+const SHOW_DELIVERY_INFORMATION = false;
 
 // Payment Icon Component with Fallback
 function PaymentIcon({
@@ -240,6 +248,9 @@ function CheckoutPageContent() {
   // Filter payment methods based on settings
   const availablePaymentMethods = useMemo(() => {
     return paymentMethods.filter((method) => {
+      // Hide COD card from UI if flag is false (can be restored later)
+      if (method.id === "cod" && !SHOW_COD_PAYMENT_CARD) return false;
+      
       if (method.id === "cod") return settings.allow_cash_on_delivery;
       if (method.id === "kbzpay") return settings.allow_kbzpay;
       if (method.id === "wavepay") return settings.allow_wavepay;
@@ -257,7 +268,7 @@ function CheckoutPageContent() {
 
   // Dynamic grid class based on available payment methods count
   const paymentGridClass = useMemo(() => {
-    return "grid w-full grid-cols-2 gap-5 justify-items-center sm:grid-cols-3 sm:gap-6 lg:grid-cols-5 lg:gap-8";
+    return "grid w-full grid-cols-1 place-items-center gap-6 sm:grid-cols-2 lg:grid-cols-4";
   }, [availablePaymentMethods.length]);
 
   // Auto-select first available payment method if current selection is disabled
@@ -376,10 +387,15 @@ function CheckoutPageContent() {
       }
 
       const nextErrors: Record<string, string> = {};
-      if (!customerForm.fullName?.trim()) nextErrors.fullName = "Name is required";
-      if (!customerForm.phone?.trim()) nextErrors.phone = "Phone is required";
-      if (!customerForm.address?.trim()) nextErrors.address = "Address is required";
-      if (!customerForm.city?.trim()) nextErrors.city = "City is required";
+      
+      // Only validate delivery information if the form is visible
+      if (SHOW_DELIVERY_INFORMATION) {
+        if (!customerForm.fullName?.trim()) nextErrors.fullName = "Name is required";
+        if (!customerForm.phone?.trim()) nextErrors.phone = "Phone is required";
+        if (!customerForm.address?.trim()) nextErrors.address = "Address is required";
+        if (!customerForm.city?.trim()) nextErrors.city = "City is required";
+      }
+      
       if (!selectedPayment) nextErrors.payment = "Please select a payment method";
       if (!cartItems || cartItems.length === 0) nextErrors.cart = "Your bag is empty";
 
@@ -446,10 +462,10 @@ function CheckoutPageContent() {
 
       const { data: savedOrderData, error: orderError } = await supabase
         .rpc("place_order", {
-          p_customer_name: customerForm.fullName,
-          p_phone: customerForm.phone,
-          p_address: customerForm.address,
-          p_city: customerForm.city,
+          p_customer_name: SHOW_DELIVERY_INFORMATION ? customerForm.fullName : "Guest Customer",
+          p_phone: SHOW_DELIVERY_INFORMATION ? customerForm.phone : "N/A",
+          p_address: SHOW_DELIVERY_INFORMATION ? customerForm.address : "N/A",
+          p_city: SHOW_DELIVERY_INFORMATION ? customerForm.city : "N/A",
           p_payment_method: selectedPaymentInfo.payment_method,
           p_payment_account_name: selectedPaymentInfo.payment_account_name,
           p_payment_phone: selectedPaymentInfo.payment_phone,
@@ -526,7 +542,10 @@ function CheckoutPageContent() {
 
       setShowPaymentModal(false);
       setSuccessOrder({
-        ...order,
+        order_number: order.order_number,
+        phone: order.phone,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
         order_items: savedOrderItems,
       });
       setShowSuccessModal(true);
@@ -626,118 +645,118 @@ function CheckoutPageContent() {
           </div>
 
           {/* Customer Information Form */}
-          <div className="mb-16">
-            <h2 className="mb-6 text-2xl font-bold text-black">Delivery Information</h2>
-            <div className="mx-auto max-w-3xl rounded-3xl border-2 border-yellow-200/40 bg-white p-8 shadow-lg">
-              {deliveryNote && (
-                <p className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50/80 px-4 py-3 text-sm font-semibold text-neutral-700">
-                  {deliveryNote}
-                </p>
-              )}
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label htmlFor="customer-fullname" className="mb-2 block text-sm font-bold text-neutral-800">
-                    Full Name *
-                  </label>
-                  <input
-                    id="customer-fullname"
-                    name="fullName"
-                    type="text"
-                    value={customerForm.fullName}
-                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="John Doe"
-                  />
-                  {errors.fullName && (
-                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.fullName}</p>
-                  )}
-                </div>
+          {SHOW_DELIVERY_INFORMATION && (
+            <div className="mb-16">
+              <h2 className="mb-6 text-2xl font-bold text-black">Delivery Information</h2>
+              <div className="mx-auto max-w-3xl rounded-3xl border-2 border-yellow-200/40 bg-white p-8 shadow-lg">
+                {deliveryNote && (
+                  <p className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50/80 px-4 py-3 text-sm font-semibold text-neutral-700">
+                    {deliveryNote}
+                  </p>
+                )}
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label htmlFor="customer-fullname" className="mb-2 block text-sm font-bold text-neutral-800">
+                      Full Name *
+                    </label>
+                    <input
+                      id="customer-fullname"
+                      name="fullName"
+                      type="text"
+                      value={customerForm.fullName}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      placeholder="John Doe"
+                    />
+                    {errors.fullName && (
+                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.fullName}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label htmlFor="customer-phone" className="mb-2 block text-sm font-bold text-neutral-800">
-                    Phone Number *
-                  </label>
-                  <input
-                    id="customer-phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={customerForm.phone}
-                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="09123456789"
-                  />
-                  {errors.phone && (
-                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
-                  )}
-                </div>
+                  <div>
+                    <label htmlFor="customer-phone" className="mb-2 block text-sm font-bold text-neutral-800">
+                      Phone Number *
+                    </label>
+                    <input
+                      id="customer-phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={customerForm.phone}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, phone: e.target.value }))}
+                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      placeholder="09123456789"
+                    />
+                    {errors.phone && (
+                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label htmlFor="customer-email" className="mb-2 block text-sm font-bold text-neutral-800">
-                    Email (Optional)
-                  </label>
-                  <input
-                    id="customer-email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={customerForm.email}
-                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, email: e.target.value }))}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="john@example.com"
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="customer-email" className="mb-2 block text-sm font-bold text-neutral-800">
+                      Email (Optional)
+                    </label>
+                    <input
+                      id="customer-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      value={customerForm.email}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, email: e.target.value }))}
+                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      placeholder="john@example.com"
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label htmlFor="customer-address" className="mb-2 block text-sm font-bold text-neutral-800">
-                    Address *
-                  </label>
-                  <input
-                    id="customer-address"
-                    name="address"
-                    type="text"
-                    autoComplete="street-address"
-                    value={customerForm.address}
-                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, address: e.target.value }))}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="Street address, building, floor"
-                  />
-                  {errors.address && (
-                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.address}</p>
-                  )}
-                </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="customer-address" className="mb-2 block text-sm font-bold text-neutral-800">
+                      Address *
+                    </label>
+                    <input
+                      id="customer-address"
+                      name="address"
+                      type="text"
+                      autoComplete="street-address"
+                      value={customerForm.address}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, address: e.target.value }))}
+                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      placeholder="Street address, building, floor"
+                    />
+                    {errors.address && (
+                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.address}</p>
+                    )}
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label htmlFor="customer-city" className="mb-2 block text-sm font-bold text-neutral-800">
-                    City *
-                  </label>
-                  <input
-                    id="customer-city"
-                    name="city"
-                    type="text"
-                    value={customerForm.city}
-                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, city: e.target.value }))}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                    placeholder="Yangon"
-                  />
-                  {errors.city && (
-                    <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.city}</p>
-                  )}
+                  <div className="sm:col-span-2">
+                    <label htmlFor="customer-city" className="mb-2 block text-sm font-bold text-neutral-800">
+                      City *
+                    </label>
+                    <input
+                      id="customer-city"
+                      name="city"
+                      type="text"
+                      value={customerForm.city}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, city: e.target.value }))}
+                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      placeholder="Yangon"
+                    />
+                    {errors.city && (
+                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.city}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Payment Method Selection */}
-          <div className="mb-8">
-            <h2 className="mb-6 text-2xl font-bold text-black">Select Payment Method</h2>
+          <div className="mx-auto mb-16 w-full max-w-6xl">
+            <h2 className="mb-8 text-2xl font-bold text-black">Select Payment Method</h2>
             {errors.payment && (
               <p role="alert" className="mb-4 text-sm font-semibold text-red-600">{errors.payment}</p>
             )}
-          </div>
 
-          {/* Premium Payment Cards - Dynamic responsive grid */}
-          <div className="mb-16">
+            {/* Premium Payment Cards - Dynamic responsive grid */}
             {availablePaymentMethods.length === 0 ? (
               <div className="rounded-[28px] border border-yellow-200 bg-yellow-50 p-8 text-center shadow-sm">
                 <h3 className="text-xl font-black text-neutral-950">No payment methods available</h3>
@@ -951,17 +970,42 @@ function CheckoutPageContent() {
                     <CheckCircle className="h-10 w-10 text-white" />
                   </div>
                   <h2 className="mb-3 text-2xl font-black text-black">Order Placed Successfully!</h2>
-                  <p className="mb-2 text-sm text-zinc-600">
-                    Your order has been received and is being processed.
-                  </p>
-                  <p className="mb-6 text-sm text-zinc-600">
-                    We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> to confirm delivery.
-                  </p>
+                  
+                  {successOrder.payment_status === "Verifying" ? (
+                    <>
+                      <p className="mb-2 text-sm font-semibold text-yellow-700">
+                        Your payment proof has been submitted.
+                      </p>
+                      <p className="mb-6 text-sm text-zinc-600">
+                        Your order is waiting for admin verification. We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> once payment is confirmed.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mb-2 text-sm text-zinc-600">
+                        Your order has been received and is being processed.
+                      </p>
+                      <p className="mb-6 text-sm text-zinc-600">
+                        We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> to confirm delivery.
+                      </p>
+                    </>
+                  )}
                   
                   <div className="mb-6 rounded-2xl border border-yellow-200 bg-white p-4 text-left">
                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Order Number</p>
                     <p className="mt-1 text-lg font-black text-yellow-600">{successOrder.order_number}</p>
                   </div>
+
+                  {successOrder.payment_status === "Verifying" && (
+                    <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+                      <p className="text-xs font-bold text-yellow-800">
+                        ⏳ Payment Verification Pending
+                      </p>
+                      <p className="mt-2 text-xs leading-relaxed text-yellow-700">
+                        Our admin team will verify your payment proof and check the transaction in our account. Once verified, your order will proceed to delivery.
+                      </p>
+                    </div>
+                  )}
 
                   <button
                     type="button"

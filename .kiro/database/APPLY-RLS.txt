@@ -1,0 +1,120 @@
+🔒 ROW-LEVEL SECURITY (RLS) SETUP INSTRUCTIONS
+===============================================
+
+⚠️ CRITICAL: Your database is currently VULNERABLE. Follow these steps immediately.
+
+STEP 1: BACKUP YOUR DATABASE
+-----------------------------
+Before making any changes:
+1. Go to Supabase Dashboard
+2. Navigate to Database -> Backups
+3. Create a manual backup or verify automatic backups are enabled
+
+STEP 2: APPLY RLS POLICIES
+---------------------------
+1. Open Supabase Dashboard
+2. Go to SQL Editor (left sidebar)
+3. Click "New Query"
+4. Open the file: rls-policies.sql
+5. Copy the ENTIRE contents of rls-policies.sql
+6. Paste into Supabase SQL Editor
+7. Click "Run" or press Ctrl+Enter
+8. Wait for confirmation (should see "Success. No rows returned")
+
+STEP 3: VERIFY RLS IS ENABLED
+------------------------------
+1. In Supabase SQL Editor, create a new query
+2. Open the file: verify-rls.sql
+3. Copy and run the first query (VERIFY RLS IS ENABLED section)
+4. You should see all tables showing "✅ Protected"
+5. If any show "🔴 VULNERABLE", re-run the rls-policies.sql
+
+STEP 4: TEST YOUR APPLICATION
+------------------------------
+Critical tests to perform:
+
+A. Test Guest Checkout:
+   - Log out of your app
+   - Browse products (should work)
+   - Add to cart and checkout (should work)
+   - Try to view someone else's order (should FAIL)
+
+B. Test Customer Access:
+   - Log in as regular customer
+   - View only YOUR orders (should work)
+   - Try to access admin pages (should FAIL)
+   - Try to modify other users' orders (should FAIL)
+
+C. Test Admin Access:
+   - Log in as admin user
+   - Verify role='admin' in profiles table
+   - Access admin dashboard (should work)
+   - View all orders (should work)
+   - Modify products (should work)
+
+STEP 5: VERIFY ADMIN USERS
+---------------------------
+Make sure your admin users have the correct role:
+
+1. In Supabase SQL Editor, run:
+   
+   SELECT id, email, role FROM public.profiles WHERE role = 'admin';
+
+2. If no admins exist, update your user:
+   
+   UPDATE public.profiles 
+   SET role = 'admin' 
+   WHERE email = 'your-admin@email.com';
+
+STEP 6: MONITOR FOR ISSUES
+---------------------------
+After deploying:
+- Watch for any permission errors in your app
+- Check Supabase logs for RLS policy violations
+- Test all user workflows thoroughly
+
+WHAT RLS PROTECTS:
+==================
+✅ Users can only see their own orders
+✅ Only admins can modify products, brands, settings
+✅ Customers cannot access other customers' data
+✅ Admin tables are restricted to admin role only
+✅ Audit logs are immutable (no updates/deletes)
+✅ Guest checkout still works (anonymous orders)
+✅ Public can view products and create orders
+
+ROLLBACK (IF NEEDED):
+=====================
+If something breaks and you need to disable RLS temporarily:
+
+-- DISABLE RLS (NOT RECOMMENDED FOR PRODUCTION)
+ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;
+-- Repeat for other tables as needed
+
+Then investigate the issue and re-enable with proper policies.
+
+COMMON ISSUES:
+==============
+❌ "New row violates RLS policy"
+   → Check that the user is authenticated
+   → Verify admin users have role='admin' in profiles table
+
+❌ "Permission denied for table"
+   → Run the GRANT statements from rls-policies.sql
+
+❌ Admin can't access admin panel
+   → Verify: SELECT role FROM profiles WHERE id = auth.uid()
+   → Should return 'admin' for admin users
+
+❌ Products not showing on storefront
+   → Check is_active = true on products
+   → Verify anonymous access policy is working
+
+SUPPORT:
+========
+If issues persist:
+1. Check Supabase logs (Dashboard -> Logs)
+2. Review the policies with: SELECT * FROM pg_policies WHERE schemaname = 'public';
+3. Test with Supabase SQL Editor using different auth contexts
+
+Remember: RLS is CRITICAL for security. Do not disable it in production!

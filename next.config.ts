@@ -50,11 +50,11 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.sentry.io",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.sentry.io https://www.googletagmanager.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://wfiejzhiuuegfxjbdupq.supabase.co https://challenges.cloudflare.com https://*.sentry.io wss://wfiejzhiuuegfxjbdupq.supabase.co",
+              "connect-src 'self' https://wfiejzhiuuegfxjbdupq.supabase.co https://challenges.cloudflare.com https://*.sentry.io https://www.google-analytics.com https://www.googletagmanager.com wss://wfiejzhiuuegfxjbdupq.supabase.co",
               "frame-src 'self' https://challenges.cloudflare.com",
               "object-src 'none'",
               "base-uri 'self'",

@@ -69,7 +69,7 @@ function ImagePanel({
       whileInView={{ opacity: 1, scale: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 1, delay, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-[140px] w-full max-w-[320px] overflow-hidden rounded-[24px] border border-[#d4af37]/18 bg-white shadow-[0_22px_60px_rgba(31,26,20,0.10),0_0_32px_rgba(212,175,55,0.10)] sm:h-[168px] lg:h-[195px]"
+      className="relative h-[140px] w-full max-w-[320px] overflow-hidden rounded-[24px] bg-[#fbf6ed] shadow-[0_12px_40px_rgba(31,26,20,0.06)] sm:h-[168px] lg:h-[195px]"
     >
       <Image
         src={src}

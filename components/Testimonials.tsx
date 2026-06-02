@@ -77,7 +77,7 @@ export default function Testimonials() {
               transition={{ duration: 0.6, delay: index * 0.2 }}
               className="relative"
             >
-              <div className="rounded-3xl border border-[#d4af37]/20 bg-white p-8 shadow-lg transition-all duration-500 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
+              <div className="rounded-3xl border border-[#d4af37]/20 bg-[#fbf6ed] p-8 shadow-lg transition-all duration-500 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
                 <div className="mb-4 flex gap-1">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="h-5 w-5 fill-[#d4af37] text-[#d4af37]" />

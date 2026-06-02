@@ -6,6 +6,7 @@ import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { validateEmail, validatePassword } from "@/lib/validation";
+import { Sparkles, Diamond, Gem } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -206,143 +207,220 @@ function LoginForm() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-[var(--site-bg)] px-4 py-10 text-neutral-950">
-      <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center">
-        <div className="w-full rounded-[28px] border border-yellow-300/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(234,179,8,0.18)] sm:p-8">
-          <div className="text-center">
-            <Link href="/" className="inline-block">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-yellow-600">
-                GOSH PERFUME
-              </p>
-            </Link>
-            <h1 className="mt-3 text-3xl font-black text-neutral-950">
-              {mode === "login" ? "Welcome Back" : "Create Account"}
-            </h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              {mode === "login"
-                ? "Sign in to your account"
-                : "Sign up to start shopping"}
-            </p>
-          </div>
-
-          {accountCreated && (
-            <div role="alert" className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-bold text-green-700">
-              Account created successfully. Please log in.
-            </div>
-          )}
-
-          <form onSubmit={handleAuth} className="mt-8 space-y-4">
-            <div>
-              <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-neutral-800">
-                Email
-              </label>
-              <input
-                id="login-email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (fieldErrors.email) {
-                    setFieldErrors(prev => {
-                      const newErrors = { ...prev };
-                      delete newErrors.email;
-                      return newErrors;
-                    });
-                  }
-                }}
-                className={`w-full rounded-2xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
-                placeholder="your@email.com"
-                aria-invalid={!!fieldErrors.email}
-                aria-describedby={fieldErrors.email ? "email-error" : undefined}
-              />
-              {fieldErrors.email && (
-                <p id="email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-neutral-800">
-                Password
-              </label>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (fieldErrors.password) {
-                    setFieldErrors(prev => {
-                      const newErrors = { ...prev };
-                      delete newErrors.password;
-                      return newErrors;
-                    });
-                  }
-                }}
-                className={`w-full rounded-2xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
-                placeholder="••••••••"
-                minLength={8}
-                aria-invalid={!!fieldErrors.password}
-                aria-describedby={fieldErrors.password ? "password-error" : undefined}
-              />
-              {fieldErrors.password && (
-                <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
-              )}
-              {mode === "signup" && !fieldErrors.password && (
-                <p className="mt-1 text-xs text-neutral-500">At least 8 characters with letters and numbers</p>
-              )}
-            </div>
-
-            {error && (
-              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                {error}
+    <main role="main" className="min-h-screen flex items-center justify-center bg-[#fffaf0] px-4 py-10 lg:py-16">
+      {/* Split Card Container */}
+      <div className="w-full max-w-5xl">
+        {/* Premium Auth Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-yellow-300/70 bg-white shadow-[0_24px_80px_rgba(234,179,8,0.18)]">
+          
+          {/* Desktop Split Layout */}
+          <div className="relative grid grid-cols-1 lg:grid-cols-2">
+            
+            {/* Form Side - Left on Login, Right on Signup */}
+            <div className={`relative z-10 order-1 p-8 sm:p-10 lg:p-12 transition-all duration-700 ${mode === "signup" ? "lg:order-2" : "lg:order-1"}`}>
+              
+              {/* Logo */}
+              <div className="mb-8">
+                <Link href="/" className="inline-block">
+                  <p className="text-xs font-bold uppercase tracking-[0.28em] text-yellow-600">
+                    GOSH PERFUME
+                  </p>
+                </Link>
               </div>
-            )}
 
-            <TurnstileWidget
-              action={mode === "login" ? "login" : "signup"}
-              resetKey={turnstileResetKey}
-              onVerify={setTurnstileToken}
-              onExpire={resetTurnstile}
-            />
+              {/* Form Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-black text-neutral-950 lg:text-4xl">
+                  {mode === "login" ? "Welcome Back" : "Create Account"}
+                </h1>
+                <p className="mt-2 text-sm text-neutral-500">
+                  {mode === "login"
+                    ? "Sign in to continue your journey"
+                    : "Join us and discover luxury fragrances"}
+                </p>
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading
-                ? "Please wait..."
-                : mode === "login"
-                ? "Sign In"
-                : "Create Account"}
-            </button>
-          </form>
+              {accountCreated && (
+                <div role="alert" className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-bold text-green-700">
+                  Account created successfully. Please log in.
+                </div>
+              )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setError("");
-              resetTurnstile();
-              setMode((prev) => (prev === "login" ? "signup" : "login"));
-            }}
-            className="mt-5 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700"
-          >
-            {mode === "login"
-              ? "Need an account? Sign up"
-              : "Already have an account? Sign in"}
-          </button>
+              {/* Auth Form */}
+              <form onSubmit={handleAuth} className="space-y-5">
+                <div>
+                  <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-neutral-800">
+                    Email
+                  </label>
+                  <input
+                    id="login-email"
+                    name="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) {
+                        setFieldErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.email;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    className={`w-full rounded-2xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
+                    placeholder="your@email.com"
+                    aria-invalid={!!fieldErrors.email}
+                    aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                  />
+                  {fieldErrors.email && (
+                    <p id="email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                  )}
+                </div>
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600"
-            >
-              ← Back to Website
-            </Link>
+                <div>
+                  <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-neutral-800">
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) {
+                        setFieldErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.password;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    className={`w-full rounded-2xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
+                    placeholder="••••••••"
+                    minLength={8}
+                    aria-invalid={!!fieldErrors.password}
+                    aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                  />
+                  {fieldErrors.password && (
+                    <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+                  )}
+                  {mode === "signup" && !fieldErrors.password && (
+                    <p className="mt-1 text-xs text-neutral-500">At least 8 characters with letters and numbers</p>
+                  )}
+                </div>
+
+                {error && (
+                  <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <TurnstileWidget
+                  action={mode === "login" ? "login" : "signup"}
+                  resetKey={turnstileResetKey}
+                  onVerify={setTurnstileToken}
+                  onExpire={resetTurnstile}
+                />
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:from-yellow-300 hover:to-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading
+                    ? "Please wait..."
+                    : mode === "login"
+                    ? "Sign In"
+                    : "Create Account"}
+                </button>
+              </form>
+
+              {/* Switch Mode */}
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                  resetTurnstile();
+                  setMode((prev) => (prev === "login" ? "signup" : "login"));
+                }}
+                className="mt-6 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700"
+              >
+                {mode === "login"
+                  ? "Need an account? Sign up"
+                  : "Already have an account? Sign in"}
+              </button>
+
+              {/* Back Link */}
+              <div className="mt-6 text-center lg:hidden">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600"
+                >
+                  ← Back to Website
+                </Link>
+              </div>
+            </div>
+
+            {/* Welcome Panel - Right on Login, Left on Signup */}
+            <div className={`relative order-2 hidden overflow-hidden lg:flex lg:items-center lg:justify-center lg:p-12 transition-all duration-700 ${mode === "signup" ? "lg:order-1" : "lg:order-2"}`}>
+              
+              {/* Premium Gold Panel Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-[#fff4c2] to-yellow-200/80" />
+              
+              {/* Content */}
+              <div className="relative z-10 max-w-md text-center">
+                <div className="mb-6 flex justify-center">
+                  <div className="rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 p-4 shadow-lg">
+                    <Sparkles className="h-10 w-10 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+                
+                <h2 className="text-3xl font-black text-neutral-950 lg:text-4xl">
+                  {mode === "login" ? "Welcome Back!" : "Join GOSH"}
+                </h2>
+                
+                <p className="mt-4 text-base leading-relaxed text-neutral-700">
+                  {mode === "login" 
+                    ? "Continue your journey through the world of luxury fragrances. Your perfect scent awaits."
+                    : "Discover handcrafted perfumes that tell your story. Experience elegance in every drop."}
+                </p>
+
+                <div className="mx-auto mt-10 max-w-sm space-y-4">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                      <Diamond className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
+                    </span>
+                    <span className="text-sm font-semibold text-neutral-900">Premium artisan fragrances</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                      <Gem className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
+                    </span>
+                    <span className="text-sm font-semibold text-neutral-900">Handcrafted with finest ingredients</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                      <Sparkles className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
+                    </span>
+                    <span className="text-sm font-semibold text-neutral-900">Exclusive luxury collections</span>
+                  </div>
+                </div>
+
+                {/* Back Link - Desktop Only */}
+                <div className="mt-10 hidden lg:block">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-neutral-700 transition hover:text-yellow-700"
+                  >
+                    ← Back to Website
+                  </Link>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

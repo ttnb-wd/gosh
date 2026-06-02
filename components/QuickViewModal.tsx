@@ -123,14 +123,14 @@ export default function QuickViewModal(props: QuickViewModalProps) {
           />
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto overscroll-contain p-2 sm:p-4 md:items-center md:p-6">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4 md:p-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative mx-auto my-1 grid max-h-[calc(100dvh-1rem)] w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-4 sm:rounded-[28px] lg:my-0 lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
+              className="relative mx-auto my-4 grid max-h-[90vh] w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-6 sm:rounded-[28px] lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
             >
               {/* Close Button */}
               <button
@@ -144,7 +144,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
               {/* LEFT IMAGE SECTION - DESKTOP ONLY */}
               {showDesktopImage && (
-                <div className="relative hidden overflow-hidden bg-[#fffdf6] lg:block lg:h-[86vh] lg:max-h-[86vh] lg:min-h-0">
+                <div className="relative hidden overflow-hidden bg-[#fffdf6] lg:block lg:h-[88vh] lg:max-h-[88vh] lg:min-h-0">
                   {product.badge && (
                     <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
                       {product.badge}
@@ -166,7 +166,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               )}
 
               {/* RIGHT DETAILS SECTION - ONLY THIS SCROLLS */}
-              <div className="scrollbar-auto-hide max-h-[calc(100dvh-1rem)] overflow-y-auto overflow-x-visible overscroll-contain p-4 pr-5 sm:p-8 md:max-h-[86vh] md:p-10">
+              <div className="scrollbar-auto-hide max-h-[90vh] overflow-y-auto overflow-x-visible overscroll-contain p-4 pr-5 sm:p-8 md:max-h-[88vh] md:p-10">
                   {/* Brand & Name */}
                   <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-yellow-600 sm:mb-2 sm:text-xs sm:tracking-[0.2em]">
                     {product.brand}

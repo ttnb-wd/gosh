@@ -619,6 +619,39 @@ function OrdersTableContent() {
                         disabled={updatingOrders.has(order.id)}
                       />
                     </div>
+
+                    {/* Quick Payment Action Buttons */}
+                    {order.payment_status === "Verifying" && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updatePaymentStatus(order.id, "Paid")}
+                          disabled={updatingOrders.has(order.id)}
+                          className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-700 shadow-sm transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Mark as Paid
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updatePaymentStatus(order.id, "Failed")}
+                          disabled={updatingOrders.has(order.id)}
+                          className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Reject Payment
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updatePaymentStatus(order.id, "Unpaid")}
+                          disabled={updatingOrders.has(order.id)}
+                          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Clock className="h-4 w-4" />
+                          Mark as Unpaid
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

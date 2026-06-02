@@ -58,7 +58,7 @@ export default function WhyChooseUs() {
               transition={{ duration: 0.6, delay: index * 0.15 }}
               className="group relative"
             >
-              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-white p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
+              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-[#fbf6ed] p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 
                 <div className="relative">

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ComponentErrorBoundary } from "./ErrorBoundaries";
 
 interface CartItem {
@@ -32,6 +33,29 @@ function CartDrawerContent({
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const isEmpty = cartItems.length === 0;
   const formatMmk = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
+
+  // Lock body scroll when cart drawer is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
 
   const handleContinueShopping = () => {
     onClose();

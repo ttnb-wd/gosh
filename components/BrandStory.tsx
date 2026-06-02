@@ -4,17 +4,26 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
+import { createSupabaseClient } from "@/lib/supabase/client";
+
+interface ProductImage {
+  id: string;
+  name: string;
+  image: string;
+}
 
 export default function BrandStory() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const { settings } = useWebsiteSettings();
   const websiteName = settings.website_name || "GOSH PERFUME";
   const aboutText =
     settings.about_text ||
     `Since 2023, ${websiteName} has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.`;
 
-  const slides = [
+  // Fallback static slides if no products
+  const fallbackSlides = [
     {
       src: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=1200&auto=format&fit=crop",
       alt: "Luxury perfume craftsmanship"
@@ -32,6 +41,40 @@ export default function BrandStory() {
       alt: "Luxury perfume bottle with gold accents"
     }
   ];
+
+  // Fetch product images from Supabase
+  useEffect(() => {
+    async function fetchProductImages() {
+      try {
+        const supabase = createSupabaseClient();
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, name, image")
+          .eq("is_active", true)
+          .not("image", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(8);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setProductImages(data);
+        }
+      } catch (error) {
+        console.error("Error fetching product images:", error);
+      }
+    }
+
+    fetchProductImages();
+  }, []);
+
+  // Use product images if available, otherwise fallback
+  const slides = productImages.length > 0
+    ? productImages.map(product => ({
+        src: product.image,
+        alt: product.name
+      }))
+    : fallbackSlides;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -102,7 +145,7 @@ export default function BrandStory() {
             className="relative lg:order-1"
           >
             <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/50 blur-3xl" />
-            <div className="relative h-[500px] overflow-hidden rounded-3xl border border-[#d4af37]/25 shadow-2xl">
+            <div className="relative h-[500px] overflow-hidden rounded-3xl">
               {slides.map((slide, index) => (
                 <div
                   key={index}

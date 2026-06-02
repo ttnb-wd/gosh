@@ -173,23 +173,13 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
 
       `}</style>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <Link href="/" className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-3">
-          <div className="gosh-logo-drop-bounce group/logo relative flex h-16 w-16 shrink-0 items-center justify-center overflow-visible rounded-full transition-all duration-500 hover:-translate-y-0.5 hover:scale-105 sm:h-20 sm:w-20" style={{ perspective: "900px" }}>
-            <img
-              src="/images/gosh-circle-logo.png"
-              alt="GOSH Perfume Studio"
-              className="gosh-logo-3d relative h-full w-full object-contain object-center transition-transform duration-700"
-            />
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="truncate text-[15px] font-black tracking-wide text-black sm:text-lg">
-              {websiteName}
-            </h1>
-            <p className="truncate text-[12px] font-black uppercase tracking-[0.32em] text-yellow-500 sm:text-sm sm:tracking-[0.42em]">
-              STUDIO
-            </p>
-          </div>
+        <Link href="/" className="group flex min-w-0 flex-1 flex-col leading-none transition hover:opacity-80 sm:flex-none">
+          <span className="text-base font-black tracking-[0.12em] text-black sm:text-lg md:text-2xl">
+            GOSH PERFUME
+          </span>
+          <span className="mt-1 text-base font-black tracking-[0.38em] text-yellow-600 sm:text-lg md:text-2xl">
+            STUDIO
+          </span>
         </Link>
 
         <nav role="navigation" aria-label="Main navigation" className="hidden items-center gap-8 md:flex">

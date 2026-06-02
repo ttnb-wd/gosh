@@ -776,7 +776,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
   const [activeBrands, setActiveBrands] = useState<BrandOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [selectedDecants, setSelectedDecants] = useState<Record<string, { label: string; price: number }>>({});
@@ -1293,7 +1293,106 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       </div>
 
       <AnimatePresence mode="wait">
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <motion.div
+            key="loading-state"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex min-h-[60vh] items-center justify-center py-20"
+          >
+            <div className="relative">
+              {/* Soft glow effect */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-64 w-64 rounded-full bg-[#d4af37]/20 blur-3xl" />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 flex flex-col items-center gap-6">
+                {/* Animated Icon */}
+                <motion.div
+                  animate={{
+                    rotate: 360,
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    rotate: {
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "linear",
+                    },
+                    scale: {
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                  }}
+                  className="relative"
+                >
+                  {/* Outer ring */}
+                  <div className="h-20 w-20 rounded-full border-4 border-[#d4af37]/30 border-t-[#d4af37]" />
+                  
+                  {/* Inner sparkle */}
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="absolute inset-0 flex items-center justify-center"
+                  >
+                    <ShoppingBag className="h-8 w-8 text-[#d4af37]" />
+                  </motion.div>
+                </motion.div>
+
+                {/* Text */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <motion.p
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="text-sm font-medium tracking-wider text-[#7a6a55] sm:text-base"
+                  >
+                    Loading products...
+                  </motion.p>
+                </motion.div>
+
+                {/* Animated dots */}
+                <div className="flex gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.3, 1, 0.3],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: "easeInOut",
+                      }}
+                      className="h-2 w-2 rounded-full bg-[#d4af37]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : filteredProducts.length > 0 ? (
           <motion.div
             key={`${selectedBrand}-${selectedCollection}`}
             variants={container}
