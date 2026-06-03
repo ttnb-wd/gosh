@@ -310,9 +310,9 @@ function OrdersTableContent() {
 
   const getPaymentMethodBadgeColor = (method: string) => {
     if (method === "cod") {
-      return "bg-zinc-100 text-zinc-700 border-zinc-200";
+      return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-[#231b12] dark:!text-[#fff7e6]/75 dark:border-[#d4af37]/25";
     }
-    return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    return "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-[#f7e7b3] dark:!text-[#8d5f00] dark:border-[#d4af37]/45";
   };
 
   const getStatusIcon = (status: string) => {
@@ -335,17 +335,17 @@ function OrdersTableContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-[#f7e7b3] dark:!text-[#8d5f00] dark:border-[#d4af37]/45";
       case "Confirmed":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:!text-blue-200 dark:border-blue-400/30";
       case "Processing":
-        return "bg-purple-100 text-purple-700 border-purple-200";
+        return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:!text-purple-200 dark:border-purple-400/30";
       case "Delivered":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:!text-green-200 dark:border-green-400/30";
       case "Cancelled":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:!text-red-200 dark:border-red-400/30";
       default:
-        return "bg-zinc-100 text-zinc-700 border-zinc-200";
+        return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-[#231b12] dark:!text-[#fff7e6]/75 dark:border-[#d4af37]/25";
     }
   };
 
@@ -428,11 +428,11 @@ function OrdersTableContent() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-[24px] border border-yellow-200 bg-[#fffdf6] p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 rounded-[24px] border border-yellow-200 bg-[#fffdf6] p-4 dark:border-[#d4af37]/25 dark:bg-[#15100b] sm:grid-cols-2 lg:grid-cols-5">
         {Object.entries(paymentStatusGuidance).map(([status, description]) => (
-          <div key={status} className="rounded-2xl border border-yellow-100 bg-white p-3">
-            <p className="text-sm font-black text-neutral-950">{status}</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-600">{description}</p>
+          <div key={status} className="rounded-2xl border border-yellow-100 bg-white p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
+            <p className="text-sm font-black text-neutral-950 dark:!text-[#fff7e6]">{status}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-600 dark:!text-[#fff7e6]/65">{description}</p>
           </div>
         ))}
       </div>
@@ -502,18 +502,18 @@ function OrdersTableContent() {
               <div
                 key={order.id}
                 id={`order-${order.id}`}
-                className={`rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md ${
+                className={`rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:bg-[#15100b] dark:text-[#fff7e6] ${
                   isHighlighted
-                    ? "ring-2 ring-yellow-300 border-yellow-300 bg-yellow-50/50"
-                    : "border-zinc-200 hover:border-yellow-400/50"
+                    ? "ring-2 ring-yellow-300 border-yellow-300 bg-yellow-50/50 dark:border-[#d4af37]/45 dark:bg-[#1c160f]"
+                    : "border-zinc-200 hover:border-yellow-400/50 dark:border-[#d4af37]/25 dark:hover:border-[#d4af37]/50"
                 }`}
               >
               <div className="p-6">
                 {/* Order Header */}
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-bold text-black">{order.order_number}</h3>
-                    <p className="text-sm text-zinc-600">
+                    <h3 className="text-lg font-bold text-black dark:!text-[#fff7e6]">{order.order_number}</h3>
+                    <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
                       {new Date(order.created_at).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
@@ -531,26 +531,26 @@ function OrdersTableContent() {
                 {/* Customer Info */}
                 <div className="mb-4 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Customer</p>
-                    <p className="mt-1 font-semibold text-black">{order.customer_name}</p>
-                    <p className="text-sm text-zinc-600">{order.phone}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Customer</p>
+                    <p className="mt-1 font-semibold text-black dark:!text-[#fff7e6]">{order.customer_name}</p>
+                    <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.phone}</p>
                     {order.customer_email && (
-                      <p className="text-sm text-zinc-600">{order.customer_email}</p>
+                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.customer_email}</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Address</p>
-                    <p className="mt-1 text-sm text-zinc-700">{order.address}</p>
-                    {order.city && <p className="text-sm text-zinc-600">{order.city}</p>}
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Address</p>
+                    <p className="mt-1 text-sm text-zinc-700 dark:!text-[#fff7e6]/75">{order.address}</p>
+                    {order.city && <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.city}</p>}
                   </div>
                 </div>
 
                 {/* Payment Info */}
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Payment Information</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Payment Information</p>
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-700">Method:</span>
+                      <span className="text-sm font-semibold text-zinc-700 dark:!text-[#fff7e6]/75">Method:</span>
                       <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPaymentMethodBadgeColor(order.payment_method)}`}>
                         {getPaymentMethodLabel(order.payment_method)}
                       </span>
@@ -558,17 +558,17 @@ function OrdersTableContent() {
                     
                     {/* Payment Account Details */}
                     {order.payment_account_name && (
-                      <p className="text-sm text-zinc-600">
+                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
                         <span className="font-semibold">Account:</span> {order.payment_account_name}
                       </p>
                     )}
                     {order.payment_phone && (
-                      <p className="text-sm text-zinc-600">
+                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
                         <span className="font-semibold">Phone:</span> {order.payment_phone}
                       </p>
                     )}
                     {order.payment_account_number && (
-                      <p className="text-sm text-zinc-600">
+                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
                         <span className="font-semibold">Account Number:</span> {order.payment_account_number}
                       </p>
                     )}
@@ -587,7 +587,7 @@ function OrdersTableContent() {
                           }
                           setPaymentScreenshotUrl(url);
                         }}
-                        className="inline-flex items-center gap-2 rounded-full border border-yellow-300 bg-white px-4 py-2 text-sm font-black text-yellow-700 shadow-sm transition hover:bg-yellow-50"
+                        className="inline-flex items-center gap-2 rounded-full border border-yellow-300 bg-white px-4 py-2 text-sm font-black text-yellow-700 shadow-sm transition hover:bg-yellow-50 dark:border-[#d4af37]/35 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
                       >
                         <ExternalLink className="h-4 w-4" />
                         View Payment Screenshot
@@ -599,19 +599,19 @@ function OrdersTableContent() {
                     )}
 
                     {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
-                      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-400/30 dark:bg-red-950/30 dark:!text-red-200">
                         Prepaid order has no payment proof. Keep as Verifying/Failed until proof is confirmed.
                       </div>
                     )}
 
-                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6]/80">
                       <span className="font-black">{order.payment_status || "Unpaid"}:</span>{" "}
                       {paymentStatusGuidance[order.payment_status || "Unpaid"] || "Review this payment before fulfillment."}
                     </div>
                     
                     {/* Payment Status Dropdown */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-700">Status:</span>
+                      <span className="text-sm font-semibold text-zinc-700 dark:!text-[#fff7e6]/75">Status:</span>
                       <PremiumStatusSelect
                         type="payment"
                         value={order.payment_status || "Unpaid"}
@@ -645,7 +645,7 @@ function OrdersTableContent() {
                           type="button"
                           onClick={() => updatePaymentStatus(order.id, "Unpaid")}
                           disabled={updatingOrders.has(order.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#d4af37]/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
                         >
                           <Clock className="h-4 w-4" />
                           Mark as Unpaid
@@ -657,44 +657,44 @@ function OrdersTableContent() {
 
                 {/* Order Items */}
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Items</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Items</p>
                   <div className="space-y-2">
                     {order.order_items && order.order_items.length > 0 ? (
                       order.order_items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between rounded-xl bg-zinc-50 p-3">
+                        <div key={index} className="flex items-center justify-between rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
                           <div>
-                            <p className="font-semibold text-black">{item.product_name}</p>
-                            <p className="text-xs text-zinc-600">
+                            <p className="font-semibold text-black dark:!text-[#fff7e6]">{item.product_name}</p>
+                            <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
                               {item.product_brand && `${item.product_brand} • `}
                               {item.selected_size && `${item.selected_size} • `}
                               Qty: {item.quantity}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-black">${item.price.toFixed(2)}</p>
-                            <p className="text-xs text-zinc-600">
+                            <p className="font-semibold text-black dark:!text-[#fff7e6]">${item.price.toFixed(2)}</p>
+                            <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
                               Total: ${(item.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-zinc-500">No items found</p>
+                      <p className="text-sm text-zinc-500 dark:!text-[#fff7e6]/60">No items found</p>
                     )}
                   </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="mb-4 rounded-xl bg-zinc-50 p-3">
+                <div className="mb-4 rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-zinc-600">Subtotal:</span>
-                      <span className="font-semibold text-black">${order.subtotal.toFixed(2)}</span>
+                      <span className="text-zinc-600 dark:!text-[#fff7e6]/65">Subtotal:</span>
+                      <span className="font-semibold text-black dark:!text-[#fff7e6]">${order.subtotal.toFixed(2)}</span>
                     </div>
                     {order.delivery_fee > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-zinc-600">Delivery Fee:</span>
-                        <span className="font-semibold text-black">${order.delivery_fee.toFixed(2)}</span>
+                        <span className="text-zinc-600 dark:!text-[#fff7e6]/65">Delivery Fee:</span>
+                        <span className="font-semibold text-black dark:!text-[#fff7e6]">${order.delivery_fee.toFixed(2)}</span>
                       </div>
                     )}
                     {order.discount > 0 && (
@@ -703,8 +703,8 @@ function OrdersTableContent() {
                         <span className="font-semibold text-green-600">-${order.discount.toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between border-t border-zinc-200 pt-1">
-                      <span className="font-bold text-black">Total:</span>
+                    <div className="flex justify-between border-t border-zinc-200 pt-1 dark:border-[#d4af37]/20">
+                      <span className="font-bold text-black dark:!text-[#fff7e6]">Total:</span>
                       <span className="font-bold text-yellow-600">${order.total.toFixed(2)}</span>
                     </div>
                   </div>
@@ -741,14 +741,14 @@ function OrdersTableContent() {
           }}
         >
           <div
-            className="relative inline-flex max-h-[92vh] w-auto max-w-[94vw] flex-col overflow-hidden rounded-[28px] border border-yellow-200 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.40)]"
+            className="relative inline-flex max-h-[92vh] w-auto max-w-[94vw] flex-col overflow-hidden rounded-[28px] border border-yellow-200 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.40)] dark:border-[#d4af37]/30 dark:bg-[#15100b]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-yellow-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-yellow-200 bg-white px-4 py-3 dark:border-[#d4af37]/25 dark:bg-[#1c160f] sm:px-5 sm:py-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-600 sm:text-xs">Payment Proof</p>
-                <h3 className="truncate text-base font-black text-neutral-950 sm:text-lg">Payment Screenshot</h3>
+                <h3 className="truncate text-base font-black text-neutral-950 dark:!text-[#fff7e6] sm:text-lg">Payment Screenshot</h3>
               </div>
               <button
                 type="button"

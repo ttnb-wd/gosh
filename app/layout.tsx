@@ -4,6 +4,7 @@ import "./globals.css";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import LoadingProvider from "@/components/LoadingProvider";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,8 +77,31 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="relative isolate min-h-full flex flex-col overflow-x-hidden" suppressHydrationWarning>
+      <head>
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var theme = localStorage.getItem("theme");
+                  if (theme === "dark") {
+                    document.documentElement.classList.add("dark");
+                    document.documentElement.style.colorScheme = "dark";
+                  } else {
+                    localStorage.setItem("theme", "light");
+                    document.documentElement.classList.remove("dark");
+                    document.documentElement.style.colorScheme = "light";
+                  }
+                } catch (_) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="relative isolate flex min-h-full w-full flex-col overflow-x-hidden bg-[var(--background)] dark:bg-[#0f0b07]" suppressHydrationWarning>
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe 
@@ -90,12 +114,14 @@ export default function RootLayout({
         {/* End Google Tag Manager (noscript) */}
         
         <GoogleAnalytics />
-        <LoadingProvider>
-          <div className="relative flex min-h-screen flex-col pb-20 md:pb-0">
-            {children}
-          </div>
-          <MobileBottomNav />
-        </LoadingProvider>
+        <ThemeProvider>
+          <LoadingProvider>
+            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[var(--background)] dark:bg-[#0f0b07] pb-20 md:pb-0">
+              {children}
+            </div>
+            <MobileBottomNav />
+          </LoadingProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -21,13 +21,13 @@ export default function Footer() {
     <footer
       role="contentinfo"
       id="contact"
-      className="border-t border-[#d4af37]/20 bg-white"
+      className="border-t border-[#d4af37]/20 bg-white dark:border-[#d4af37]/25 dark:bg-[#0f0b07]"
     >
       <div className="mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 lg:px-8">
-        <h4 className="text-2xl font-bold text-[#1f1a14]">{websiteName}</h4>
-        <p className="mt-3 text-[#7a6a55]">{footerText}</p>
+        <h4 className="text-2xl font-bold text-[#1f1a14] dark:text-[#fff7e6]">{websiteName}</h4>
+        <p className="mt-3 text-[#7a6a55] dark:text-[#fff7e6]/65">{footerText}</p>
         {contactItems.length > 0 && (
-          <p className="mx-auto mt-4 max-w-3xl text-sm font-medium text-[#7a6a55]/90">
+          <p className="mx-auto mt-4 max-w-3xl text-sm font-medium text-[#7a6a55]/90 dark:text-[#fff7e6]/60">
             {contactItems.join(" • ")}
           </p>
         )}
@@ -39,14 +39,14 @@ export default function Footer() {
                 href={link.href || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full border border-[#d4af37]/30 bg-[#fffaf0] px-4 py-2 text-xs font-bold text-[#b88705] transition hover:border-[#d4af37]/60 hover:bg-[#fff7e6]"
+                className="rounded-full border border-[#d4af37]/30 bg-[#fffaf0] px-4 py-2 text-xs font-bold text-[#b88705] transition hover:border-[#d4af37]/60 hover:bg-[#fff7e6] dark:bg-[#15100b] dark:text-[#d4af37] dark:hover:bg-[#1c160f]"
               >
                 {link.label}
               </a>
             ))}
           </div>
         )}
-        <p className="mt-6 text-sm text-[#7a6a55]/80">
+        <p className="mt-6 text-sm text-[#7a6a55]/80 dark:text-[#fff7e6]/50">
           © 2026 {websiteName}. All rights reserved.
         </p>
       </div>

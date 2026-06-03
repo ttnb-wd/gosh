@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, X, ShoppingBag, LogIn, CircleUserRound, LogOut, LayoutDashboard } from "lucide-react";
+import { ShoppingBag, LogIn, CircleUserRound, LogOut, LayoutDashboard, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface NavbarProps {
   onCartOpen: () => void;
@@ -14,13 +15,13 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = false }: NavbarProps) {
-  const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [profileName, setProfileName] = useState("");
   const { settings: websiteSettings } = useWebsiteSettings();
   const websiteName = websiteSettings.website_name || "GOSH PERFUME";
+  const { theme, toggleTheme } = useTheme();
 
   const loadUserProfile = async (currentUser: User | null) => {
     if (!currentUser) {
@@ -109,7 +110,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
   
   return (
     <>
-    <header role="banner" className="fixed inset-x-0 top-0 z-[1000] bg-white/90 backdrop-blur-xl">
+    <header role="banner" className="fixed inset-x-0 top-0 z-[1000] bg-white/90 backdrop-blur-xl dark:border-b dark:border-[#d4af37]/20 dark:bg-[#0f0b07]/95">
       <style jsx>{`
         @keyframes navbar-drop {
           0% {
@@ -174,10 +175,10 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
       `}</style>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
         <Link href="/" className="group flex min-w-0 flex-1 flex-col leading-none transition hover:opacity-80 sm:flex-none">
-          <span className="text-base font-black tracking-[0.12em] text-black sm:text-lg md:text-2xl">
+          <span className="text-base font-black tracking-[0.12em] text-black dark:text-[#fff7e6] sm:text-lg md:text-2xl">
             GOSH PERFUME
           </span>
-          <span className="mt-1 text-base font-black tracking-[0.38em] text-yellow-600 sm:text-lg md:text-2xl">
+          <span className="mt-1 text-base font-black tracking-[0.38em] text-yellow-600 dark:text-[#d4af37] sm:text-lg md:text-2xl">
             STUDIO
           </span>
         </Link>
@@ -185,37 +186,53 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
         <nav role="navigation" aria-label="Main navigation" className="hidden items-center gap-8 md:flex">
           <Link
             href="/"
-            className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
+            className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
           >
             Home
           </Link>
           <Link
             href="/products"
-            className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
+            className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
           >
             Products
           </Link>
           <Link
             href="/about"
-            className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
+            className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
           >
             About
           </Link>
           <Link
             href="/contact"
-            className="text-sm font-medium text-zinc-700 transition hover:text-yellow-500"
+            className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
           >
             Contact
           </Link>
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
+          >
+            <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
+            {theme === "dark" ? (
+              <Sun className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+            ) : (
+              <Moon className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+            )}
+            <div className="absolute -inset-1 rounded-2xl bg-yellow-400/20 opacity-0 blur-sm transition-all duration-300 group-hover:opacity-100" />
+          </button>
+
           {isAdmin && (
             <Link
               href="/admin"
               aria-label="Admin Dashboard"
               title="Admin Dashboard"
-              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20"
+              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
             >
               <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
               <LayoutDashboard className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-600" />
@@ -227,7 +244,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
           {!user ? (
             <Link
               href="/login"
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_16px_35px_rgba(234,179,8,0.26)]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_16px_35px_rgba(234,179,8,0.26)] dark:border-[#d4af37]/40 dark:bg-[#1c160f]/90 dark:text-[#fff7e6] dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
             >
               <LogIn className="h-4 w-4 text-yellow-600 transition-transform duration-300 group-hover:scale-110" />
               <span className="hidden sm:inline">Login / Sign Up</span>
@@ -241,7 +258,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
                 aria-label="Open account menu"
                 aria-expanded={showAccountMenu}
                 aria-haspopup="true"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 dark:border-[#d4af37]/40 dark:bg-[#1c160f]/90 dark:text-[#fff7e6] dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
               >
                 <CircleUserRound className="h-4 w-4 text-yellow-600" aria-hidden="true" />
                 <span className="hidden max-w-[120px] truncate sm:inline">
@@ -251,15 +268,15 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
               
               {showAccountMenu && (
                 <div 
-                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.18)] backdrop-blur"
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.18)] backdrop-blur dark:border-[#d4af37]/30 dark:bg-[#1c160f]/95"
                   role="menu"
                   aria-label="Account menu"
                 >
                   <div className="px-3 py-2">
-                    <p className="truncate text-sm font-bold text-neutral-900">
+                    <p className="truncate text-sm font-bold text-neutral-900 dark:text-[#fff7e6]">
                       {profileName || "Account"}
                     </p>
-                    <p className="truncate text-xs font-semibold text-neutral-500">
+                    <p className="truncate text-xs font-semibold text-neutral-500 dark:text-[#fff7e6]/60">
                       {user.email}
                     </p>
                   </div>
@@ -267,7 +284,7 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
                     href="/orders"
                     onClick={() => setShowAccountMenu(false)}
                     role="menuitem"
-                    className="block rounded-xl px-3 py-2 text-sm font-bold text-neutral-800 transition hover:bg-yellow-50 hover:text-yellow-700"
+                    className="block rounded-xl px-3 py-2 text-sm font-bold text-neutral-800 transition hover:bg-yellow-50 hover:text-yellow-700 dark:text-[#fff7e6]/80 dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
                   >
                     My Orders
                   </Link>
@@ -287,10 +304,10 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
           )}
 
           {/* Premium Animated Shopping Bag Icon with Badge */}
-          <button 
+          <button
             type="button"
             onClick={onCartOpen}
-            className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20"
+            className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
             aria-label="Open shopping bag"
             title="Open shopping bag"
           >
@@ -308,22 +325,58 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
+          >
+            <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
+            {theme === "dark" ? (
+              <Sun className="relative h-[18px] w-[18px]" />
+            ) : (
+              <Moon className="relative h-[18px] w-[18px]" />
+            )}
+          </button>
+
           {isAdmin && (
             <Link
               href="/admin"
               aria-label="Admin Dashboard"
               title="Admin Dashboard"
-              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
             >
               <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
               <LayoutDashboard className="relative h-[18px] w-[18px]" />
             </Link>
           )}
 
+          {!user ? (
+            <Link
+              href="/login"
+              className="group relative inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-yellow-400/40 bg-white px-3 text-xs font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#fff7e6]"
+            >
+              <LogIn className="h-[16px] w-[16px] text-yellow-600" aria-hidden="true" />
+              Login
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
+              aria-label="Logout from account"
+              title="Logout"
+            >
+              <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
+              <LogOut className="relative h-[18px] w-[18px]" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onCartOpen}
-            className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95"
+            className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
             aria-label="Open shopping bag"
             title="Open shopping bag"
           >
@@ -335,10 +388,11 @@ export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = fa
               </span>
             )}
           </button>
+
         </div>
       </div>
     </header>
-    <div aria-hidden="true" className="h-[89px] bg-[#fef5e7] sm:h-[113px]" />
+    <div aria-hidden="true" className="h-[89px] bg-[#fef5e7] dark:bg-[#0f0b07] sm:h-[113px]" />
     </>
   );
 }

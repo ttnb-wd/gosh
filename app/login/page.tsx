@@ -22,6 +22,7 @@ function LoginForm() {
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const accountCreated = searchParams.get("created") === "1";
+  const authMode = searchParams.get("mode");
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
@@ -35,11 +36,15 @@ function LoginForm() {
       setRedirectTo(redirect);
     }
     
+    if (authMode === "signup" && !accountCreated) {
+      setMode("signup");
+    }
+
     // Switch to login mode if account was just created
     if (accountCreated) {
       setMode("login");
     }
-  }, [searchParams, accountCreated]);
+  }, [searchParams, accountCreated, authMode]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -207,11 +212,11 @@ function LoginForm() {
   };
 
   return (
-    <main role="main" className="min-h-screen flex items-center justify-center bg-[#fffaf0] px-4 py-10 lg:py-16">
+    <main role="main" className="min-h-screen flex items-center justify-center bg-[#fffaf0] px-4 py-10 dark:bg-[#0f0b07] lg:py-16">
       {/* Split Card Container */}
       <div className="w-full max-w-5xl">
         {/* Premium Auth Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-yellow-300/70 bg-white shadow-[0_24px_80px_rgba(234,179,8,0.18)]">
+        <div className="relative overflow-hidden rounded-3xl border border-yellow-300/70 bg-white shadow-[0_24px_80px_rgba(234,179,8,0.18)] dark:border-[#d4af37]/30 dark:bg-[#15100b] dark:shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
           
           {/* Desktop Split Layout */}
           <div className="relative grid grid-cols-1 lg:grid-cols-2">
@@ -230,10 +235,10 @@ function LoginForm() {
 
               {/* Form Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-black text-neutral-950 lg:text-4xl">
+                <h1 className="text-3xl font-black text-neutral-950 dark:!text-[#fff7e6] lg:text-4xl">
                   {mode === "login" ? "Welcome Back" : "Create Account"}
                 </h1>
-                <p className="mt-2 text-sm text-neutral-500">
+                <p className="mt-2 text-sm text-neutral-500 dark:!text-[#fff7e6]/70">
                   {mode === "login"
                     ? "Sign in to continue your journey"
                     : "Join us and discover luxury fragrances"}
@@ -249,7 +254,7 @@ function LoginForm() {
               {/* Auth Form */}
               <form onSubmit={handleAuth} className="space-y-5">
                 <div>
-                  <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-neutral-800">
+                  <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-neutral-800 dark:!text-[#fff7e6]">
                     Email
                   </label>
                   <input
@@ -268,7 +273,7 @@ function LoginForm() {
                         });
                       }
                     }}
-                    className={`w-full rounded-2xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
+                    className={`w-full rounded-2xl border ${fieldErrors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:ring-4 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45`}
                     placeholder="your@email.com"
                     aria-invalid={!!fieldErrors.email}
                     aria-describedby={fieldErrors.email ? "email-error" : undefined}
@@ -279,7 +284,7 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-neutral-800">
+                  <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-neutral-800 dark:!text-[#fff7e6]">
                     Password
                   </label>
                   <input
@@ -298,7 +303,7 @@ function LoginForm() {
                         });
                       }
                     }}
-                    className={`w-full rounded-2xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4`}
+                    className={`w-full rounded-2xl border ${fieldErrors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200/60' : 'border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60'} bg-white px-4 py-3 text-sm font-semibold text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:ring-4 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45`}
                     placeholder="••••••••"
                     minLength={8}
                     aria-invalid={!!fieldErrors.password}
@@ -308,7 +313,7 @@ function LoginForm() {
                     <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
                   )}
                   {mode === "signup" && !fieldErrors.password && (
-                    <p className="mt-1 text-xs text-neutral-500">At least 8 characters with letters and numbers</p>
+                    <p className="mt-1 text-xs text-neutral-500 dark:!text-[#fff7e6]/60">At least 8 characters with letters and numbers</p>
                   )}
                 </div>
 
@@ -346,7 +351,7 @@ function LoginForm() {
                   resetTurnstile();
                   setMode((prev) => (prev === "login" ? "signup" : "login"));
                 }}
-                className="mt-6 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700"
+                className="mt-6 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700 dark:!text-[#fff7e6]/70 dark:hover:!text-[#d4af37]"
               >
                 {mode === "login"
                   ? "Need an account? Sign up"
@@ -357,7 +362,7 @@ function LoginForm() {
               <div className="mt-6 text-center lg:hidden">
                 <Link
                   href="/"
-                  className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600"
+                  className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600 dark:!text-[#fff7e6]/70 dark:hover:!text-[#d4af37]"
                 >
                   ← Back to Website
                 </Link>
@@ -368,7 +373,7 @@ function LoginForm() {
             <div className={`relative order-2 hidden overflow-hidden lg:flex lg:items-center lg:justify-center lg:p-12 transition-all duration-700 ${mode === "signup" ? "lg:order-1" : "lg:order-2"}`}>
               
               {/* Premium Gold Panel Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-[#fff4c2] to-yellow-200/80" />
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-[#fff4c2] to-yellow-200/80 dark:from-[#1c160f] dark:via-[#15100b] dark:to-[#231b12]" />
               
               {/* Content */}
               <div className="relative z-10 max-w-md text-center">
@@ -378,11 +383,11 @@ function LoginForm() {
                   </div>
                 </div>
                 
-                <h2 className="text-3xl font-black text-neutral-950 lg:text-4xl">
+                <h2 className="text-3xl font-black text-neutral-950 dark:!text-[#fff7e6] lg:text-4xl">
                   {mode === "login" ? "Welcome Back!" : "Join GOSH"}
                 </h2>
                 
-                <p className="mt-4 text-base leading-relaxed text-neutral-700">
+                <p className="mt-4 text-base leading-relaxed text-neutral-700 dark:!text-[#fff7e6]/75">
                   {mode === "login" 
                     ? "Continue your journey through the world of luxury fragrances. Your perfect scent awaits."
                     : "Discover handcrafted perfumes that tell your story. Experience elegance in every drop."}
@@ -390,22 +395,22 @@ function LoginForm() {
 
                 <div className="mx-auto mt-10 max-w-sm space-y-4">
                   <div className="flex items-center gap-4">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
                       <Diamond className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
                     </span>
-                    <span className="text-sm font-semibold text-neutral-900">Premium artisan fragrances</span>
+                    <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">Premium artisan fragrances</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
                       <Gem className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
                     </span>
-                    <span className="text-sm font-semibold text-neutral-900">Handcrafted with finest ingredients</span>
+                    <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">Handcrafted with finest ingredients</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
                       <Sparkles className="h-4 w-4 text-yellow-600" strokeWidth={2.5} />
                     </span>
-                    <span className="text-sm font-semibold text-neutral-900">Exclusive luxury collections</span>
+                    <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">Exclusive luxury collections</span>
                   </div>
                 </div>
 
@@ -413,7 +418,7 @@ function LoginForm() {
                 <div className="mt-10 hidden lg:block">
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-2 text-sm font-bold text-neutral-700 transition hover:text-yellow-700"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-neutral-700 transition hover:text-yellow-700 dark:!text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
                   >
                     ← Back to Website
                   </Link>

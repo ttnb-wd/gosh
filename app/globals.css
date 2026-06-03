@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --site-bg: #fbf6ed;
   --background: var(--site-bg);
@@ -16,6 +18,21 @@
   --gosh-gold-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M6 3.8 21.8 14 15.2 15.3 18.9 23.1 15.2 24.8 11.6 17.1 7.1 21.8Z' fill='%23facc15' stroke='%23000' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M8.2 6.9 17.3 12.8 12.8 13.7 15.6 19.8 14.6 20.3 11.7 14.1 8.6 17.3Z' fill='%23fff8db' opacity='.75'/%3E%3C/svg%3E") 6 4, pointer;
 }
 
+.dark {
+  --site-bg: #0f0b07;
+  --background: var(--site-bg);
+  --foreground: #fff7e6;
+  --gosh-ivory: #15100b;
+  --gosh-white: #1c160f;
+  --gosh-cream: #231b12;
+  --gosh-gold: #d4af37;
+  --gosh-gold-soft: rgba(247, 231, 179, 0.18);
+  --gosh-burgundy: #d4af37;
+  --gosh-burgundy-soft: #231b12;
+  --gosh-text: #fff7e6;
+  --gosh-muted: rgba(255, 247, 230, 0.65);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -25,6 +42,8 @@
 
 html,
 body {
+  width: 100%;
+  min-height: 100%;
   max-width: 100%;
   overflow-x: hidden;
   background: var(--background);
@@ -33,6 +52,12 @@ body {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   cursor: var(--gosh-gold-cursor);
+}
+
+html.dark,
+html.dark body {
+  background: #0f0b07;
+  color: #fff7e6;
 }
 
 * {
@@ -306,4 +331,321 @@ select:disabled {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+.dark main,
+.dark section,
+.dark article,
+.dark aside,
+.dark footer,
+.dark [role="main"],
+.dark [role="contentinfo"] {
+  background-color: #0f0b07;
+  color: #fff7e6;
+}
+
+.dark .bg-\[var\(--site-bg\)\],
+.dark .bg-\[\#fbf6ed\],
+.dark .bg-\[\#fef5e7\] {
+  background-color: #0f0b07 !important;
+}
+
+.dark .bg-\[\#fffaf0\],
+.dark .bg-\[\#fff7e6\],
+.dark .bg-\[\#fffdf6\],
+.dark .bg-\[\#fffef9\] {
+  background-color: #15100b !important;
+}
+
+.dark .bg-white,
+.dark .bg-white\/50,
+.dark .bg-white\/70,
+.dark .bg-white\/72,
+.dark .bg-white\/80,
+.dark .bg-white\/85,
+.dark .bg-white\/90,
+.dark .bg-white\/95,
+.dark .bg-white\/98,
+.dark .bg-\[\#fffdf6\]\/95,
+.dark .bg-\[\#fffdf6\]\/98,
+.dark .bg-\[\#fffef9\]\/95 {
+  background-color: rgba(28, 22, 15, 0.94) !important;
+}
+
+.dark .bg-transparent {
+  background-color: transparent !important;
+}
+
+.dark .text-black,
+.dark .text-neutral-900,
+.dark .text-neutral-800,
+.dark .text-zinc-900,
+.dark .text-zinc-800,
+.dark .text-\[\#1f1a14\],
+.dark .text-\[\#15120f\] {
+  color: #fff7e6 !important;
+}
+
+.dark .text-neutral-700,
+.dark .text-neutral-600,
+.dark .text-neutral-500,
+.dark .text-zinc-700,
+.dark .text-zinc-600,
+.dark .text-zinc-500,
+.dark .text-\[\#4f4234\],
+.dark .text-\[\#7a6a55\],
+.dark .text-\[\#7a6a55\]\/80,
+.dark .text-\[\#7a6a55\]\/90 {
+  color: rgba(255, 247, 230, 0.65) !important;
+}
+
+.dark .placeholder\:text-neutral-400::placeholder,
+.dark .placeholder\:text-zinc-400::placeholder,
+.dark .placeholder\:text-stone-400::placeholder {
+  color: rgba(255, 247, 230, 0.44) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1c160f !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+  color: #fff7e6 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(255, 247, 230, 0.44) !important;
+}
+
+.dark .border-zinc-100,
+.dark .border-zinc-200,
+.dark .border-neutral-200,
+.dark .border-yellow-100,
+.dark .border-yellow-200,
+.dark .border-yellow-300,
+.dark .border-\[\#d4af37\]\/15,
+.dark .border-\[\#d4af37\]\/20,
+.dark .border-\[\#d4af37\]\/25,
+.dark .border-\[\#d4af37\]\/30,
+.dark .border-\[\#d4af37\]\/35,
+.dark .border-\[\#d4af37\]\/40,
+.dark .border-\[\#d4af37\]\/45 {
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+
+.dark .shadow-sm,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.32), 0 0 28px rgba(212, 175, 55, 0.08) !important;
+}
+
+.dark .hover\:bg-yellow-50:hover,
+.dark .hover\:bg-zinc-50:hover,
+.dark .hover\:bg-\[\#fff7e6\]:hover {
+  background-color: #231b12 !important;
+}
+
+.dark .focus\:ring-yellow-200\/60:focus,
+.dark .focus\:ring-yellow-200\/70:focus,
+.dark .focus\:ring-\[\#f7e7b3\]\/70:focus {
+  --tw-ring-color: rgba(212, 175, 55, 0.2) !important;
+}
+
+.dark [class*="bg-gradient-to-br"][class*="from-[#fff7e6]"],
+.dark [class*="bg-gradient-to-br"][class*="to-white"] {
+  background-image: linear-gradient(135deg, #231b12, #15100b) !important;
+}
+
+.dark [class*="bg-[radial-gradient"],
+.dark [class*="bg-[linear-gradient"] {
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+.dark .fixed[class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+.dark table,
+.dark thead,
+.dark tbody,
+.dark tr {
+  color: #fff7e6;
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.dark th,
+.dark td {
+  border-color: rgba(212, 175, 55, 0.18) !important;
+}
+
+/* Admin dashboard theme polish. Scoped so customer-facing pages keep their own design. */
+.dark [data-admin-theme] {
+  background: #0f0b07 !important;
+  color: #fff7e6;
+}
+
+.dark [data-admin-theme] header,
+.dark [data-admin-theme] aside,
+.dark [data-admin-theme] main,
+.dark [data-admin-theme] section,
+.dark [data-admin-theme] article {
+  background-color: #0f0b07;
+  color: #fff7e6;
+}
+
+.dark [data-admin-theme] .bg-white,
+.dark [data-admin-theme] .bg-white\/70,
+.dark [data-admin-theme] .bg-white\/90,
+.dark [data-admin-theme] .bg-white\/95,
+.dark [data-admin-theme] .bg-\[\#fffdf6\],
+.dark [data-admin-theme] .bg-\[\#fffdf6\]\/95,
+.dark [data-admin-theme] .bg-\[\#fffdf6\]\/98,
+.dark [data-admin-theme] .bg-\[\#fffaf0\] {
+  background-color: #15100b !important;
+}
+
+.dark [data-admin-theme] .bg-zinc-50,
+.dark [data-admin-theme] .bg-zinc-100,
+.dark [data-admin-theme] .bg-\[\#fff7e6\],
+.dark [data-admin-theme] .bg-yellow-50,
+.dark [data-admin-theme] .bg-yellow-50\/35,
+.dark [data-admin-theme] .bg-yellow-50\/40,
+.dark [data-admin-theme] .bg-yellow-50\/70,
+.dark [data-admin-theme] .bg-yellow-100 {
+  background-color: #1c160f !important;
+}
+
+.dark [data-admin-theme] .text-black,
+.dark [data-admin-theme] .text-neutral-950,
+.dark [data-admin-theme] .text-neutral-900,
+.dark [data-admin-theme] .text-neutral-800,
+.dark [data-admin-theme] .text-zinc-900,
+.dark [data-admin-theme] .text-zinc-800,
+.dark [data-admin-theme] .text-\[\#1f1a14\] {
+  color: #fff7e6 !important;
+}
+
+.dark [data-admin-theme] .text-neutral-700,
+.dark [data-admin-theme] .text-neutral-600,
+.dark [data-admin-theme] .text-neutral-500,
+.dark [data-admin-theme] .text-zinc-700,
+.dark [data-admin-theme] .text-zinc-600,
+.dark [data-admin-theme] .text-zinc-500,
+.dark [data-admin-theme] .text-zinc-400,
+.dark [data-admin-theme] .text-\[\#7a6a55\] {
+  color: rgba(255, 247, 230, 0.68) !important;
+}
+
+.dark [data-admin-theme] .text-yellow-600,
+.dark [data-admin-theme] .text-yellow-700,
+.dark [data-admin-theme] .text-\[\#d4af37\] {
+  color: #f6d365 !important;
+}
+
+.dark [data-admin-theme] .border-zinc-100,
+.dark [data-admin-theme] .border-zinc-200,
+.dark [data-admin-theme] .border-zinc-300,
+.dark [data-admin-theme] .border-neutral-200,
+.dark [data-admin-theme] .border-yellow-100,
+.dark [data-admin-theme] .border-yellow-200,
+.dark [data-admin-theme] .border-yellow-300,
+.dark [data-admin-theme] .border-\[\#d4af37\]\/15,
+.dark [data-admin-theme] .border-\[\#d4af37\]\/20,
+.dark [data-admin-theme] .border-\[\#d4af37\]\/25 {
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+
+.dark [data-admin-theme] input,
+.dark [data-admin-theme] textarea,
+.dark [data-admin-theme] select {
+  background-color: #1c160f !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+  color: #fff7e6 !important;
+}
+
+.dark [data-admin-theme] input::placeholder,
+.dark [data-admin-theme] textarea::placeholder {
+  color: rgba(255, 247, 230, 0.44) !important;
+}
+
+.dark [data-admin-theme] table,
+.dark [data-admin-theme] thead,
+.dark [data-admin-theme] tbody,
+.dark [data-admin-theme] tr,
+.dark [data-admin-theme] th,
+.dark [data-admin-theme] td {
+  background-color: transparent;
+  border-color: rgba(212, 175, 55, 0.2) !important;
+  color: #fff7e6;
+}
+
+.dark [data-admin-theme] .fixed[class*="bg-white"],
+.dark [data-admin-theme] .sticky[class*="bg-white"] {
+  background-color: rgba(21, 16, 11, 0.96) !important;
+}
+
+.dark [data-admin-theme] .shadow-sm,
+.dark [data-admin-theme] .shadow-lg,
+.dark [data-admin-theme] .shadow-xl,
+.dark [data-admin-theme] .shadow-2xl {
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.34), 0 0 28px rgba(212, 175, 55, 0.08) !important;
+}
+
+.dark [data-admin-theme] .hover\:bg-yellow-50:hover,
+.dark [data-admin-theme] .hover\:bg-yellow-50\/40:hover,
+.dark [data-admin-theme] .hover\:bg-zinc-50:hover,
+.dark [data-admin-theme] .hover\:bg-zinc-100:hover {
+  background-color: #231b12 !important;
+}
+
+.dark [data-admin-theme] .bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.32) !important;
+}
+
+.dark [data-admin-theme] .text-red-600,
+.dark [data-admin-theme] .text-red-700 {
+  color: #fecaca !important;
+}
+
+.dark [data-admin-theme] .bg-emerald-50,
+.dark [data-admin-theme] .bg-green-50 {
+  background-color: rgba(6, 78, 59, 0.35) !important;
+}
+
+.dark [data-admin-theme] .text-emerald-700,
+.dark [data-admin-theme] .text-green-700 {
+  color: #bbf7d0 !important;
+}
+
+.dark [data-admin-theme] .bg-blue-50,
+.dark [data-admin-theme] .bg-purple-50 {
+  background-color: #231b12 !important;
+}
+
+.dark [data-admin-theme] .text-blue-600,
+.dark [data-admin-theme] .text-blue-700,
+.dark [data-admin-theme] .text-purple-700 {
+  color: #f6d365 !important;
+}
+
+.dark [data-admin-theme] .bg-yellow-300,
+.dark [data-admin-theme] .bg-yellow-400,
+.dark [data-admin-theme] .bg-yellow-500,
+.dark [data-admin-theme] .bg-\[\#f7e7b3\] {
+  color: #17120b !important;
+}
+
+.dark [data-admin-theme] .bg-yellow-300 *,
+.dark [data-admin-theme] .bg-yellow-400 *,
+.dark [data-admin-theme] .bg-yellow-500 *,
+.dark [data-admin-theme] .bg-\[\#f7e7b3\] * {
+  color: #17120b !important;
+}
+
+.dark [data-admin-theme] .bg-yellow-300 .bg-white,
+.dark [data-admin-theme] .bg-yellow-400 .bg-white,
+.dark [data-admin-theme] .bg-yellow-500 .bg-white {
+  background-color: #fffaf0 !important;
 }

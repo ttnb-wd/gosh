@@ -69,16 +69,15 @@ function ImagePanel({
       whileInView={{ opacity: 1, scale: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 1, delay, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-[140px] w-full max-w-[320px] overflow-hidden rounded-[24px] bg-[#fbf6ed] shadow-[0_12px_40px_rgba(31,26,20,0.06)] sm:h-[168px] lg:h-[195px]"
+      className="relative mx-auto h-[140px] w-[92%] max-w-[300px] overflow-hidden rounded-[24px] bg-transparent shadow-[0_12px_40px_rgba(31,26,20,0.06)] dark:bg-[#0f0b07] sm:h-[168px] sm:max-w-[320px] lg:h-[195px]"
     >
       <Image
         src={src}
         alt={alt}
         fill
         sizes="(min-width: 1024px) 320px, (min-width: 640px) 320px, 100vw"
-        className="object-cover object-center"
+        className="block h-full w-full scale-[1.08] object-cover object-center"
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,250,240,0.04),rgba(31,26,20,0.10))]" />
     </motion.div>
   );
 }

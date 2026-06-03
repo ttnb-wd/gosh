@@ -326,10 +326,10 @@ function ContactSectionContent() {
             <motion.div 
               variants={cardVariants}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-50 to-yellow-100 p-6"
+              className="rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 dark:border-yellow-400/25 dark:bg-[#15100b] dark:bg-none dark:text-[#fff7e6]"
             >
-              <h3 className="text-xl font-bold text-black mb-4">Why Choose {storeName}?</h3>
-              <ul className="space-y-3 text-zinc-700">
+              <h3 className="text-xl font-bold text-black mb-4 dark:!text-[#fff7e6]">Why Choose {storeName}?</h3>
+              <ul className="space-y-3 text-zinc-700 dark:!text-[#fff7e6]/75">
                 <li className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                   Premium luxury fragrances

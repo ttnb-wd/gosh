@@ -28,9 +28,9 @@ export default function LuxuryStats() {
               className="text-center"
             >
               <div className="mb-2">
-                <span className="text-6xl font-black text-[#1f1a14]">{stat.value}</span>
+                <span className="text-6xl font-black text-[#1f1a14] dark:!text-[#17120b]">{stat.value}</span>
               </div>
-              <p className="text-lg font-semibold text-[#1f1a14]/80">{stat.label}</p>
+              <p className="text-lg font-semibold text-[#1f1a14]/80 dark:!text-[#17120b]/80">{stat.label}</p>
             </motion.div>
           ))}
         </div>

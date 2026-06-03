@@ -47,7 +47,7 @@ export default function PremiumSelect({
   return (
     <div className="w-full">
       {label && (
-        <label className="mb-2 block text-sm font-bold text-neutral-800">
+        <label className="mb-2 block text-sm font-bold text-neutral-800 dark:!text-[#fff7e6]">
           {label}
         </label>
       )}
@@ -55,9 +55,9 @@ export default function PremiumSelect({
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="group flex w-full items-center justify-between rounded-[22px] border border-yellow-300 bg-white px-5 py-4 text-left shadow-[0_10px_28px_rgba(234,179,8,0.10)] transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50/50 focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-200/60"
+          className="group flex w-full items-center justify-between rounded-[22px] border border-yellow-300 bg-white px-5 py-4 text-left shadow-[0_10px_28px_rgba(234,179,8,0.10)] transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50/50 focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-200/60 dark:border-yellow-400/30 dark:bg-[#1c160f] dark:hover:bg-[#231b12] dark:focus:ring-yellow-400/20"
         >
-          <span className="truncate text-sm font-black text-neutral-900 sm:text-base">
+          <span className="truncate text-sm font-black text-neutral-900 dark:!text-[#fff7e6] sm:text-base">
             {displayLabel}
           </span>
           <ChevronDown
@@ -68,7 +68,7 @@ export default function PremiumSelect({
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-[999] overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/95 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.16),0_0_32px_rgba(234,179,8,0.18)] backdrop-blur">
+          <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-[999] overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/95 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.16),0_0_32px_rgba(234,179,8,0.18)] backdrop-blur dark:border-yellow-400/25 dark:bg-[#15100b]/98">
             <div className="grid max-h-[280px] gap-1 overflow-y-auto">
               {options.map((option) => {
                 const active = option.value === value;
@@ -83,7 +83,7 @@ export default function PremiumSelect({
                     className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition-all duration-300 ${
                       active
                         ? "bg-yellow-400 text-black shadow-[0_10px_25px_rgba(234,179,8,0.25)]"
-                        : "bg-white text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
+                        : "bg-white text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-yellow-300"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-3">
@@ -92,7 +92,7 @@ export default function PremiumSelect({
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                             active
                               ? "bg-white/80 text-yellow-700"
-                              : "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100"
+                              : "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100 dark:bg-[#231b12] dark:!text-yellow-300 dark:ring-yellow-400/20"
                           }`}
                         >
                           {option.icon}

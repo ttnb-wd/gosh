@@ -23,7 +23,7 @@ export default function Hero() {
       role="region"
       aria-label="Hero banner"
       id="home"
-      className="relative isolate -mt-px overflow-hidden bg-[radial-gradient(circle_at_78%_28%,rgba(247,231,179,0.78),transparent_30%),radial-gradient(circle_at_8%_12%,rgba(255,255,255,0.96),transparent_36%),linear-gradient(135deg,#fffaf0_0%,#fff7e6_48%,#f3dfb2_100%)] px-0 pb-6 pt-0 sm:px-6 sm:pb-8 lg:px-8 lg:pb-10"
+      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_78%_28%,rgba(247,231,179,0.78),transparent_30%),radial-gradient(circle_at_8%_12%,rgba(255,255,255,0.96),transparent_36%),linear-gradient(135deg,#fffaf0_0%,#fff7e6_48%,#f3dfb2_100%)] px-0 pb-6 pt-0 dark:bg-[#0f0b07] sm:px-6 sm:pb-8 lg:px-8 lg:pb-10"
     >
       <div
         className="pointer-events-none absolute inset-0 z-0 opacity-80"
@@ -44,19 +44,23 @@ export default function Hero() {
           fetchPriority="high"
         />
         {/* Left fade overlay - minimal blend on edge only */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-48 bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-48 bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/40 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/75" />
         {/* Top fade overlay - minimal blend on edge only */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#fffaf0] via-[#fffaf0]/30 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#fffaf0] via-[#fffaf0]/30 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/50" />
         {/* Bottom fade overlay - constrained to image area only, stops before feature card */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-[#fbf6ed] via-[#fbf6ed]/60 to-transparent sm:h-40 lg:h-48" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-[#fbf6ed] via-[#fbf6ed]/60 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/70 sm:h-40 lg:h-48" />
       </div>
 
-      {/* Gradient overlay for text readability - Hidden on mobile, visible on tablet+ */}
-      <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-[2] hidden w-[50%] bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/80 to-transparent sm:block lg:block" />
+      {/* Dark mode soft gradient overlay - blends dark area into image */}
+      <div className="absolute inset-0 z-[1] hidden dark:block pointer-events-none bg-[linear-gradient(90deg,#0f0b07_0%,rgba(15,11,7,0.95)_18%,rgba(15,11,7,0.70)_30%,rgba(15,11,7,0.35)_42%,rgba(15,11,7,0.10)_52%,transparent_62%)]" />
 
-      <div className="relative z-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid items-center pt-0 pb-0 sm:pt-6 sm:pb-12 lg:grid-cols-[40%_60%] lg:pt-8 lg:pb-16 px-0 sm:px-6 lg:px-8">
+      {/* Gradient overlay for text readability - Hidden on mobile, visible on tablet+ */}
+      <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-[4] hidden w-[58%] bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/80 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/95 dark:to-transparent sm:block lg:block" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] hidden w-[52%] bg-[linear-gradient(90deg,#0f0b07_0%,#0f0b07_64%,rgba(15,11,7,0.72)_82%,transparent_100%)] opacity-0 dark:opacity-100 sm:block" />
+
+      <div className="relative z-10 dark:bg-[#0f0b07] sm:dark:bg-transparent">
+        <div className="mx-auto max-w-7xl dark:bg-[#0f0b07] sm:dark:bg-transparent">
+          <div className="grid items-center px-0 pb-0 pt-0 dark:bg-[#0f0b07] sm:bg-transparent sm:px-6 sm:pb-12 sm:pt-6 sm:dark:bg-transparent lg:grid-cols-[40%_60%] lg:px-8 lg:pb-16 lg:pt-8">
             {/* Mobile: Content area with background image | Desktop: Normal content */}
             <div className="relative w-full mx-0 px-0 py-4 pb-4 mb-0 sm:static sm:max-w-2xl sm:mx-auto sm:px-0 sm:py-0 sm:pb-0 sm:mb-0 text-center sm:text-left">
               
@@ -67,21 +71,21 @@ export default function Hero() {
                   alt="Perfume bottle background"
                   fill
                   priority
-                  className="object-cover object-center opacity-50"
+                  className="object-cover object-center opacity-65 dark:opacity-32"
                 />
-                <div className="absolute inset-0 bg-white/20" />
+                <div className="absolute inset-0 bg-white/10 dark:bg-[#0f0b07]/25" />
               </div>
 
               {/* Mobile readability overlay */}
-              <div className="absolute inset-0 z-[1] sm:hidden bg-white/30 pointer-events-none" />
+              <div className="absolute inset-0 z-[1] bg-white/20 pointer-events-none dark:bg-[#0f0b07]/20 sm:hidden" />
 
               {/* Content - Above background */}
               <div className="relative z-10 px-5 sm:px-0">
-                <h1 className="font-serif text-[clamp(3.1rem,12vw,5rem)] leading-[0.98] tracking-tight text-[#15120f] sm:text-[clamp(4.3rem,8vw,6.8rem)] lg:text-[clamp(4.7rem,6.8vw,7.25rem)]">
+                <h1 className="font-serif text-[clamp(3.1rem,12vw,5rem)] leading-[0.98] tracking-tight text-[#15120f] dark:text-[#fff7e6] sm:dark:text-[#fff7e6] drop-shadow-[0_2px_8px_rgba(255,255,255,0.65)] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.75)] sm:drop-shadow-none sm:dark:drop-shadow-none sm:text-[clamp(4.3rem,8vw,6.8rem)] lg:text-[clamp(4.7rem,6.8vw,7.25rem)]">
                   <span className="block whitespace-nowrap">The Essence</span>
                   <span className="block whitespace-nowrap">
                     of{" "}
-                    <span className="bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] bg-clip-text text-transparent">
+                    <span className="bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] dark:bg-[linear-gradient(135deg,#d4af37,#f7d774,#b88700)] sm:dark:bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] bg-clip-text text-transparent drop-shadow-[0_1px_4px_rgba(255,247,230,0.5)] dark:drop-shadow-[0_3px_10px_rgba(0,0,0,0.7)] sm:drop-shadow-none sm:dark:drop-shadow-none">
                       Elegance
                     </span>
                   </span>
@@ -93,7 +97,7 @@ export default function Hero() {
                   <span className="h-px flex-1 bg-[#d4af37]/60" />
                 </div>
 
-                <p className="mx-auto mt-7 max-w-xl text-base font-medium leading-7 text-black/85 drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)] sm:mx-0 sm:text-lg sm:leading-8 sm:text-[#4f4234] sm:drop-shadow-none">
+                <p className="mx-auto mt-7 max-w-[360px] text-[15.5px] font-medium leading-7 text-black/85 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)] dark:text-[#fff7e6] dark:drop-shadow-[0_2px_10px_rgba(0,0,0,0.78)] sm:mx-0 sm:max-w-xl sm:text-base sm:leading-8 sm:text-[#4f4234] sm:drop-shadow-none sm:dark:text-[#fff7e6] sm:dark:drop-shadow-none lg:text-lg">
                   Experience premium perfumes crafted with style, depth, and luxury.
                   A modern perfume brand with clean elegance and golden highlights.
                 </p>
@@ -107,7 +111,7 @@ export default function Hero() {
                   </Link>
 
                   <Link href="/products">
-                    <button className="h-11 min-w-[140px] whitespace-nowrap rounded-full bg-[#1f1a14] px-3 text-xs font-bold text-white shadow-[0_12px_28px_rgba(31,26,20,0.18)] transition hover:-translate-y-0.5 hover:bg-[#2a2018] sm:h-auto sm:min-w-0 sm:px-8 sm:py-4 sm:text-base sm:text-lg">
+                    <button className="h-11 min-w-[140px] whitespace-nowrap rounded-full bg-[#1f1a14] px-3 text-xs font-bold text-white shadow-[0_12px_28px_rgba(31,26,20,0.18)] transition hover:-translate-y-0.5 hover:bg-[#2a2018] dark:bg-[#17120b] dark:text-[#fff7e6] dark:hover:bg-[#1f1a14] sm:dark:bg-[#fff7e6] sm:dark:text-[#1f1a14] sm:dark:hover:bg-[#f7e7b3] sm:h-auto sm:min-w-0 sm:px-8 sm:py-4 sm:text-base sm:text-lg">
                       Explore Collection
                     </button>
                   </Link>
@@ -130,19 +134,19 @@ export default function Hero() {
         </div>
 
         {/* Premium Feature Card - Overlapping Hero - Above all gradients */}
-        <div className="relative z-30 mt-0 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-0 mx-0 sm:mt-5 lg:mt-6">
-          <div className="w-full overflow-hidden rounded-3xl border-y border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)]">
-            <div className="grid gap-0 divide-y divide-[#d4af37]/15 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div className="relative z-30 mx-0 mt-0 w-full max-w-full px-0 dark:bg-[#0f0b07] sm:mt-5 sm:bg-transparent sm:dark:bg-transparent lg:mt-6">
+          <div className="w-full overflow-hidden rounded-3xl border-y border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)] dark:bg-[#15100b] dark:shadow-[0_16px_52px_rgba(0,0,0,0.34)]">
+            <div className="grid gap-0 divide-y divide-[#d4af37]/15 dark:divide-[#d4af37]/25 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {/* Column 1: Beyond Luxury */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-12 sm:w-12">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Diamond className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
                   BEYOND LUXURY
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] sm:mt-2.5 sm:text-base sm:leading-relaxed">
+                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
                   Crafted to evoke emotion, designed to leave a lasting impression.
                 </p>
               </div>
@@ -150,14 +154,14 @@ export default function Hero() {
 
             {/* Column 2: Golden Essence Collection */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-12 sm:w-12">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
                   GOLDEN ESSENCE COLLECTION
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] sm:mt-2.5 sm:text-base sm:leading-relaxed">
+                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
                   A radiant expression of timeless elegance and refined craftsmanship.
                 </p>
               </div>
@@ -165,14 +169,14 @@ export default function Hero() {
 
             {/* Column 3: Discover Scents */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] text-[#b88700] sm:h-12 sm:w-12">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Gem className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
-                <h2 className="text-sm font-black leading-tight text-[#1f1a14] sm:text-base sm:leading-tight">
+                <h2 className="text-sm font-black leading-tight text-[#1f1a14] dark:text-[#fff7e6] sm:text-base sm:leading-tight">
                   Discover scents that define you.
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] sm:mt-2.5 sm:text-base sm:leading-relaxed">
+                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
                   Explore our signature collection today.
                 </p>
                 <Link
@@ -190,7 +194,7 @@ export default function Hero() {
 
       {/* Bottom section fade - only affects area below feature card */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-[-1px] z-[5] h-24 bg-[linear-gradient(to_bottom,rgba(251,246,237,0)_0%,rgba(251,246,237,0.3)_50%,rgba(251,246,237,1)_100%)]"
+        className="pointer-events-none absolute inset-x-0 bottom-[-1px] z-[5] h-24 bg-[linear-gradient(to_bottom,rgba(251,246,237,0)_0%,rgba(251,246,237,0.3)_50%,rgba(251,246,237,1)_100%)] dark:bg-[linear-gradient(to_bottom,rgba(15,11,7,0)_0%,rgba(15,11,7,0.72)_45%,#0f0b07_100%)]"
         aria-hidden="true"
       />
     </section>

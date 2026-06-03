@@ -737,7 +737,7 @@ function ProductManagerContent() {
         </div>
       </div>
 
-      <div className="space-y-3 rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="space-y-3 rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm dark:border-yellow-400/25 dark:bg-[#15100b]">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
           <input
@@ -747,7 +747,7 @@ function ProductManagerContent() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search product, brand, or category..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45"
           />
         </div>
 
@@ -760,7 +760,7 @@ function ProductManagerContent() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 statusFilter === item.value
                   ? "bg-yellow-400 text-black shadow-md"
-                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-[#d4af37]"
               }`}
             >
               {item.label}
@@ -777,7 +777,7 @@ function ProductManagerContent() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 categoryFilter === item.value
                   ? "bg-yellow-400 text-black shadow-md"
-                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-[#d4af37]"
               }`}
             >
               {item.label}
@@ -785,7 +785,7 @@ function ProductManagerContent() {
           ))}
         </div>
 
-        <div className="w-full max-w-[320px] border-t border-yellow-100 pt-3">
+        <div className="w-full max-w-[320px] border-t border-yellow-100 pt-3 dark:border-yellow-400/20">
           <PremiumSelect
             label="Filter by Brand"
             value={brandFilter}
@@ -797,29 +797,29 @@ function ProductManagerContent() {
       </div>
 
       {!showListLoading && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
           <p>
-            Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
-            <span className="font-bold text-black">{totalProducts}</span> products
+            Showing <span className="font-bold text-black dark:!text-[#fff7e6]">{pageStart}</span>-<span className="font-bold text-black dark:!text-[#fff7e6]">{pageEnd}</span> of{" "}
+            <span className="font-bold text-black dark:!text-[#fff7e6]">{totalProducts}</span> products
           </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
             >
               <ChevronLeft className="h-4 w-4" />
               Prev
             </button>
-            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700">
+            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
               {currentPage} / {totalPages}
             </span>
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
             >
               Next
               <ChevronRight className="h-4 w-4" />
@@ -830,28 +830,28 @@ function ProductManagerContent() {
 
       {/* Products Grid */}
       {showListLoading ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center dark:border-yellow-400/25 dark:bg-[#15100b]">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
-          <p className="mt-4 text-sm text-zinc-600">Loading products...</p>
+          <p className="mt-4 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">Loading products...</p>
         </div>
       ) : products.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
-          <Package className="mx-auto h-12 w-12 text-zinc-300" />
-          <h3 className="mt-4 text-lg font-bold text-black">No products found</h3>
-          <p className="mt-2 text-sm text-zinc-600">Add your first product to get started.</p>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center dark:border-yellow-400/25 dark:bg-[#15100b]">
+          <Package className="mx-auto h-12 w-12 text-zinc-300 dark:text-[#fff7e6]/35" />
+          <h3 className="mt-4 text-lg font-bold text-black dark:!text-[#fff7e6]">No products found</h3>
+          <p className="mt-2 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">Add your first product to get started.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <div
               key={product.id}
-              className={`group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg ${
+              className={`group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white text-black shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg dark:border-yellow-400/25 dark:bg-[#15100b] dark:text-[#fff7e6] dark:shadow-[0_18px_42px_rgba(0,0,0,0.28)] dark:hover:border-yellow-400/45 ${
                 product.category === "Accessories" ? "w-full max-w-[320px] justify-self-start" : ""
               }`}
             >
               {/* Product Image */}
               <div
-                className={`relative overflow-hidden bg-zinc-50 ${
+                className={`relative overflow-hidden bg-zinc-50 dark:bg-[#0f0b07] ${
                   product.category === "Accessories" ? "h-36 sm:h-40" : "h-40 sm:h-44 lg:h-48"
                 }`}
               >
@@ -883,7 +883,7 @@ function ProductManagerContent() {
               {/* Product Info */}
               <div className="p-3.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-yellow-600">
+                  <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-yellow-600 dark:!text-yellow-300">
                     {product.brands?.name || product.brand || "Unlinked brand"}
                   </p>
                   <div className="flex shrink-0 items-center gap-1">
@@ -891,53 +891,53 @@ function ProductManagerContent() {
                       <span
                         className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${
                           product.brands.is_active
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-zinc-100 text-zinc-500"
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:!text-emerald-200"
+                            : "bg-zinc-100 text-zinc-500 dark:bg-[#231b12] dark:!text-[#fff7e6]/55"
                         }`}
                       >
                         {product.brands.is_active ? "Brand active" : "Brand inactive"}
                       </span>
                     )}
                     {!product.brand_id && (
-                      <span className="rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black uppercase text-yellow-700">
+                      <span className="rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black uppercase text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
                         Legacy
                       </span>
                     )}
                     {product.category === "Accessories" && (
-                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700">
+                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
                         Accessory
                       </span>
                     )}
                   </div>
                 </div>
-                <h3 className="mt-1 line-clamp-1 text-base font-bold leading-tight text-black">{product.name}</h3>
+                <h3 className="mt-1 line-clamp-1 text-base font-bold leading-tight text-black dark:!text-[#fff7e6]">{product.name}</h3>
                 {product.scent_collection && (
                   <div className="mt-1.5">
-                    <span className="inline-flex rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-yellow-700">
+                    <span className="inline-flex rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-yellow-700 dark:border-yellow-400/30 dark:bg-[#231b12] dark:!text-yellow-300">
                       {product.scent_collection}
                     </span>
                   </div>
                 )}
                 <p
-                  className="mt-1 line-clamp-1 min-h-[20px] text-sm text-zinc-600"
+                  className="mt-1 line-clamp-1 min-h-[20px] text-sm text-zinc-600 dark:!text-[#fff7e6]/65"
                 >
                   {product.description}
                 </p>
                 
                 <div className="mt-2.5 flex items-center justify-between">
-                  <span className="text-lg font-black text-yellow-600">{formatPrice(product.price)}</span>
-                  <span className="text-sm font-semibold text-zinc-600">Stock: {product.stock}</span>
+                  <span className="text-lg font-black text-yellow-600 dark:!text-yellow-300">{formatPrice(product.price)}</span>
+                  <span className="text-sm font-semibold text-zinc-600 dark:!text-[#fff7e6]/75">Stock: {product.stock}</span>
                 </div>
 
                 {/* Decant Sizes */}
                 {product.category !== "Accessories" && product.decants && product.decants.length > 0 && (
                   <div className="mt-2.5">
-                    <p className="text-xs font-semibold text-zinc-500">Decant Sizes:</p>
+                    <p className="text-xs font-semibold text-zinc-500 dark:!text-[#fff7e6]/65">Decant Sizes:</p>
                     <div className="mt-1 flex max-h-[52px] flex-wrap gap-1 overflow-hidden">
                       {product.decants.map((decant) => (
                         <span
                           key={decant.label}
-                          className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700"
+                          className="rounded-full border border-transparent bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:border-yellow-400/20 dark:bg-[#231b12] dark:!text-[#fff7e6]/75"
                         >
                           {decant.label} - {formatPrice(decant.price)}
                         </span>
@@ -955,8 +955,8 @@ function ProductManagerContent() {
                     disabled={updatingProducts.has(product.id)}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
                       product.is_active
-                        ? "border border-yellow-200 bg-white text-neutral-800 hover:border-yellow-400 hover:bg-yellow-50"
-                        : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        ? "border border-yellow-200 bg-white text-neutral-800 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:hover:bg-[#231b12]"
+                        : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/30 dark:bg-emerald-950/35 dark:!text-emerald-200"
                     }`}
                     aria-label={product.is_active ? "Deactivate product" : "Activate product"}
                   >
@@ -983,7 +983,7 @@ function ProductManagerContent() {
                     <button
                       type="button"
                       onClick={() => openEditProductForm(product)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:hover:bg-[#231b12]"
                       aria-label="Edit product"
                     >
                       <Edit className="h-4 w-4" />
@@ -992,7 +992,7 @@ function ProductManagerContent() {
                     <button
                       type="button"
                       onClick={() => openDeleteModal(product)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-400/30 dark:bg-red-950/35 dark:!text-red-200 dark:hover:bg-red-950/50"
                       aria-label="Delete product"
                     >
                       <Trash2 className="h-4 w-4" />

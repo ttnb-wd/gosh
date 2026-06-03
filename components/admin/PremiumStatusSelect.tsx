@@ -98,7 +98,7 @@ export default function PremiumStatusSelect({
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-[99999] w-[220px] overflow-hidden rounded-2xl border border-yellow-200 bg-[#fffdf6] p-2 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_26px_rgba(234,179,8,0.14)] backdrop-blur">
+        <div className="absolute left-0 top-[calc(100%+10px)] z-[99999] w-[220px] overflow-hidden rounded-2xl border border-yellow-200 bg-[#fffdf6] p-2 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_26px_rgba(234,179,8,0.14)] backdrop-blur dark:border-yellow-400/25 dark:bg-[#15100b]">
           <div className="grid gap-1">
             {options.map((option) => {
               const active = option.value === selected.value;
@@ -116,7 +116,7 @@ export default function PremiumStatusSelect({
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-xs font-black transition-all duration-300 ${
                     active
                       ? optionStyle
-                      : "bg-white text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
+                      : "bg-white text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-yellow-300"
                   }`}
                 >
                   <span className="inline-flex items-center gap-2">
