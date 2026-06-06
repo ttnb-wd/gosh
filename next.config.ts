@@ -45,6 +45,14 @@ const nextConfig: NextConfig = {
             key: "X-XSS-Protection",
             value: "1; mode=block",
           },
+          {
+            key: "X-Download-Options",
+            value: "noopen",
+          },
+          {
+            key: "X-Permitted-Cross-Domain-Policies",
+            value: "none",
+          },
           // Content Security Policy
           {
             key: "Content-Security-Policy",

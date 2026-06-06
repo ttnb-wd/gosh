@@ -5,7 +5,6 @@ import { ShoppingBag, LogIn, CircleUserRound, LogOut, LayoutDashboard, Moon, Sun
 import Link from "next/link";
 import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
-import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface NavbarProps {
@@ -14,13 +13,11 @@ interface NavbarProps {
   enableDropAnimation?: boolean;
 }
 
-export default function Navbar({ onCartOpen, cartCount, enableDropAnimation = false }: NavbarProps) {
+export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [profileName, setProfileName] = useState("");
-  const { settings: websiteSettings } = useWebsiteSettings();
-  const websiteName = websiteSettings.website_name || "GOSH PERFUME";
   const { theme, toggleTheme } = useTheme();
 
   const loadUserProfile = async (currentUser: User | null) => {

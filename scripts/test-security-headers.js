@@ -73,7 +73,7 @@ protocol.get(url, (res) => {
   // Check production-only headers
   if (isProduction) {
     console.log('\n📦 Production Headers:');
-    for (const [header, expectedValue] of Object.entries(productionHeaders)) {
+    for (const header of Object.keys(productionHeaders)) {
       const actualValue = headers[header];
       
       if (!actualValue) {

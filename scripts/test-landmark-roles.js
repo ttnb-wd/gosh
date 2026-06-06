@@ -76,7 +76,6 @@ function checkFile(filePath, requiredRoles) {
   }
 
   const content = fs.readFileSync(fullPath, 'utf8');
-  const fileName = path.basename(filePath);
   
   console.log(`${colors.blue}Testing:${colors.reset} ${filePath}`);
   

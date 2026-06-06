@@ -1,21 +1,8 @@
 "use client";
 
-import { ArrowRight, Diamond, Gem, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Diamond, Gem, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-const heroInfo = [
-  {
-    icon: Diamond,
-    title: "AUTHENTIC FOCUS",
-    text: "Honest fragrance details for confident shopping.",
-  },
-  {
-    icon: Sparkles,
-    title: "CAREFULLY SOURCED",
-    text: "Selected with care from trusted fragrance sources.",
-  },
-];
 
 export default function Hero() {
   return (

@@ -137,7 +137,6 @@ function ProductManagerContent() {
   const [error, setError] = useState("");
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProduct, setDeletingProduct] = useState(false);
-  const showDeleteLoading = useDelayedLoading(deletingProduct, 400);
   const [deleteError, setDeleteError] = useState("");
   const formatPrice = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
   const totalPages = Math.max(1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE));
