@@ -6,17 +6,17 @@ import { Leaf } from "lucide-react";
 
 const creationRows = [
   {
-    title: "The Alchemist's Touch",
+    title: "Trusted Selection",
     description:
-      "Each essence is meticulously selected and blended through ancient techniques, honoring the timeless craft of perfumery. We believe in creating not just fragrances, but liquid memories.",
+      "We carefully select fragrances from trusted suppliers and reliable sources, with a focus on authentic products and confident shopping.",
     image: "/images/fragrance-creation/waterfall.png.png",
     imageAlt: "Waterfall surrounded by lush green forest",
     imageFirst: true,
   },
   {
-    title: "Whispers of the Earth",
+    title: "Clear Product Details",
     description:
-      "Our ingredients are ethically sourced from the deepest forests, the highest peaks, and the most mystical gardens, ensuring purity and sustainability. Nature's secrets, bottled for you.",
+      "Every listing is reviewed for product condition, scent profile, presentation, and useful details to help you choose with care.",
     image: "/images/fragrance-creation/forest-stream.png.png",
     imageAlt: "Forest stream with golden lights",
     imageFirst: false,
@@ -98,12 +98,12 @@ export default function FragranceCreationSection() {
           className="mx-auto max-w-4xl text-center"
         >
           <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#6f1d1b] sm:text-xs">
-            The Art of Fragrance Creation
+            The Art of Fragrance Selection
           </p>
           <h2 className="mt-2 font-serif text-[2rem] font-black leading-tight text-[#1f1a14] sm:text-3xl lg:text-[2.5rem]">
-            Alchemy, tradition,
+            Carefully sourced,
             <span className="block">
-              and <span className="text-[#b88705]">boundless imagination.</span>
+              thoughtfully <span className="text-[#b88705]">presented.</span>
             </span>
           </h2>
         </motion.div>

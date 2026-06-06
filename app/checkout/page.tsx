@@ -137,8 +137,14 @@ function PaymentIcon({
     );
   }
 
+  const fixedLightFallbackSurface = type === "kbzpay" || type === "bank";
+
   return (
-    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100">
+    <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 ${
+      fixedLightFallbackSurface
+        ? "dark:bg-yellow-100"
+        : "dark:border dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
+    }`}>
       {fallbackIcon}
     </div>
   );
@@ -768,6 +774,7 @@ function CheckoutPageContent() {
               <div className={paymentGridClass}>
                 {availablePaymentMethods.map((method, index) => {
                 const isSelected = selectedPayment === method.id;
+                const fixedLightIconSurface = method.id === "kbzpay" || method.id === "bank";
 
                 return (
                   <motion.button
@@ -830,9 +837,11 @@ function CheckoutPageContent() {
                           }`} />
 
                           <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-12 sm:w-12 ${
-                            isSelected
-                              ? "border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-50 shadow-xl shadow-yellow-400/50"
-                              : "border-yellow-300/30 bg-gradient-to-br from-white via-yellow-50/30 to-white shadow-lg group-hover:border-yellow-400/50 group-hover:shadow-xl group-hover:shadow-yellow-400/40"
+                            fixedLightIconSurface
+                              ? "border-[#E8D7A2]/40 bg-[#FFFDF7] shadow-[0_1px_2px_rgba(0,0,0,0.05)] group-hover:border-yellow-400/50 group-hover:shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:border-[#E8D7A2]/40 dark:bg-[#FFFDF7] dark:shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                              : isSelected
+                                ? "border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-50 shadow-xl shadow-yellow-400/50 dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
+                                : "border-yellow-300/30 bg-gradient-to-br from-white via-yellow-50/30 to-white shadow-lg group-hover:border-yellow-400/50 group-hover:shadow-xl group-hover:shadow-yellow-400/40 dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
                           }`}>
                             <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/70 via-transparent to-transparent" />
                             

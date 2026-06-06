@@ -169,35 +169,36 @@ function OperationalFlag({
   tone?: "neutral" | "warning" | "danger";
 }) {
   const styles = {
-    neutral: "border-[#d4af37]/15 bg-white hover:border-[#d4af37]/35",
-    warning: "border-[#d4af37]/30 bg-[#fff7e6]/70 hover:border-[#d4af37]",
-    danger: "border-red-200 bg-red-50/40 hover:border-red-300",
+    neutral: "border-[#d4af37]/15 bg-white hover:border-[#d4af37]/35 hover:bg-[#fff8df] hover:shadow-[0_14px_35px_rgba(212,175,55,0.12)] dark:border-[#d4af37]/20 dark:bg-[#080704] dark:text-[#f8f1d8] dark:hover:border-[#d4af37]/45 dark:hover:bg-[#0d0b07] dark:hover:shadow-[0_16px_40px_rgba(212,175,55,0.16)]",
+    warning: "border-[#d4af37]/30 bg-[#fff7e6]/70 hover:border-[#d4af37] hover:bg-[#fff8df] hover:shadow-[0_14px_35px_rgba(212,175,55,0.12)] dark:border-[#d4af37]/45 dark:bg-[#0d0b07] dark:text-[#f8f1d8] dark:shadow-[0_16px_40px_rgba(212,175,55,0.14)] dark:hover:border-[#d4af37]/45 dark:hover:bg-[#0d0b07] dark:hover:shadow-[0_16px_40px_rgba(212,175,55,0.16)]",
+    danger: "border-red-200 bg-red-50/40 hover:border-red-300 dark:border-red-400/35 dark:bg-[#120807] dark:text-[#f8f1d8] dark:hover:border-red-300/50 dark:hover:bg-[#180b09] dark:hover:shadow-[0_16px_40px_rgba(248,113,113,0.14)]",
   };
 
   const iconStyles = {
-    neutral: "bg-[#fff7e6] text-[#7a6a55]",
-    warning: "bg-[#f7e7b3] text-[#6f1d1b]",
-    danger: "bg-red-100 text-red-700",
+    neutral: "bg-[#fff7e6] text-[#7a6a55] group-hover:bg-[#fff7d6] dark:border dark:border-[#d4af37]/20 dark:bg-[#151207] dark:text-[#d4af37] dark:group-hover:bg-[#1b1609]",
+    warning: "bg-[#f7e7b3] text-[#6f1d1b] group-hover:bg-[#fff7d6] dark:border dark:border-[#d4af37]/20 dark:bg-[#151207] dark:text-[#d4af37] dark:group-hover:bg-[#1b1609]",
+    danger: "bg-red-100 text-red-700 dark:border dark:border-red-400/25 dark:bg-[#26100e] dark:text-red-300 dark:group-hover:bg-[#30120f]",
   };
+  const highlightIcon = title === "Verify Payments" || title === "Confirm Orders";
 
   return (
     <Link
       href={href}
-      className={`group flex min-w-0 flex-col items-start gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between ${styles[tone]}`}
+      className={`admin-operational-flag admin-operational-flag-${tone} group flex min-w-0 flex-col items-start gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between ${styles[tone]}`}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyles[tone]}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`admin-operational-flag-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyles[tone]}`}>
+          <Icon className={`h-5 w-5 ${highlightIcon ? "admin-operational-flag-highlight-icon" : ""}`} strokeWidth={highlightIcon ? 2.75 : 2} />
         </div>
         <div className="min-w-0">
-          <p className="font-black text-[#1f1a14]">{title}</p>
-          <p className="mt-1 text-xs font-semibold leading-snug text-[#7a6a55] sm:truncate">{detail}</p>
+          <p className="admin-operational-flag-title font-black text-[#1f1a14]">{title}</p>
+          <p className="admin-operational-flag-detail mt-1 text-xs font-semibold leading-snug text-[#7a6a55] sm:truncate">{detail}</p>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
-        <span className="text-xl font-black text-[#1f1a14]">{value}</span>
-        <ArrowRight className="h-4 w-4 text-[#7a6a55] transition group-hover:translate-x-1 group-hover:text-[#6f1d1b]" />
+        <span className="admin-operational-flag-value text-xl font-black text-[#1f1a14] transition group-hover:text-[#8a6a18] dark:text-[#f8f1d8] dark:group-hover:text-[#d4af37]">{value}</span>
+        <ArrowRight className="admin-operational-flag-arrow h-4 w-4 text-[#7a6a55] transition group-hover:translate-x-1 group-hover:text-[#8a6a18] dark:text-[#f8f1d8] dark:group-hover:text-[#d4af37]" />
       </div>
     </Link>
   );

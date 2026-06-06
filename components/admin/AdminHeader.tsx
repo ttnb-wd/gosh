@@ -1,11 +1,12 @@
 "use client";
 
-import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare } from "lucide-react";
+import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare, Moon, Sun } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface AdminHeaderProps {
   title: string;
@@ -35,6 +36,7 @@ interface ContactMessageNotification {
 
 export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const { user } = useAdminAuth();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseClient(), []);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -255,6 +257,20 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white/80 text-[#8a6a18] shadow-sm transition-all duration-200 hover:border-[#d4af37]/50 hover:bg-[#fff8df] dark:border-[#d4af37]/25 dark:bg-[#0d0b07] dark:text-[#d4af37] dark:hover:bg-[#151207]"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </button>
+
           {/* Notifications */}
           <div className="relative" ref={notiRef}>
             <button

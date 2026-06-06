@@ -18,9 +18,7 @@ export default function BrandStory() {
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const { settings } = useWebsiteSettings();
   const websiteName = settings.website_name || "GOSH PERFUME";
-  const aboutText =
-    settings.about_text ||
-    `Since 2023, ${websiteName} has been crafting exceptional fragrances that capture the essence of luxury and sophistication. Each bottle tells a story, each scent evokes emotion.`;
+  const aboutText = `${websiteName} is an independent curated perfume shop focused on carefully sourced fragrances, clear product details, and a trustworthy shopping experience.`;
 
   // Fallback static slides if no products
   const fallbackSlides = [
@@ -118,21 +116,21 @@ export default function BrandStory() {
             className="lg:order-2"
           >
             <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
-              Our Story
+              Our Authenticity Note
             </p>
             <h2 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-5xl">
-              The Art of
-              <span className="block text-[#b88705]">Perfumery</span>
+              Curated with
+              <span className="block text-[#b88705]">Confidence</span>
             </h2>
             <div className="space-y-4 text-lg leading-relaxed text-[#7a6a55]">
               <p>
                 {aboutText}
               </p>
               {/* <p>
-                Our master perfumers blend tradition with innovation, using only the finest ingredients sourced from the world&apos;s most prestigious suppliers. Every fragrance is a masterpiece, designed to become your signature.
+                We carefully source authentic perfumes from trusted suppliers and review product details before listing.
               </p> */}
               <p>
-                We believe that perfume is more than just a scent—it&apos;s an expression of who you are, a memory in the making, and a statement of elegance that lingers long after you&apos;ve left the room.
+                Brand names are shown only to identify products clearly for customers. Find your signature scent with confidence, elegance, and care.
               </p>
             </div>
           </motion.div>

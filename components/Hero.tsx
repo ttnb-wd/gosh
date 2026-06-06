@@ -7,13 +7,13 @@ import Link from "next/link";
 const heroInfo = [
   {
     icon: Diamond,
-    title: "BEYOND LUXURY",
-    text: "Crafted to evoke emotion, designed to leave a lasting impression.",
+    title: "AUTHENTIC FOCUS",
+    text: "Honest fragrance details for confident shopping.",
   },
   {
     icon: Sparkles,
-    title: "GOLDEN ESSENCE COLLECTION",
-    text: "A radiant expression of timeless elegance and refined craftsmanship.",
+    title: "CAREFULLY SOURCED",
+    text: "Selected with care from trusted fragrance sources.",
   },
 ];
 
@@ -81,13 +81,10 @@ export default function Hero() {
 
               {/* Content - Above background */}
               <div className="relative z-10 px-5 sm:px-0">
-                <h1 className="font-serif text-[clamp(3.1rem,12vw,5rem)] leading-[0.98] tracking-tight text-[#15120f] dark:text-[#fff7e6] sm:dark:text-[#fff7e6] drop-shadow-[0_2px_8px_rgba(255,255,255,0.65)] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.75)] sm:drop-shadow-none sm:dark:drop-shadow-none sm:text-[clamp(4.3rem,8vw,6.8rem)] lg:text-[clamp(4.7rem,6.8vw,7.25rem)]">
-                  <span className="block whitespace-nowrap">The Essence</span>
-                  <span className="block whitespace-nowrap">
-                    of{" "}
-                    <span className="bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] dark:bg-[linear-gradient(135deg,#d4af37,#f7d774,#b88700)] sm:dark:bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] bg-clip-text text-transparent drop-shadow-[0_1px_4px_rgba(255,247,230,0.5)] dark:drop-shadow-[0_3px_10px_rgba(0,0,0,0.7)] sm:drop-shadow-none sm:dark:drop-shadow-none">
-                      Elegance
-                    </span>
+                <h1 className="max-w-4xl pb-2 font-serif text-[clamp(2.5rem,9vw,3.6rem)] leading-[1.08] tracking-tight text-[#15120f] drop-shadow-[0_2px_8px_rgba(255,255,255,0.65)] dark:text-[#fff7e6] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.75)] sm:text-[3.35rem] sm:drop-shadow-none sm:dark:drop-shadow-none md:text-[4rem] lg:max-w-[650px] lg:text-[4.75rem] xl:text-[5.35rem]">
+                  <span className="block whitespace-nowrap">Curated Authentic</span>
+                  <span className="block pb-1 bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] bg-clip-text text-transparent drop-shadow-[0_1px_4px_rgba(255,247,230,0.5)] dark:bg-[linear-gradient(135deg,#d4af37,#f7d774,#b88700)] dark:drop-shadow-[0_3px_10px_rgba(0,0,0,0.7)] sm:dark:bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] sm:drop-shadow-none sm:dark:drop-shadow-none">
+                    Fragrances
                   </span>
                 </h1>
 
@@ -98,8 +95,8 @@ export default function Hero() {
                 </div>
 
                 <p className="mx-auto mt-7 max-w-[360px] text-[15.5px] font-medium leading-7 text-black/85 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)] dark:text-[#fff7e6] dark:drop-shadow-[0_2px_10px_rgba(0,0,0,0.78)] sm:mx-0 sm:max-w-xl sm:text-base sm:leading-8 sm:text-[#4f4234] sm:drop-shadow-none sm:dark:text-[#fff7e6] sm:dark:drop-shadow-none lg:text-lg">
-                  Experience premium perfumes crafted with style, depth, and luxury.
-                  A modern perfume brand with clean elegance and golden highlights.
+                  Discover carefully sourced perfumes selected for elegance, quality, and
+                  confidence. Shop every fragrance with peace of mind.
                 </p>
 
                 <div className="mt-8 flex flex-row items-center justify-center gap-2 px-2 sm:justify-start sm:gap-4 sm:px-0">
@@ -134,50 +131,50 @@ export default function Hero() {
         </div>
 
         {/* Premium Feature Card - Overlapping Hero - Above all gradients */}
-        <div className="relative z-30 mx-0 mt-0 w-full max-w-full px-0 dark:bg-[#0f0b07] sm:mt-5 sm:bg-transparent sm:dark:bg-transparent lg:mt-6">
+        <div className="relative z-30 mx-0 mt-0 w-full max-w-full px-0 dark:bg-[#0f0b07] sm:mt-7 sm:bg-transparent sm:dark:bg-transparent lg:mt-8">
           <div className="w-full overflow-hidden rounded-3xl border-y border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)] dark:bg-[#15100b] dark:shadow-[0_16px_52px_rgba(0,0,0,0.34)]">
             <div className="grid gap-0 divide-y divide-[#d4af37]/15 dark:divide-[#d4af37]/25 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-            {/* Column 1: Beyond Luxury */}
+            {/* Column 1: Authentic product focus */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Diamond className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
-                  BEYOND LUXURY
+                  AUTHENTIC FOCUS
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  Crafted to evoke emotion, designed to leave a lasting impression.
+                  Honest fragrance details for confident shopping.
                 </p>
               </div>
             </div>
 
-            {/* Column 2: Golden Essence Collection */}
+            {/* Column 2: Carefully sourced */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
-                  GOLDEN ESSENCE COLLECTION
+                  CAREFULLY SOURCED
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  A radiant expression of timeless elegance and refined craftsmanship.
+                  Selected with care from trusted fragrance sources.
                 </p>
               </div>
             </div>
 
-            {/* Column 3: Discover Scents */}
+            {/* Column 3: Quality checked */}
             <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
                 <Gem className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1">
-                <h2 className="text-sm font-black leading-tight text-[#1f1a14] dark:text-[#fff7e6] sm:text-base sm:leading-tight">
-                  Discover scents that define you.
+                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
+                  Quality Checked
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  Explore our signature collection today.
+                  Products are reviewed before listing.
                 </p>
                 <Link
                   href="/products"

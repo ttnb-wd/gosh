@@ -593,11 +593,127 @@ select:disabled {
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.34), 0 0 28px rgba(212, 175, 55, 0.08) !important;
 }
 
+.dark [data-admin-theme] [class*="hover:bg-"]:hover,
+.dark [data-admin-theme] [class*="hover:bg-["]:hover,
+.dark [data-admin-theme] [class*="dark:hover:bg"]:hover,
+.dark [data-admin-theme] [class*="dark:hover:bg-["]:hover,
 .dark [data-admin-theme] .hover\:bg-yellow-50:hover,
 .dark [data-admin-theme] .hover\:bg-yellow-50\/40:hover,
 .dark [data-admin-theme] .hover\:bg-zinc-50:hover,
-.dark [data-admin-theme] .hover\:bg-zinc-100:hover {
-  background-color: #231b12 !important;
+.dark [data-admin-theme] .hover\:bg-zinc-100:hover,
+.dark [data-admin-theme] .hover\:bg-neutral-50:hover,
+.dark [data-admin-theme] .hover\:bg-gray-800:hover,
+.dark [data-admin-theme] .hover\:bg-red-50:hover,
+.dark [data-admin-theme] .hover\:bg-red-100:hover,
+.dark [data-admin-theme] .hover\:bg-green-100:hover,
+.dark [data-admin-theme] .hover\:bg-yellow-100:hover,
+.dark [data-admin-theme] .hover\:bg-yellow-300:hover,
+.dark [data-admin-theme] .hover\:bg-yellow-500:hover,
+.dark [data-admin-theme] .hover\:bg-\[\#fff7e6\]:hover,
+.dark [data-admin-theme] .hover\:bg-\[\#fff8df\]:hover {
+  background-color: #0d0b07 !important;
+  background-image: none !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  color: #f8f1d8 !important;
+  box-shadow: 0 18px 45px rgba(212, 175, 55, 0.16) !important;
+}
+
+.dark [data-admin-theme] button[class*="h-9"][class*="w-9"]:hover,
+.dark [data-admin-theme] button[class*="h-10"][class*="w-10"]:hover,
+.dark [data-admin-theme] button[class*="h-11"][class*="w-11"]:hover,
+.dark [data-admin-theme] button[class*="h-12"][class*="w-12"]:hover,
+.dark [data-admin-theme] a[class*="h-10"][class*="w-10"]:hover,
+.dark [data-admin-theme] a[class*="h-11"][class*="w-11"]:hover,
+.dark [data-admin-theme] a[class*="h-12"][class*="w-12"]:hover {
+  background-color: #171307 !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  color: #d4af37 !important;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.18) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag {
+  background-color: #0d0b07 !important;
+  border-color: rgba(212, 175, 55, 0.24) !important;
+  color: #fff7e6 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-warning {
+  background-color: #0d0b07 !important;
+  border-color: rgba(212, 175, 55, 0.36) !important;
+  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.08) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-danger {
+  background-color: #120807 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag:hover {
+  background-color: #141007 !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  color: #fff7e6 !important;
+  box-shadow: 0 16px 40px rgba(212, 175, 55, 0.16) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-danger:hover {
+  background-color: #180b09 !important;
+  border-color: rgba(252, 165, 165, 0.5) !important;
+  box-shadow: 0 16px 40px rgba(248, 113, 113, 0.14) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-icon {
+  background-color: #1b1609 !important;
+  border: 1px solid rgba(212, 175, 55, 0.34) !important;
+  color: #f6d365 !important;
+  box-shadow: none !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag:hover .admin-operational-flag-icon {
+  background-color: #241c0b !important;
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  color: #f6d365 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-icon svg {
+  color: inherit !important;
+  opacity: 1 !important;
+  stroke: currentColor !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-highlight-icon,
+.dark [data-admin-theme] .admin-operational-flag-highlight-icon * {
+  color: #f6d365 !important;
+  opacity: 1 !important;
+  stroke: #f6d365 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-danger .admin-operational-flag-icon {
+  background-color: #26100e !important;
+  border-color: rgba(248, 113, 113, 0.25) !important;
+  color: #fca5a5 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-danger:hover .admin-operational-flag-icon {
+  background-color: #30120f !important;
+  color: #fca5a5 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-title,
+.dark [data-admin-theme] .admin-operational-flag-value {
+  color: #fff7e6 !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-detail {
+  color: rgba(255, 247, 230, 0.72) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag-arrow {
+  color: rgba(255, 247, 230, 0.7) !important;
+}
+
+.dark [data-admin-theme] .admin-operational-flag:hover .admin-operational-flag-value,
+.dark [data-admin-theme] .admin-operational-flag:hover .admin-operational-flag-arrow {
+  color: #d4af37 !important;
 }
 
 .dark [data-admin-theme] .bg-red-50 {

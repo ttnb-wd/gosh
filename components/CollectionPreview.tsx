@@ -159,7 +159,7 @@ export default function CollectionPreview() {
           className="sr-only"
         >
           <h2 className="text-4xl font-black tracking-tight text-[#1f1a14] sm:text-5xl lg:text-6xl">
-            Perfume Collection
+            Curated Fragrance Collections
           </h2>
         </motion.div>
 
@@ -184,7 +184,7 @@ export default function CollectionPreview() {
 
                 <div className="relative z-10 flex h-full flex-col justify-center">
                   <p className="mb-2 max-w-full text-[clamp(1.5rem,7vw,2.5rem)] font-black leading-[0.95] text-[#b88700] sm:mb-2 sm:text-[clamp(1.75rem,6vw,2.5rem)] md:mb-3 md:text-[clamp(2.25rem,5vw,3.2rem)] lg:max-w-[620px] lg:text-[clamp(2.8rem,4vw,3.6rem)]">
-                    Perfume Collection
+                    Curated Collections
                   </p>
                   <div className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#d4af37]/35 bg-white/70 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#b88700] shadow-[0_10px_30px_rgba(212,175,55,0.16)] sm:mb-3 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-[0.2em] md:mb-4 md:px-4 md:py-2 md:text-[11px] md:tracking-[0.26em] lg:mb-5">
                     <ActiveIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
@@ -233,12 +233,12 @@ export default function CollectionPreview() {
                   </div>
                 </div>
 
-                <div className="relative z-10 flex h-[160px] items-center justify-center overflow-hidden rounded-xl bg-[#fff7e6] shadow-[0_24px_70px_rgba(31,26,20,0.14)] sm:h-[180px] sm:rounded-[1.25rem] md:h-[240px] md:rounded-[1.5rem] lg:h-[320px] lg:rounded-[1.75rem]">
+                <div className="relative z-10 flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-xl bg-[#f7f3ea] shadow-[0_24px_70px_rgba(31,26,20,0.14)] max-sm:aspect-[4/3] sm:rounded-[1.25rem] md:rounded-[1.5rem] lg:rounded-[1.75rem]">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_55%_28%,rgba(247,231,179,0.75),transparent_36%),linear-gradient(135deg,rgba(255,250,240,0.08),rgba(31,26,20,0.22))]" />
                   <img
                     src={activeCollection.image}
                     alt={`${activeCollection.name} collection`}
-                    className="h-full w-full scale-[0.82] object-contain object-center transition-all duration-500 lg:scale-[0.85]"
+                    className="h-full w-full scale-[1.08] object-cover object-center transition-all duration-500"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(31,26,20,0.18),transparent_45%),linear-gradient(0deg,rgba(31,26,20,0.42),transparent_55%)]" />
                 </div>
