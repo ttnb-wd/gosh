@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
 import { validateEmail } from "@/lib/validation";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -42,24 +42,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json(
-        { error: "Service temporarily unavailable." },
-        { status: 500 }
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .upsert(
+        {
+          email: body.email!.trim().toLowerCase(),
+          status: "subscribed",
+          source: "vip_club",
+          subscribed_at: new Date().toISOString(),
+          unsubscribed_at: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "email" }
       );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
-    });
-
-    const { error } = await supabase.rpc("subscribe_newsletter", {
-      p_email: body.email!.trim().toLowerCase(),
-      p_source: "vip_club",
-    });
 
     if (error) {
       // Don't expose database errors to users

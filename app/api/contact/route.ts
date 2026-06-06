@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { sendAdminContactEmail } from "@/lib/email";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { validateEmail, validateName, validateSubject, validateMessage, sanitizeInput } from "@/lib/validation";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -65,25 +65,35 @@ export async function POST(request: Request) {
     const sanitizedSubject = sanitizeInput(body.subject!.trim());
     const sanitizedMessage = sanitizeInput(body.message!.trim());
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = getSupabaseAdmin();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-    if (!supabaseUrl || !supabaseKey) {
+    const { count: recentCount, error: rateLimitError } = await supabase
+      .from("contact_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("email", sanitizedEmail)
+      .gt("created_at", oneHourAgo);
+
+    if (rateLimitError) {
       return NextResponse.json(
-        { error: "Service temporarily unavailable." },
-        { status: 500 }
+        { error: "Could not send your message. Please try again or contact us directly." },
+        { status: 400 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
-    });
+    if ((recentCount || 0) >= 3) {
+      return NextResponse.json(
+        { error: "Too many messages sent recently. Please try again later." },
+        { status: 429 }
+      );
+    }
 
-    const { error } = await supabase.rpc("submit_contact_message", {
-      p_full_name: sanitizedName,
-      p_email: sanitizedEmail,
-      p_subject: sanitizedSubject,
-      p_message: sanitizedMessage,
+    const { error } = await supabase.from("contact_messages").insert({
+      full_name: sanitizedName,
+      email: sanitizedEmail,
+      subject: sanitizedSubject,
+      message: sanitizedMessage,
+      status: "unread",
     });
 
     if (error) {
