@@ -113,25 +113,38 @@ export default function AdminCustomersPage() {
       setLoading(true);
       setError(null);
       const supabase = createSupabaseClient();
-      const { data, error: summariesError } = await supabase.rpc("get_customer_summaries", {
-        p_page: currentPage,
-        p_page_size: pageSize,
-        p_search: searchQuery.trim(),
-        p_filter: filterType,
-        p_sort: sortType,
-      });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (summariesError) {
-        console.error("Customers fetch error:", {
-          message: summariesError.message,
-          details: summariesError.details,
-          hint: summariesError.hint,
-          code: summariesError.code,
-        });
-        throw summariesError;
+      if (!session?.access_token) {
+        throw new Error("Admin session expired. Please sign in again.");
       }
 
-      const rows = (data || []) as CustomerSummaryRow[];
+      const response = await fetch("/api/admin/customers/summaries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          page: currentPage,
+          pageSize,
+          search: searchQuery.trim(),
+          filter: filterType,
+          sort: sortType,
+        }),
+      });
+      const result = (await response.json()) as { data?: CustomerSummaryRow[]; error?: string };
+
+      if (!response.ok || result.error) {
+        console.error("Customers fetch error:", {
+          message: result.error,
+        });
+        throw new Error(result.error || "Failed to fetch customers");
+      }
+
+      const rows = result.data || [];
       const customersData: Customer[] = rows.map((row) => ({
         id: row.id,
         email: row.email,

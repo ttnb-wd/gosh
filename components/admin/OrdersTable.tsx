@@ -190,22 +190,43 @@ function OrdersTableContent() {
     return data.signedUrl;
   };
 
+  const callOrderStatusAction = async (body: Record<string, unknown>) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error("Admin session expired. Please sign in again.");
+    }
+
+    const response = await fetch("/api/admin/orders/status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const result = (await response.json()) as { data?: unknown; error?: string };
+
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "Order status action failed.");
+    }
+
+    return result.data;
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
     const previousOrder = orders.find((order) => order.id === orderId);
     const previousStatus = previousOrder?.status;
 
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
-      const { data: updatedOrderData, error } = await supabase.rpc("admin_update_order_status", {
-        p_order_id: orderId,
-        p_status: newStatus,
+      const updatedOrderData = await callOrderStatusAction({
+        type: "order",
+        orderId,
+        status: newStatus,
       });
-
-      if (error) {
-        console.error("Error updating order status:", error);
-        setActionMessage({ type: "error", text: "Failed to update order status." });
-        return;
-      }
 
       const updatedOrder = Array.isArray(updatedOrderData) ? updatedOrderData[0] : updatedOrderData;
 
@@ -267,16 +288,11 @@ function OrdersTableContent() {
 
     setUpdatingOrders(prev => new Set(prev).add(orderId));
     try {
-      const { data: updatedOrderData, error } = await supabase.rpc("admin_update_payment_status", {
-        p_order_id: orderId,
-        p_payment_status: newPaymentStatus,
+      const updatedOrderData = await callOrderStatusAction({
+        type: "payment",
+        orderId,
+        paymentStatus: newPaymentStatus,
       });
-
-      if (error) {
-        console.error("Error updating payment status:", error);
-        setActionMessage({ type: "error", text: "Failed to update payment status." });
-        return;
-      }
 
       const updatedOrder = Array.isArray(updatedOrderData) ? updatedOrderData[0] : updatedOrderData;
 

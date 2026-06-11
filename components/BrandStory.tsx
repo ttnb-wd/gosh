@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -10,6 +9,45 @@ interface ProductImage {
   id: string;
   name: string;
   image: string;
+}
+
+const fallbackBrandStoryImage =
+  "/images/showcase/perfume-showcase-1.jpg";
+
+const getSafeBrandStoryImage = (image?: string | null) => {
+  const value = image?.trim();
+  if (!value) return fallbackBrandStoryImage;
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (supabaseUrl && (value.startsWith("products/") || value.startsWith("product-images/"))) {
+    const path = value.startsWith("product-images/") ? value.replace(/^product-images\//, "") : value;
+    return `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
+  }
+
+  return fallbackBrandStoryImage;
+};
+
+function BrandStorySlideImage({ src, alt }: { src: string; alt: string }) {
+  const [imageSrc, setImageSrc] = useState(() => getSafeBrandStoryImage(src));
+
+  useEffect(() => {
+    setImageSrc(getSafeBrandStoryImage(src));
+  }, [src]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className="absolute inset-0 h-full w-full object-cover"
+      loading="eager"
+      onError={() => {
+        if (imageSrc !== fallbackBrandStoryImage) {
+          setImageSrc(fallbackBrandStoryImage);
+        }
+      }}
+    />
+  );
 }
 
 export default function BrandStory() {
@@ -69,7 +107,7 @@ export default function BrandStory() {
   // Use product images if available, otherwise fallback
   const slides = productImages.length > 0
     ? productImages.map(product => ({
-        src: product.image,
+        src: getSafeBrandStoryImage(product.image),
         alt: product.name
       }))
     : fallbackSlides;
@@ -151,13 +189,9 @@ export default function BrandStory() {
                     index === currentSlide ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  <Image
+                  <BrandStorySlideImage
                     src={slide.src}
                     alt={slide.alt}
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="object-cover"
-                    priority={index === 0}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#d4af37]/10 to-transparent" />
                 </div>

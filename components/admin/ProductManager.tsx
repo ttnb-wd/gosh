@@ -181,6 +181,32 @@ function ProductManagerContent() {
     }
   };
 
+  const callProductAction = async (body: Record<string, unknown>) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error("Admin session expired. Please sign in again.");
+    }
+
+    const response = await fetch("/api/admin/products/action", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const result = (await response.json()) as { data?: unknown; error?: string };
+
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "Product action failed.");
+    }
+
+    return result.data;
+  };
+
   // Handle image file selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -554,25 +580,20 @@ function ProductManagerContent() {
         notes: hasQuickViewNotes(quickViewNotes) ? quickViewNotes : {},
       };
 
-      const result = await supabase.rpc("admin_save_product", {
-        p_product_id: editingProduct?.id || null,
-        p_product: productPayload,
-      });
-
-      if (result.error) {
+      let savedProduct: Product | null = null;
+      try {
+        savedProduct = (await callProductAction({
+          action: "save",
+          productId: editingProduct?.id || null,
+          product: productPayload,
+        })) as Product | null;
+      } catch (saveError) {
         await deleteUploadedProductImage(uploadedImagePath);
-        console.error(editingProduct ? "Update product error:" : "Add product error:", {
-          message: result.error.message,
-          details: result.error.details,
-          hint: result.error.hint,
-          code: result.error.code,
-        });
-        setError(result.error.message || (editingProduct ? "Could not update product." : "Could not add product."));
+        console.error(editingProduct ? "Update product error:" : "Add product error:", saveError);
+        setError(saveError instanceof Error ? saveError.message : editingProduct ? "Could not update product." : "Could not add product.");
         setLoading(false);
         return;
       }
-
-      const savedProduct = result.data as Product | null;
       if (savedProduct?.id) {
         const { error: productMetaUpdateError } = await supabase
           .from("products")
@@ -640,15 +661,11 @@ function ProductManagerContent() {
     setUpdatingProducts(prev => new Set(prev).add(productId));
 
     try {
-      const { error } = await supabase.rpc("admin_set_product_active", {
-        p_product_id: productId,
-        p_is_active: !currentStatus,
+      await callProductAction({
+        action: "setActive",
+        productId,
+        isActive: !currentStatus,
       });
-
-      if (error) {
-        console.error("Error updating product status:", error);
-        return;
-      }
 
       loadProducts();
     } catch (error) {
@@ -680,15 +697,10 @@ function ProductManagerContent() {
 
     setDeletingProduct(true);
     try {
-      const { error } = await supabase.rpc("admin_delete_product", {
-        p_product_id: productToDelete.id,
+      await callProductAction({
+        action: "delete",
+        productId: productToDelete.id,
       });
-
-      if (error) {
-        console.error("Error deleting product:", error);
-        setDeleteError("Failed to delete product. Please try again.");
-        return;
-      }
 
       // Close modal and reload products
       closeDeleteModal();

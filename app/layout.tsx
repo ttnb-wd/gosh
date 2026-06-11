@@ -116,7 +116,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <ThemeProvider>
           <LoadingProvider>
-            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[var(--background)] dark:bg-[#0f0b07] pb-20 md:pb-0">
+            <div className="site-page-wrapper relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[var(--background)] pb-20 dark:bg-[#0f0b07] md:pb-0">
               {children}
             </div>
             <MobileBottomNav />

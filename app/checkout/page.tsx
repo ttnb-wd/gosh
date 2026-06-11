@@ -118,11 +118,11 @@ function PaymentIcon({
 
   const fallbackIcon =
     type === "cod" ? (
-      <Banknote className="h-10 w-10 text-yellow-700" />
+      <Banknote className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
     ) : type === "bank" ? (
-      <Building2 className="h-10 w-10 text-yellow-700" />
+      <Building2 className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
     ) : (
-      <Smartphone className="h-10 w-10 text-yellow-700" />
+      <Smartphone className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
     );
 
   if (src && !failed) {
@@ -130,7 +130,7 @@ function PaymentIcon({
       <img
         src={src}
         alt={alt}
-        className="h-14 w-14 rounded-full object-cover"
+        className="h-10 w-10 rounded-full object-cover sm:h-14 sm:w-14"
         loading="lazy"
         onError={() => setFailed(true)}
       />
@@ -140,7 +140,7 @@ function PaymentIcon({
   const fixedLightFallbackSurface = type === "kbzpay" || type === "bank";
 
   return (
-    <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 ${
+    <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 sm:h-14 sm:w-14 ${
       fixedLightFallbackSurface
         ? "dark:bg-yellow-100"
         : "dark:border dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
@@ -274,7 +274,7 @@ function CheckoutPageContent() {
 
   // Dynamic grid class based on available payment methods count
   const paymentGridClass = useMemo(() => {
-    return "grid w-full grid-cols-1 place-items-center gap-6 sm:grid-cols-2 lg:grid-cols-4";
+    return "grid w-full grid-cols-2 place-items-center gap-x-3 gap-y-5 sm:gap-6 lg:grid-cols-4";
   }, [availablePaymentMethods.length]);
 
   // Auto-select first available payment method if current selection is disabled
@@ -466,23 +466,44 @@ function CheckoutPageContent() {
         quantity: Number(item.qty || 1),
       }));
 
-      const { data: savedOrderData, error: orderError } = await supabase
-        .rpc("place_order", {
-          p_customer_name: SHOW_DELIVERY_INFORMATION ? customerForm.fullName : "Guest Customer",
-          p_phone: SHOW_DELIVERY_INFORMATION ? customerForm.phone : "N/A",
-          p_address: SHOW_DELIVERY_INFORMATION ? customerForm.address : "N/A",
-          p_city: SHOW_DELIVERY_INFORMATION ? customerForm.city : "N/A",
-          p_payment_method: selectedPaymentInfo.payment_method,
-          p_payment_account_name: selectedPaymentInfo.payment_account_name,
-          p_payment_phone: selectedPaymentInfo.payment_phone,
-          p_payment_account_number: selectedPaymentInfo.payment_account_number,
-          p_payment_screenshot_url: paymentScreenshotUrl,
-          p_items: orderItemsPayload,
-        });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
+        setSubmitError("Please login or create an account to place your order.");
+        setSubmittingOrder(false);
+        router.push("/login?redirect=/checkout");
+        return;
+      }
+
+      const orderResponse = await fetch("/api/checkout/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          customerName: SHOW_DELIVERY_INFORMATION ? customerForm.fullName : "Guest Customer",
+          phone: SHOW_DELIVERY_INFORMATION ? customerForm.phone : "N/A",
+          address: SHOW_DELIVERY_INFORMATION ? customerForm.address : "N/A",
+          city: SHOW_DELIVERY_INFORMATION ? customerForm.city : "N/A",
+          paymentMethod: selectedPaymentInfo.payment_method,
+          paymentAccountName: selectedPaymentInfo.payment_account_name,
+          paymentPhone: selectedPaymentInfo.payment_phone,
+          paymentAccountNumber: selectedPaymentInfo.payment_account_number,
+          paymentScreenshotUrl,
+          items: orderItemsPayload,
+        }),
+      });
+      const orderResult = (await orderResponse.json()) as { data?: unknown; error?: string };
+      const savedOrderData = orderResult.data;
+      const orderError = orderResult.error ? { message: orderResult.error } : null;
 
       const savedOrder = Array.isArray(savedOrderData) ? savedOrderData[0] : savedOrderData;
 
-      if (orderError || !savedOrder) {
+      if (!orderResponse.ok || orderError || !savedOrder) {
         const orderMessage = getOrderErrorMessage(orderError);
 
         await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
@@ -791,7 +812,7 @@ function CheckoutPageContent() {
                     whileTap={{ scale: 0.98 }}
                     className="group relative flex w-full justify-center"
                   >
-                    <div className={`relative aspect-square w-[150px] overflow-hidden rounded-full border border-yellow-400/70 bg-white text-center shadow-[0_14px_40px_rgba(234,179,8,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(234,179,8,0.30)] sm:w-[180px] lg:w-[210px] ${
+                    <div className={`relative aspect-square w-[132px] overflow-hidden rounded-full border border-yellow-400/70 bg-white text-center shadow-[0_14px_40px_rgba(234,179,8,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(234,179,8,0.30)] min-[390px]:w-[142px] sm:w-[180px] lg:w-[210px] ${
                       isSelected
                         ? "ring-2 ring-yellow-400 shadow-[0_20px_60px_rgba(234,179,8,0.38)]"
                         : ""
@@ -800,7 +821,7 @@ function CheckoutPageContent() {
                         isSelected ? "opacity-100" : "group-hover:opacity-80"
                       }`} />
 
-                      <div className="relative flex h-full w-full flex-col items-center justify-center px-4 py-5 sm:px-5 sm:py-6">
+                      <div className="relative flex h-full w-full flex-col items-center justify-center px-3 py-4 sm:px-5 sm:py-6">
 
                         {/* Selected check badge */}
                         {isSelected && (

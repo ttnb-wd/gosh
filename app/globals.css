@@ -115,6 +115,23 @@ video {
   height: auto;
 }
 
+@media (max-width: 767px) {
+  body:has(main[role="main"] > footer[role="contentinfo"]) .site-page-wrapper {
+    padding-bottom: 0;
+  }
+
+  main[role="main"]:has(> footer[role="contentinfo"]) {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  main[role="main"]:has(> footer[role="contentinfo"]) > footer[role="contentinfo"] {
+    margin-top: auto;
+  }
+}
+
 button,
 a,
 summary,

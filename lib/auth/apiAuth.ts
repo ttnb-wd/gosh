@@ -6,19 +6,24 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 
+function getBearerToken(request: NextRequest | Request) {
+  const authHeader = request.headers.get('authorization');
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  return authHeader.substring(7);
+}
+
 /**
  * Get authenticated user from Bearer token
  * @param request Next.js request object
  * @returns User object or null
  */
 export async function getAuthenticatedUser(request: NextRequest | Request) {
-  const authHeader = request.headers.get('authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.substring(7);
+  const token = getBearerToken(request);
+  if (!token) return null;
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -54,8 +59,9 @@ export async function getAuthenticatedUser(request: NextRequest | Request) {
  */
 export async function checkAdminApiAuth(request: NextRequest | Request) {
   const user = await getAuthenticatedUser(request);
+  const token = getBearerToken(request);
 
-  if (!user) {
+  if (!user || !token) {
     return { isAdmin: false, user: null };
   }
 
@@ -68,6 +74,11 @@ export async function checkAdminApiAuth(request: NextRequest | Request) {
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
   });
 
   const { data: profile } = await supabase
