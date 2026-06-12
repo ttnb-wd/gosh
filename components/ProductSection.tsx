@@ -329,13 +329,14 @@ interface ProductCardProps {
   product: Product;
   onAddToBag: (product: Product) => void;
   onQuickView: (product: Product) => void;
+  priority?: boolean;
   selectedDecants: Record<string, { label: string; price: number }>;
   setSelectedDecants: React.Dispatch<React.SetStateAction<Record<string, { label: string; price: number }>>>;
   openDecantDropdown: string | null;
   setOpenDecantDropdown: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
+function ProductCard({ product, onAddToBag, onQuickView, priority = false, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
   const productKey = String(product.id);
   const productImageUrl = normalizeImageUrl(product.image);
   const [imageSrc, setImageSrc] = useState(productImageUrl);
@@ -401,7 +402,8 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
               src={imageSrc}
               alt={product.name}
               fill
-              loading="lazy"
+              loading={priority ? undefined : "lazy"}
+              priority={priority}
               sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
               unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
               className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
@@ -482,7 +484,8 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             src={imageSrc}
             alt={product.name}
             fill
-            loading="lazy"
+            loading={priority ? undefined : "lazy"}
+            priority={priority}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
             className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
@@ -1407,6 +1410,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                   product={product} 
                   onAddToBag={onAddToBag}
                   onQuickView={handleQuickView}
+                  priority={index === 0}
                   selectedDecants={selectedDecants}
                   setSelectedDecants={setSelectedDecants}
                   openDecantDropdown={openDecantDropdown}
