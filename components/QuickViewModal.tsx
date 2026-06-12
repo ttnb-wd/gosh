@@ -130,7 +130,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative mx-auto my-4 grid max-h-[90vh] w-full max-w-[94vw] grid-cols-1 overflow-hidden rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-6 sm:rounded-[28px] lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2"
+              className="relative mx-auto my-4 grid max-h-[90vh] w-full max-w-[94vw] grid-cols-1 overflow-y-auto overscroll-contain rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-6 sm:rounded-[28px] lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2 lg:overflow-hidden"
             >
               {/* Close Button */}
               <button
@@ -141,6 +141,26 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               >
                 ×
               </button>
+
+              {/* MOBILE IMAGE SECTION */}
+              <div className="relative h-[84vh] min-h-[520px] overflow-hidden bg-[#fffdf6] dark:bg-[#141008] lg:hidden">
+                {product.badge && (
+                  <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
+                    {product.badge}
+                  </div>
+                )}
+                <Image
+                  src={imageSrc}
+                  alt={product.name}
+                  fill
+                  sizes="94vw"
+                  unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+                  className="object-cover object-center"
+                  onError={() => {
+                    setImageSrc(fallbackQuickViewImage);
+                  }}
+                />
+              </div>
 
               {/* LEFT IMAGE SECTION - DESKTOP ONLY */}
               {showDesktopImage && (
@@ -166,7 +186,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               )}
 
               {/* RIGHT DETAILS SECTION - ONLY THIS SCROLLS */}
-              <div className="scrollbar-auto-hide max-h-[90vh] overflow-y-auto overflow-x-visible overscroll-contain p-4 pr-5 sm:p-8 md:max-h-[88vh] md:p-10">
+              <div className="scrollbar-auto-hide overflow-x-visible p-4 pr-5 sm:p-8 md:p-10 lg:max-h-[88vh] lg:overflow-y-auto lg:overscroll-contain">
                   {/* Brand & Name */}
                   <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-yellow-600 sm:mb-2 sm:text-xs sm:tracking-[0.2em]">
                     {product.brand}
