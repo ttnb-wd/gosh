@@ -393,10 +393,10 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="group relative h-full min-w-0"
       >
-        <div className="group flex h-full min-h-[250px] min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[285px] sm:rounded-[26px]">
+        <div className="group flex h-[430px] min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:h-full sm:min-h-[285px] sm:rounded-[26px]">
           <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
 
-          <div className="relative z-0 h-[150px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[175px] lg:h-[190px]">
+          <div className="relative z-0 h-[165px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[175px] lg:h-[190px]">
             <Image
               src={imageSrc}
               alt={product.name}
@@ -416,7 +416,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             )}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+          <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
             <div className="flex min-w-0 items-center justify-between gap-2">
               <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
                 {product.brand || "GOSH PERFUME"}
@@ -430,11 +430,11 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
             <h3 className="mt-1.5 line-clamp-1 text-base font-black leading-tight text-[#1f1a14] sm:text-lg">
               {product.name}
             </h3>
-            <p className="mt-1.5 line-clamp-1 min-h-[20px] text-xs leading-5 text-[#7a6a55] sm:text-sm">
+            <p className="mt-1.5 line-clamp-2 min-h-[36px] text-xs leading-[18px] text-[#7a6a55] sm:line-clamp-1 sm:min-h-[20px] sm:leading-5 sm:text-sm">
               {product.description || "Premium accessory for your fragrance routine."}
             </p>
 
-            <div className="mt-auto space-y-2.5 pt-3">
+            <div className="mt-auto space-y-2 pt-2.5 sm:space-y-2.5 sm:pt-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="shrink-0 text-lg font-black text-[#b88705] sm:text-xl">
                   {formatMmk(product.price)}
@@ -472,12 +472,12 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="group relative h-full min-w-0"
     >
-      <div className="group flex h-full min-h-[315px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:min-h-[350px] sm:rounded-[28px]">
+      <div className="group flex h-[500px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:h-full sm:min-h-[350px] sm:rounded-[28px]">
         {/* Gold glow effect on hover */}
         <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
         
         {/* Image Container - Fixed Square Ratio */}
-        <div className="relative z-0 h-[155px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[185px] lg:h-[205px]">
+        <div className="relative z-0 h-[185px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[185px] lg:h-[205px]">
           <Image
             src={imageSrc}
             alt={product.name}
@@ -503,7 +503,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
         </div>
 
         {/* Content - Flex Column with Fixed Heights */}
-        <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+        <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
           {/* Brand - Truncate */}
           <div className="flex min-w-0 items-center justify-between gap-2">
             <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
@@ -522,7 +522,7 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
           </h3>
           
           {/* Description - Line Clamp 3 with Min Height */}
-          <p className="mt-1.5 line-clamp-1 min-h-[20px] text-xs leading-5 text-[#7a6a55] sm:text-sm">
+          <p className="mt-1.5 line-clamp-2 min-h-[36px] text-xs leading-[18px] text-[#7a6a55] sm:line-clamp-1 sm:min-h-[20px] sm:leading-5 sm:text-sm">
             {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
           </p>
           
@@ -549,11 +549,11 @@ function ProductCard({ product, onAddToBag, onQuickView, selectedDecants, setSel
           
           {/* Spacer for accessories to maintain card height */}
           {(isAccessory || !hasDecants) && (
-            <div className="mt-3 min-h-[24px]" />
+            <div className="mt-2 min-h-[18px] sm:mt-3 sm:min-h-[24px]" />
           )}
           
           {/* Price and Buttons - Push to Bottom with mt-auto */}
-          <div className="mt-auto space-y-2 pt-2.5">
+          <div className="mt-auto space-y-2 pt-2 sm:pt-2.5">
             <div className="flex min-w-0 flex-col gap-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
               <span className="shrink-0 text-xl font-black text-[#b88705] sm:text-2xl">
                 {formatMmk(isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price))}
