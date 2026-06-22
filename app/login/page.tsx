@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
+import { createFreshSupabaseAuthClient, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -11,7 +11,6 @@ import { Sparkles, Diamond, Gem } from "lucide-react";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createSupabaseClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -97,6 +96,8 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+
+      const supabase = createFreshSupabaseAuthClient();
 
       // Signup flow - creates customer and redirects to login page
       if (mode === "signup") {

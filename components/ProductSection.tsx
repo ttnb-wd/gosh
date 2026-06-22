@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import QuickViewModal from "./QuickViewModal";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createPublicSupabaseClient } from "@/lib/supabase/client";
 import { SCENT_COLLECTIONS, isScentCollection } from "@/lib/collections";
 
 interface Product {
@@ -598,7 +598,7 @@ interface ProductSectionProps {
 const scentCollectionOptions = SCENT_COLLECTIONS;
 
 export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
-  const supabase = createSupabaseClient();
+  const supabase = createPublicSupabaseClient();
   const searchParams = useSearchParams();
   const collectionParam = searchParams.get("collection");
   const urlCollection = isScentCollection(collectionParam) ? collectionParam : null;

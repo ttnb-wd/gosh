@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createPublicSupabaseClient } from "@/lib/supabase/client";
 
 interface ProductImage {
   id: string;
@@ -82,7 +82,7 @@ export default function BrandStory() {
   useEffect(() => {
     async function fetchProductImages() {
       try {
-        const supabase = createSupabaseClient();
+        const supabase = createPublicSupabaseClient();
         const { data, error } = await supabase
           .from("products")
           .select("id, name, image")

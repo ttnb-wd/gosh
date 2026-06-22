@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "./supabase/client";
+import { createPublicSupabaseClient, createSupabaseClient } from "./supabase/client";
 
 export interface SiteSettings {
   id: number;
@@ -89,7 +89,7 @@ const defaultSettings: SiteSettings = {
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = createPublicSupabaseClient();
 
     const { data, error } = await supabase
       .from("site_settings")

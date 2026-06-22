@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 const getSupabaseAuthStorageKey = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -163,8 +164,10 @@ const supabaseClientOptions = {
 };
 
 type SupabaseBrowserClient = ReturnType<typeof createBrowserClient>;
+type SupabasePublicClient = ReturnType<typeof createClient>;
 
 let supabaseClient: SupabaseBrowserClient | null = null;
+let publicSupabaseClient: SupabasePublicClient | null = null;
 
 // Client-side Supabase client for use in Client Components
 export const createSupabaseClient = () => {
@@ -177,10 +180,50 @@ export const createSupabaseClient = () => {
   }
 
   if (!supabaseClient) {
+    if (hasExpiredStoredSupabaseSession()) {
+      clearSupabaseAuthStorage();
+    }
+
     supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
   }
 
   return supabaseClient;
+};
+
+// Public reads should not touch the browser auth session. Using a separate
+// no-session client keeps storefront data fetches from competing for Auth locks.
+export const createPublicSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase environment variables');
+    throw new Error('Supabase configuration is missing. Please check your .env.local file.');
+  }
+
+  if (!publicSupabaseClient) {
+    publicSupabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+        storageKey: 'gosh-public-no-session',
+      },
+      global: {
+        headers: {
+          'x-client-info': 'gosh-perfume-public-client',
+        },
+      },
+    });
+  }
+
+  return publicSupabaseClient;
+};
+
+export const createFreshSupabaseAuthClient = () => {
+  clearSupabaseAuthStorage();
+  supabaseClient = null;
+  return createSupabaseClient();
 };
 
 export const getSupabaseUser = async (client = createSupabaseClient()) => {

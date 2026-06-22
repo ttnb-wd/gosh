@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
+import { createFreshSupabaseAuthClient, getSupabaseUser } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -76,8 +76,8 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Create Supabase client
-      const supabase = createSupabaseClient();
+      // Start from a clean auth session so expired refresh tokens do not block login.
+      const supabase = createFreshSupabaseAuthClient();
 
       // Sign in with Supabase
       const { error: authError } = await supabase.auth.signInWithPassword({

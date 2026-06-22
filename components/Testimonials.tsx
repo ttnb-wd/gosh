@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Star, UserCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createPublicSupabaseClient } from "@/lib/supabase/client";
 
 interface Testimonial {
   id: string;
@@ -25,7 +25,7 @@ const getInitials = (name: string) =>
 export default function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
-  const supabase = useMemo(() => createSupabaseClient(), []);
+  const supabase = useMemo(() => createPublicSupabaseClient(), []);
 
   useEffect(() => {
     const loadTestimonials = async () => {
