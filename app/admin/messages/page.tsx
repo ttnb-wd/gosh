@@ -117,7 +117,7 @@ export default function AdminMessagesPage() {
         {loading ? "Loading messages, please wait..." : `${filteredMessages.length} message${filteredMessages.length !== 1 ? 's' : ''} loaded`}
       </div>
 
-      <main role="main" className="p-6">
+      <main role="main" className="p-4 sm:p-6">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (

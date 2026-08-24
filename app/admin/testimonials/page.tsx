@@ -172,7 +172,7 @@ export default function AdminTestimonialsPage() {
     <div className="min-h-screen">
       <AdminHeader title="Testimonials" subtitle="Manage customer comments" />
 
-      <main role="main" className="p-6">
+      <main role="main" className="p-4 sm:p-6">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (

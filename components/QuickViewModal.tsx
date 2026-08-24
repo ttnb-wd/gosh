@@ -130,7 +130,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative mx-auto my-4 grid max-h-[90vh] w-full max-w-[94vw] grid-cols-1 overflow-y-auto overscroll-contain rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-6 sm:rounded-[28px] lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2 lg:overflow-hidden"
+              className="relative mx-auto my-2 grid max-h-[92vh] w-full max-w-[94vw] grid-cols-1 overflow-y-auto overscroll-contain rounded-2xl border border-yellow-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)] sm:my-6 sm:rounded-[28px] lg:max-h-[88vh] lg:max-w-5xl lg:grid-cols-2 lg:overflow-hidden"
             >
               {/* Close Button */}
               <button
@@ -143,7 +143,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               </button>
 
               {/* MOBILE IMAGE SECTION */}
-              <div className="relative h-[84vh] min-h-[520px] overflow-hidden bg-[#fffdf6] dark:bg-[#141008] lg:hidden">
+              <div className="relative h-[42vh] min-h-[260px] overflow-hidden bg-[#fffdf6] dark:bg-[#141008] sm:h-[56vh] sm:min-h-[420px] lg:hidden">
                 {product.badge && (
                   <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
                     {product.badge}
@@ -216,7 +216,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                     <h3 className="mb-2 text-base font-bold text-black sm:mb-3 sm:text-lg">{isAccessory ? "Accessory Notes" : "Scent Notes"}</h3>
                     
                     {/* Tabs */}
-                    <div className="mb-3 flex gap-1.5 sm:mb-4 sm:gap-2">
+                    <div className="mb-3 flex flex-wrap gap-1.5 sm:mb-4 sm:gap-2">
                       {(["top", "heart", "base"] as const).map((tab) => (
                         <button
                           key={tab}

@@ -1428,7 +1428,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             transition={{ duration: 0.5 }}
             className="flex justify-center"
           >
-            <div className="rounded-3xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
+            <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-12">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-50 text-yellow-600">
                 <ShoppingBag className="h-8 w-8" />
               </div>

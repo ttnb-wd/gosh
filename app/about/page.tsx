@@ -98,14 +98,14 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
+            <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#6f1d1b] sm:text-sm sm:tracking-[0.35em]">
               Our Story
             </p>
-            <h1 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-4xl font-black leading-tight text-[#1f1a14] sm:text-6xl lg:text-7xl">
               About
               <span className="block text-[#b88705]">GOSH PERFUME STUDIO</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-xl leading-relaxed text-[#7a6a55]">
+            <p className="mx-auto max-w-3xl text-base leading-relaxed text-[#7a6a55] sm:text-xl">
               {aboutText}
             </p>
           </motion.div>
@@ -156,11 +156,11 @@ export default function AboutPage() {
               className="relative"
             >
               <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/45 blur-2xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/25 bg-white p-8 shadow-[0_20px_80px_rgba(31,26,20,0.08)]">
+              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/25 bg-white p-4 shadow-[0_20px_80px_rgba(31,26,20,0.08)] sm:p-8">
                 <img
                   src="https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=1400&auto=format&fit=crop"
                   alt="Luxury perfume craftsmanship"
-                  className="h-80 w-full rounded-2xl object-cover"
+                  className="h-64 w-full rounded-2xl object-cover sm:h-80"
                 />
                 <div className="mt-6 text-center">
                   <p className="text-sm font-medium text-[#6f1d1b]">Carefully Sourced</p>
@@ -206,7 +206,7 @@ export default function AboutPage() {
                 key={index}
                 variants={fadeInUp}
                 transition={{ duration: 0.6 }}
-                className="rounded-3xl border border-[#d4af37]/25 bg-white p-6 text-center shadow-[0_18px_45px_rgba(212,175,55,0.12),0_6px_18px_rgba(111,29,27,0.06)]"
+                className="rounded-3xl border border-[#d4af37]/25 bg-white p-5 text-center shadow-[0_18px_45px_rgba(212,175,55,0.12),0_6px_18px_rgba(111,29,27,0.06)] sm:p-6"
               >
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d4af37]/30 bg-[#fff7e6] text-[#d4af37]">
                   {value.icon}

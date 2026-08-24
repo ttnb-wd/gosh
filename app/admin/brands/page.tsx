@@ -7,7 +7,7 @@ export default function AdminBrandsPage() {
   return (
     <div className="min-h-screen">
       <AdminHeader title="Brands" subtitle="Manage product brands and visibility" />
-      <main role="main" className="p-6">
+      <main role="main" className="p-4 sm:p-6">
         <BrandManager />
       </main>
     </div>

@@ -264,7 +264,7 @@ function ContactSectionContent() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
+            <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_20px_80px_rgba(0,0,0,0.08)] sm:p-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-black">Visit Our Boutique</h2>
                 <p className="mt-2 text-sm font-medium text-yellow-600">{storeTagline}</p>
@@ -273,12 +273,12 @@ function ContactSectionContent() {
               <div className="space-y-6">
                 <a
                   href={`tel:${phone}`}
-                  className="flex items-start gap-4 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50"
+                  className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50 sm:gap-4"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
                     <Phone className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-black">Phone</p>
                     <p className="text-zinc-600">{phone}</p>
                   </div>
@@ -286,22 +286,22 @@ function ContactSectionContent() {
 
                 <a
                   href={`mailto:${email}`}
-                  className="flex items-start gap-4 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50"
+                  className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50 sm:gap-4"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
                     <Mail className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-black">Email</p>
                     <p className="break-all text-zinc-600">{email}</p>
                   </div>
                 </a>
 
-                <div className="flex items-start gap-4 rounded-2xl border border-transparent p-3">
+                <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 sm:gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
                     <MapPin className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-black">Address</p>
                     <p className="text-zinc-600" style={{ whiteSpace: "pre-line" }}>
                       {address.split(", ").join("\n")}
@@ -309,11 +309,11 @@ function ContactSectionContent() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 rounded-2xl border border-transparent p-3">
+                <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 sm:gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
                     <Clock className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-black">Working Hours</p>
                     <p className="whitespace-pre-line text-zinc-600">
                       {openingHours}
@@ -384,7 +384,7 @@ function ContactSectionContent() {
             variants={cardVariants}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
+            <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_20px_80px_rgba(0,0,0,0.08)] sm:p-8">
               <h2 className="text-2xl font-bold text-black mb-6">Send us a Message</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">

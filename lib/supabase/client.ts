@@ -39,6 +39,66 @@ const getAuthErrorMessage = (error: unknown) => {
   return typeof message === 'string' ? message : '';
 };
 
+type SupabaseAuthLock = <R>(
+  name: string,
+  acquireTimeout: number,
+  fn: () => Promise<R>
+) => Promise<R>;
+
+const authLockQueues = new Map<string, Promise<unknown>>();
+
+const isStolenLockAbortError = (error: unknown) => {
+  return (
+    error instanceof DOMException &&
+    error.name === 'AbortError' &&
+    error.message.toLowerCase().includes('steal')
+  );
+};
+
+const runWithQueuedLock = async <R>(name: string, fn: () => Promise<R>) => {
+  const previous = authLockQueues.get(name) ?? Promise.resolve();
+
+  const run = previous.catch(() => null).then(fn);
+  authLockQueues.set(
+    name,
+    run.finally(() => {
+      if (authLockQueues.get(name) === run) {
+        authLockQueues.delete(name);
+      }
+    })
+  );
+
+  return run;
+};
+
+const requestBrowserLock = async <R>(name: string, fn: () => Promise<R>) => {
+  return navigator.locks.request(name, { mode: 'exclusive' }, async () => fn());
+};
+
+const supabaseAuthLock: SupabaseAuthLock = async (name, _acquireTimeout, fn) => {
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    try {
+      return await requestBrowserLock(name, fn);
+    } catch (error) {
+      if (!isStolenLockAbortError(error)) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      try {
+        return await requestBrowserLock(name, fn);
+      } catch (retryError) {
+        if (!isStolenLockAbortError(retryError)) {
+          throw retryError;
+        }
+      }
+    }
+  }
+
+  return runWithQueuedLock(name, fn);
+};
+
 const getStoredSupabaseSession = () => {
   if (typeof window === 'undefined') return null;
 
@@ -117,6 +177,7 @@ const supabaseClientOptions = {
     autoRefreshToken: false,
     detectSessionInUrl: true,
     persistSession: true,
+    lock: supabaseAuthLock,
   },
   global: {
     headers: {
@@ -243,16 +304,5 @@ export const getSupabaseUser = async (client = createSupabaseClient()) => {
 
   return response;
 };
-
-try {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (supabaseUrl && supabaseKey) {
-    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
-  }
-} catch (error) {
-  console.error('Failed to initialize Supabase client:', error);
-}
 
 export { supabaseClient as supabase };

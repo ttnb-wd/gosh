@@ -250,19 +250,19 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
   return (
     <header role="banner" className="sticky top-0 z-30 border-b border-[#d4af37]/20 bg-white/90 backdrop-blur">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
-        <div className="min-w-0 pl-14 lg:pl-0">
-          <h1 className="break-words text-[2rem] font-black leading-[0.98] text-[#1f1a14] sm:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm font-medium leading-6 text-[#7a6a55] sm:text-base">{subtitle}</p>}
+      <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
+        <div className="min-w-0 flex-1 pl-14 lg:pl-0">
+          <h1 className="break-words text-2xl font-black leading-[0.98] text-[#1f1a14] sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-xs font-medium leading-5 text-[#7a6a55] sm:mt-2 sm:text-base sm:leading-6">{subtitle}</p>}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-4">
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white/80 text-[#8a6a18] shadow-sm transition-all duration-200 hover:border-[#d4af37]/50 hover:bg-[#fff8df] dark:border-[#d4af37]/25 dark:bg-[#0d0b07] dark:text-[#d4af37] dark:hover:bg-[#151207]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white/80 text-[#8a6a18] shadow-sm transition-all duration-200 hover:border-[#d4af37]/50 hover:bg-[#fff8df] dark:border-[#d4af37]/25 dark:bg-[#0d0b07] dark:text-[#d4af37] dark:hover:bg-[#151207] sm:h-10 sm:w-10"
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -276,7 +276,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             <button
               type="button"
               onClick={() => setNotiOpen((prev) => !prev)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white text-[#1f1a14] shadow-sm transition duration-300 hover:scale-105 hover:bg-[#fff7e6]"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white text-[#1f1a14] shadow-sm transition duration-300 hover:scale-105 hover:bg-[#fff7e6] sm:h-11 sm:w-11"
               aria-label="Admin notifications"
             >
               <Bell className="h-5 w-5" />
@@ -401,7 +401,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-3 py-2 text-sm font-medium text-[#7a6a55] transition hover:border-[#d4af37] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
+              className="flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-2.5 py-2 text-sm font-medium text-[#7a6a55] transition hover:border-[#d4af37] hover:bg-[#fff7e6] hover:text-[#1f1a14] sm:px-3"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user?.email?.split("@")[0] || "Admin"}</span>

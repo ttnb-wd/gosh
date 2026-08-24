@@ -466,29 +466,29 @@ function OrdersTableContent() {
       )}
 
       {!loading && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
+        <div className="flex flex-col items-start justify-between gap-3 text-sm text-zinc-600 sm:flex-row sm:items-center">
           <p>
             Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
             <span className="font-bold text-black">{totalOrders}</span> orders
           </p>
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-yellow-200 bg-white px-3 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
             >
               <ChevronLeft className="h-4 w-4" />
               Prev
             </button>
-            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700">
+            <span className="rounded-full bg-yellow-50 px-3 py-2 text-center text-sm font-black text-yellow-700 sm:px-4">
               {currentPage} / {totalPages}
             </span>
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-yellow-200 bg-white px-3 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
             >
               Next
               <ChevronRight className="h-4 w-4" />
@@ -524,7 +524,7 @@ function OrdersTableContent() {
                     : "border-zinc-200 hover:border-yellow-400/50 dark:border-[#d4af37]/25 dark:hover:border-[#d4af37]/50"
                 }`}
               >
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Order Header */}
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -546,15 +546,15 @@ function OrdersTableContent() {
 
                 {/* Customer Info */}
                 <div className="mb-4 grid gap-4 sm:grid-cols-2">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Customer</p>
                     <p className="mt-1 font-semibold text-black dark:!text-[#fff7e6]">{order.customer_name}</p>
                     <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.phone}</p>
                     {order.customer_email && (
-                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.customer_email}</p>
+                      <p className="break-all text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.customer_email}</p>
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Address</p>
                     <p className="mt-1 text-sm text-zinc-700 dark:!text-[#fff7e6]/75">{order.address}</p>
                     {order.city && <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.city}</p>}
@@ -677,8 +677,8 @@ function OrdersTableContent() {
                   <div className="space-y-2">
                     {order.order_items && order.order_items.length > 0 ? (
                       order.order_items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
-                          <div>
+                        <div key={index} className="flex flex-col gap-3 rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f] sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
                             <p className="font-semibold text-black dark:!text-[#fff7e6]">{item.product_name}</p>
                             <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
                               {item.product_brand && `${item.product_brand} • `}
@@ -686,7 +686,7 @@ function OrdersTableContent() {
                               Qty: {item.quantity}
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <p className="font-semibold text-black dark:!text-[#fff7e6]">${item.price.toFixed(2)}</p>
                             <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
                               Total: ${(item.price * item.quantity).toFixed(2)}

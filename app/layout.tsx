@@ -61,11 +61,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/images/gosh-circle-logo.png",
-  },
 };
 
 export default function RootLayout({
