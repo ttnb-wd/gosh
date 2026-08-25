@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createFreshSupabaseAuthClient, getSupabaseUser } from "@/lib/supabase/client";
+import { createFreshSupabaseAuthClient, getSupabaseErrorMessage, getSupabaseUser } from "@/lib/supabase/client";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -18,6 +18,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [redirectTo, setRedirectTo] = useState<string>("/");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileUnavailable, setTurnstileUnavailable] = useState(false);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const accountCreated = searchParams.get("created") === "1";
@@ -25,8 +26,32 @@ function LoginForm() {
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
+    setTurnstileUnavailable(false);
     setTurnstileResetKey((key) => key + 1);
   }, []);
+
+  const handleTurnstileError = useCallback((errorCode?: string) => {
+    if (errorCode === "110200") {
+      setTurnstileUnavailable(true);
+      return;
+    }
+
+    setTurnstileUnavailable(false);
+  }, []);
+
+  const ensureProfile = async (accessToken: string) => {
+    const response = await fetch("/api/auth/ensure-profile", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return response.json() as Promise<{
+      profile?: { id: string; email?: string | null; role?: string | null; full_name?: string | null };
+      error?: string;
+    }>;
+  };
 
   // Get redirect parameter from URL
   useEffect(() => {
@@ -77,24 +102,26 @@ function LoginForm() {
         return;
       }
 
-      if (!turnstileToken) {
+      if (!turnstileToken && !turnstileUnavailable) {
         setError("Please complete the security check.");
         setLoading(false);
         return;
       }
 
-      const turnstileResponse = await fetch("/api/verify-turnstile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: turnstileToken }),
-      });
+      if (turnstileToken) {
+        const turnstileResponse = await fetch("/api/verify-turnstile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: turnstileToken }),
+        });
 
-      const turnstileResult = (await turnstileResponse.json()) as { error?: string };
-      if (!turnstileResponse.ok) {
-        setError(turnstileResult.error || "Security check failed. Please try again.");
-        resetTurnstile();
-        setLoading(false);
-        return;
+        const turnstileResult = (await turnstileResponse.json()) as { error?: string };
+        if (!turnstileResponse.ok) {
+          setError(turnstileResult.error || "Security check failed. Please try again.");
+          resetTurnstile();
+          setLoading(false);
+          return;
+        }
       }
 
       const supabase = createFreshSupabaseAuthClient();
@@ -107,20 +134,20 @@ function LoginForm() {
         });
 
         if (error) {
-          setError(error.message);
+          setError(getSupabaseErrorMessage(error, "Could not create account."));
           resetTurnstile();
           setLoading(false);
           return;
         }
 
-        const user = data.user;
-        if (user) {
-          // Create profile with customer role
-          await supabase.from("profiles").upsert({
-            id: user.id,
-            email: user.email,
-            role: "customer",
-          });
+        if (data.session?.access_token) {
+          const profileResult = await ensureProfile(data.session.access_token);
+          if (profileResult.error) {
+            setError(profileResult.error);
+            resetTurnstile();
+            setLoading(false);
+            return;
+          }
         }
 
         // Sign out to prevent auto-login
@@ -142,13 +169,24 @@ function LoginForm() {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        setError(getSupabaseErrorMessage(signInError, "Invalid email or password."));
         resetTurnstile();
         setLoading(false);
         return;
       }
 
       // Get user data after successful sign in
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setError("Could not verify logged in session.");
+        resetTurnstile();
+        setLoading(false);
+        return;
+      }
+
       const {
         data: { user },
         error: userError,
@@ -161,12 +199,25 @@ function LoginForm() {
         return;
       }
 
-      // Fetch profile to check role
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id, email, role, full_name")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (!profile && !profileError) {
+        const profileResult = await ensureProfile(session.access_token);
+        if (profileResult.profile) {
+          profile = profileResult.profile;
+        } else if (profileResult.error) {
+          profileError = {
+            message: profileResult.error,
+            details: "",
+            hint: "",
+            code: "",
+          };
+        }
+      }
 
       if (profileError) {
         console.error("Profile error details:", {
@@ -203,8 +254,8 @@ function LoginForm() {
         router.push("/");
       }
       router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      setError(getSupabaseErrorMessage(error));
       resetTurnstile();
       setLoading(false);
     } finally {
@@ -329,6 +380,7 @@ function LoginForm() {
                   resetKey={turnstileResetKey}
                   onVerify={setTurnstileToken}
                   onExpire={resetTurnstile}
+                  onError={handleTurnstileError}
                 />
 
                 <button

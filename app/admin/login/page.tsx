@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createFreshSupabaseAuthClient, getSupabaseUser } from "@/lib/supabase/client";
+import { createFreshSupabaseAuthClient, getSupabaseErrorMessage, getSupabaseUser } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -16,12 +16,23 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileUnavailable, setTurnstileUnavailable] = useState(false);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("");
+    setTurnstileUnavailable(false);
     setTurnstileResetKey((key) => key + 1);
+  }, []);
+
+  const handleTurnstileError = useCallback((errorCode?: string) => {
+    if (errorCode === "110200") {
+      setTurnstileUnavailable(true);
+      return;
+    }
+
+    setTurnstileUnavailable(false);
   }, []);
 
   const validateForm = (): boolean => {
@@ -56,24 +67,26 @@ export default function AdminLoginPage() {
         return;
       }
 
-      if (!turnstileToken) {
+      if (!turnstileToken && !turnstileUnavailable) {
         setError("Please complete the security check.");
         setLoading(false);
         return;
       }
 
-      const turnstileResponse = await fetch("/api/verify-turnstile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: turnstileToken }),
-      });
+      if (turnstileToken) {
+        const turnstileResponse = await fetch("/api/verify-turnstile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: turnstileToken }),
+        });
 
-      const turnstileResult = (await turnstileResponse.json()) as { error?: string };
-      if (!turnstileResponse.ok) {
-        setError(turnstileResult.error || "Security check failed. Please try again.");
-        resetTurnstile();
-        setLoading(false);
-        return;
+        const turnstileResult = (await turnstileResponse.json()) as { error?: string };
+        if (!turnstileResponse.ok) {
+          setError(turnstileResult.error || "Security check failed. Please try again.");
+          resetTurnstile();
+          setLoading(false);
+          return;
+        }
       }
 
       // Start from a clean auth session so expired refresh tokens do not block login.
@@ -130,7 +143,7 @@ export default function AdminLoginPage() {
       router.refresh();
     } catch (err: unknown) {
       console.error("Login error:", err);
-      setError(err instanceof Error ? err.message : "Invalid email or password");
+      setError(getSupabaseErrorMessage(err, "Invalid email or password"));
       resetTurnstile();
     } finally {
       setLoading(false);
@@ -257,6 +270,7 @@ export default function AdminLoginPage() {
                 resetKey={turnstileResetKey}
                 onVerify={setTurnstileToken}
                 onExpire={resetTurnstile}
+                onError={handleTurnstileError}
               />
             </div>
 

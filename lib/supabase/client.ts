@@ -1,308 +1,527 @@
-import { createBrowserClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
-const getSupabaseAuthStorageKey = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+/**
+ * ============================================================
+ * GOSH PERFUME — Supabase Browser Client
+ * ============================================================
+ *
+ * Responsibilities:
+ * - Browser-side Supabase client
+ * - Supabase Auth session persistence
+ * - PKCE authentication flow
+ * - Automatic token refresh
+ * - Public/non-authenticated Supabase client
+ * - Consistent Supabase error handling
+ *
+ * IMPORTANT:
+ * - NEVER put SUPABASE_SERVICE_ROLE_KEY in this file.
+ * - Only NEXT_PUBLIC_SUPABASE_URL and
+ *   NEXT_PUBLIC_SUPABASE_ANON_KEY are safe here.
+ * ============================================================
+ */
 
-  if (!supabaseUrl) return null;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+/**
+ * ------------------------------------------------------------
+ * Environment validation
+ * ------------------------------------------------------------
+ */
+const getSupabaseConfig = () => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error(
+      "[Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+
+    throw new Error(
+      "Supabase configuration is missing. Please check your environment variables."
+    );
+  }
+
+  return {
+    url: SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY,
+  };
+};
+
+/**
+ * ------------------------------------------------------------
+ * Error helpers
+ * ------------------------------------------------------------
+ */
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error
+  ) {
+    const message = (error as { message?: unknown }).message;
+
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+
+  return "";
+};
+
+export const isInvalidRefreshTokenError = (
+  error: unknown
+): boolean => {
+  const message = getErrorMessage(error).toLowerCase();
+
+  const code =
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error
+      ? String(
+          (error as { code?: unknown }).code ?? ""
+        ).toLowerCase()
+      : "";
+
+  return (
+    code === "refresh_token_not_found" ||
+    code === "invalid_refresh_token" ||
+    message.includes("refresh token not found") ||
+    message.includes("invalid refresh token")
+  );
+};
+
+/**
+ * Converts Supabase/network errors into user-friendly messages.
+ */
+export const getSupabaseErrorMessage = (
+  error: unknown,
+  fallback = "Something went wrong. Please try again."
+): string => {
+  const message = getErrorMessage(error);
+
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("fetch failed") ||
+    normalized.includes("network error") ||
+    normalized.includes("networkerror") ||
+    normalized.includes("connection") ||
+    normalized.includes("timed out") ||
+    normalized.includes("timeout") ||
+    normalized.includes("unreachable")
+  ) {
+    return "Unable to connect to the server. Please check your internet connection and try again.";
+  }
+
+  if (
+    normalized.includes("invalid login credentials") ||
+    normalized.includes("invalid email or password")
+  ) {
+    return "Invalid email or password.";
+  }
+
+  if (
+    normalized.includes("email not confirmed") ||
+    normalized.includes("email_not_confirmed")
+  ) {
+    return "Please confirm your email address before signing in.";
+  }
+
+  if (
+    normalized.includes("user already registered") ||
+    normalized.includes("already registered")
+  ) {
+    return "An account with this email already exists.";
+  }
+
+  if (
+    normalized.includes("password") &&
+    normalized.includes("weak")
+  ) {
+    return "Your password is too weak. Please choose a stronger password.";
+  }
+
+  if (isInvalidRefreshTokenError(error)) {
+    return "Your session has expired. Please sign in again.";
+  }
+
+  return message || fallback;
+};
+
+/**
+ * ------------------------------------------------------------
+ * Auth storage cleanup
+ * ------------------------------------------------------------
+ *
+ * Normally Supabase manages this automatically.
+ *
+ * This helper is only used when a refresh token is definitely
+ * invalid or when we intentionally want to start a fresh auth
+ * session.
+ * ------------------------------------------------------------
+ */
+
+const getSupabaseAuthStorageKey = (): string | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const url = SUPABASE_URL;
+
+  if (!url) {
+    return null;
+  }
 
   try {
-    const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
+    const projectRef = new URL(url).hostname.split(".")[0];
+
+    if (!projectRef) {
+      return null;
+    }
+
     return `sb-${projectRef}-auth-token`;
   } catch {
     return null;
   }
 };
 
-const isSupabaseAuthStorageName = (name: string) => {
+const isSupabaseAuthStorageKey = (
+  key: string
+): boolean => {
   const storageKey = getSupabaseAuthStorageKey();
 
   if (!storageKey) {
-    return name === 'supabase.auth.token' || (name.startsWith('sb-') && name.includes('auth-token'));
+    return (
+      key === "supabase.auth.token" ||
+      (key.startsWith("sb-") &&
+        key.includes("auth-token"))
+    );
   }
 
   return (
-    name === storageKey ||
-    name.startsWith(`${storageKey}.`) ||
-    name === `${storageKey}-code-verifier` ||
-    name.startsWith(`${storageKey}-code-verifier.`) ||
-    name === `${storageKey}-user` ||
-    name.startsWith(`${storageKey}-user.`)
+    key === storageKey ||
+    key.startsWith(`${storageKey}.`) ||
+    key === `${storageKey}-code-verifier` ||
+    key.startsWith(
+      `${storageKey}-code-verifier.`
+    )
   );
 };
 
-const getAuthErrorMessage = (error: unknown) => {
-  if (error instanceof Error) return error.message;
-  if (typeof error !== 'object' || error === null || !('message' in error)) return '';
-
-  const message = (error as { message?: unknown }).message;
-  return typeof message === 'string' ? message : '';
-};
-
-type SupabaseAuthLock = <R>(
-  name: string,
-  acquireTimeout: number,
-  fn: () => Promise<R>
-) => Promise<R>;
-
-const authLockQueues = new Map<string, Promise<unknown>>();
-
-const isStolenLockAbortError = (error: unknown) => {
-  return (
-    error instanceof DOMException &&
-    error.name === 'AbortError' &&
-    error.message.toLowerCase().includes('steal')
-  );
-};
-
-const runWithQueuedLock = async <R>(name: string, fn: () => Promise<R>) => {
-  const previous = authLockQueues.get(name) ?? Promise.resolve();
-
-  const run = previous.catch(() => null).then(fn);
-  authLockQueues.set(
-    name,
-    run.finally(() => {
-      if (authLockQueues.get(name) === run) {
-        authLockQueues.delete(name);
-      }
-    })
-  );
-
-  return run;
-};
-
-const requestBrowserLock = async <R>(name: string, fn: () => Promise<R>) => {
-  return navigator.locks.request(name, { mode: 'exclusive' }, async () => fn());
-};
-
-const supabaseAuthLock: SupabaseAuthLock = async (name, _acquireTimeout, fn) => {
-  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
-    try {
-      return await requestBrowserLock(name, fn);
-    } catch (error) {
-      if (!isStolenLockAbortError(error)) {
-        throw error;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      try {
-        return await requestBrowserLock(name, fn);
-      } catch (retryError) {
-        if (!isStolenLockAbortError(retryError)) {
-          throw retryError;
-        }
-      }
-    }
+/**
+ * Clears only Supabase authentication storage.
+ *
+ * We intentionally do NOT call localStorage.clear()
+ * because that could destroy shopping cart, preferences,
+ * checkout data, etc.
+ */
+export const clearSupabaseAuthStorage = (): void => {
+  if (typeof window === "undefined") {
+    return;
   }
-
-  return runWithQueuedLock(name, fn);
-};
-
-const getStoredSupabaseSession = () => {
-  if (typeof window === 'undefined') return null;
-
-  const storageKey = getSupabaseAuthStorageKey();
-  if (!storageKey) return null;
 
   try {
-    const rawSession = window.localStorage.getItem(storageKey);
-    if (!rawSession) return null;
+    const clearStorage = (storage: Storage) => {
+      const keysToRemove: string[] = [];
 
-    const parsed = JSON.parse(rawSession) as {
-      currentSession?: { expires_at?: number | null } | null;
-      expires_at?: number | null;
+      for (let index = 0; index < storage.length; index++) {
+        const key = storage.key(index);
+
+        if (
+          key &&
+          isSupabaseAuthStorageKey(key)
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach((key) => {
+        storage.removeItem(key);
+      });
     };
 
-    return parsed.currentSession ?? parsed;
-  } catch {
-    return null;
-  }
-};
-
-const hasExpiredStoredSupabaseSession = () => {
-  const session = getStoredSupabaseSession();
-  const expiresAt = session?.expires_at;
-
-  if (!expiresAt) return false;
-
-  return expiresAt <= Math.floor(Date.now() / 1000);
-};
-
-export const isInvalidRefreshTokenError = (error: unknown) => {
-  const message = getAuthErrorMessage(error).toLowerCase();
-  const code = typeof error === 'object' && error !== null && 'code' in error
-    ? (error as { code?: unknown }).code
-    : null;
-
-  return (
-    code === 'refresh_token_not_found' ||
-    (message.includes('invalid refresh token') && message.includes('refresh token not found'))
-  );
-};
-
-export const clearSupabaseAuthStorage = () => {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-  const clearStorage = (storage: Storage) => {
-    try {
-      Object.keys(storage)
-        .filter(isSupabaseAuthStorageName)
-        .forEach((key) => storage.removeItem(key));
-    } catch {
-      // Browser privacy modes can block storage access.
-    }
-  };
-
-  try {
     clearStorage(window.localStorage);
     clearStorage(window.sessionStorage);
-  } catch {
-    // Browser privacy modes can block storage access.
+  } catch (error) {
+    console.warn(
+      "[Supabase] Could not clear auth storage:",
+      error
+    );
   }
-
-  document.cookie
-    .split(';')
-    .map((cookie) => cookie.split('=')[0]?.trim())
-    .filter((name): name is string => Boolean(name && isSupabaseAuthStorageName(name)))
-    .forEach((name) => {
-      document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    });
 };
 
-const supabaseClientOptions = {
-  auth: {
-    flowType: 'pkce' as const,
-    autoRefreshToken: false,
-    detectSessionInUrl: true,
-    persistSession: true,
-    lock: supabaseAuthLock,
-  },
-  global: {
-    headers: {
-      'x-client-info': 'gosh-perfume-client',
-    },
-    fetch: async (...args: Parameters<typeof fetch>) => {
-      try {
-        const response = await globalThis.fetch(...args);
-        const requestUrl = typeof args[0] === 'string'
-          ? args[0]
-          : args[0] instanceof URL
-            ? args[0].toString()
-            : args[0].url;
+/**
+ * ------------------------------------------------------------
+ * Browser Auth Client
+ * ------------------------------------------------------------
+ *
+ * This is the main client used by:
+ *
+ * - Login
+ * - Signup
+ * - Logout
+ * - getSession()
+ * - getUser()
+ * - Auth state listeners
+ * - Client-side database queries
+ *
+ * createBrowserClient handles the browser cookie/storage
+ * integration required by @supabase/ssr.
+ * ------------------------------------------------------------
+ */
 
-        if (!response.ok && requestUrl.includes('/auth/v1/')) {
-          response
-            .clone()
-            .text()
-            .then((body) => {
-              if (isInvalidRefreshTokenError({ message: body })) {
-                clearSupabaseAuthStorage();
-              }
-            })
-            .catch(() => {
-              // Ignore response clone/body read issues.
-            });
-        }
+type SupabaseBrowserClient =
+  ReturnType<typeof createBrowserClient>;
 
-        return response;
-      } catch {
-        return new Response(
-          JSON.stringify({
-            message: 'Supabase is unreachable. Please check your internet connection or Supabase project settings.',
-          }),
-          {
-            status: 503,
-            headers: {
-              'content-type': 'application/json',
-            },
-          }
-        );
+type SupabasePublicClient =
+  ReturnType<typeof createClient>;
+
+let browserClient: SupabaseBrowserClient | null =
+  null;
+
+let publicClient: SupabasePublicClient | null =
+  null;
+
+/**
+ * Creates/reuses the authenticated browser client.
+ */
+export const createSupabaseClient =
+  (): SupabaseBrowserClient => {
+    if (browserClient) {
+      return browserClient;
+    }
+
+    const { url, anonKey } =
+      getSupabaseConfig();
+
+    browserClient = createBrowserClient(
+      url,
+      anonKey,
+      {
+        auth: {
+          /**
+           * PKCE is recommended for modern
+           * Supabase applications.
+           */
+          flowType: "pkce",
+
+          /**
+           * Let Supabase automatically refresh
+           * access tokens before they expire.
+           */
+          autoRefreshToken: true,
+
+          /**
+           * Detect OAuth/PKCE callback URLs.
+           */
+          detectSessionInUrl: true,
+
+          /**
+           * Keep the user logged in across
+           * page refreshes/browser restarts.
+           */
+          persistSession: true,
+        },
+
+        global: {
+          headers: {
+            "x-client-info":
+              "gosh-perfume-web",
+          },
+        },
       }
-    },
-  },
-};
+    );
 
-type SupabaseBrowserClient = ReturnType<typeof createBrowserClient>;
-type SupabasePublicClient = ReturnType<typeof createClient>;
+    return browserClient;
+  };
 
-let supabaseClient: SupabaseBrowserClient | null = null;
-let publicSupabaseClient: SupabasePublicClient | null = null;
+/**
+ * ------------------------------------------------------------
+ * Fresh Auth Client
+ * ------------------------------------------------------------
+ *
+ * Use this only when you intentionally want to start
+ * authentication from a clean browser session.
+ *
+ * Example:
+ *
+ * const supabase =
+ *   createFreshSupabaseAuthClient();
+ *
+ * This is useful after an invalid refresh token.
+ * ------------------------------------------------------------
+ */
+export const createFreshSupabaseAuthClient =
+  (): SupabaseBrowserClient => {
+    clearSupabaseAuthStorage();
 
-// Client-side Supabase client for use in Client Components
-export const createSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    /**
+     * Do not keep the previous client because it may
+     * still contain an invalid auth session.
+     */
+    browserClient = null;
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables');
-    throw new Error('Supabase configuration is missing. Please check your .env.local file.');
-  }
+    return createSupabaseClient();
+  };
 
-  if (!supabaseClient) {
-    if (hasExpiredStoredSupabaseSession()) {
+/**
+ * ------------------------------------------------------------
+ * Public Supabase Client
+ * ------------------------------------------------------------
+ *
+ * Used for public data where we explicitly do NOT want
+ * this client to persist an authentication session.
+ *
+ * Example:
+ * - Public products
+ * - Public brands
+ * - Public testimonials
+ * - Public website settings
+ *
+ * IMPORTANT:
+ * RLS must still protect the database.
+ * This client does NOT bypass RLS.
+ * ------------------------------------------------------------
+ */
+export const createPublicSupabaseClient =
+  (): SupabasePublicClient => {
+    if (publicClient) {
+      return publicClient;
+    }
+
+    const { url, anonKey } =
+      getSupabaseConfig();
+
+    publicClient = createClient(
+      url,
+      anonKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          persistSession: false,
+
+          /**
+           * Separate storage key prevents this
+           * public client from interfering with
+           * the authenticated client.
+           */
+          storageKey:
+            "gosh-public-no-session",
+        },
+
+        global: {
+          headers: {
+            "x-client-info":
+              "gosh-perfume-public-client",
+          },
+        },
+      }
+    );
+
+    return publicClient;
+  };
+
+/**
+ * ------------------------------------------------------------
+ * Get Current User
+ * ------------------------------------------------------------
+ *
+ * Uses Supabase's server-verified user endpoint.
+ *
+ * This is preferable to trusting arbitrary data from
+ * localStorage.
+ * ------------------------------------------------------------
+ */
+export const getSupabaseUser = async (
+  client: SupabaseBrowserClient =
+    createSupabaseClient()
+) => {
+  try {
+    const response =
+      await client.auth.getUser();
+
+    if (
+      response.error &&
+      isInvalidRefreshTokenError(
+        response.error
+      )
+    ) {
       clearSupabaseAuthStorage();
     }
 
-    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey, supabaseClientOptions);
-  }
+    return response;
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) {
+      clearSupabaseAuthStorage();
+    }
 
-  return supabaseClient;
+    throw error;
+  }
 };
 
-// Public reads should not touch the browser auth session. Using a separate
-// no-session client keeps storefront data fetches from competing for Auth locks.
-export const createPublicSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * ------------------------------------------------------------
+ * Get Current Session
+ * ------------------------------------------------------------
+ *
+ * Use this when you specifically need the session/access
+ * token on the client.
+ *
+ * For authorization decisions on the server, prefer
+ * getUser()/getClaims() through the server client.
+ * ------------------------------------------------------------
+ */
+export const getSupabaseSession =
+  async (
+    client: SupabaseBrowserClient =
+      createSupabaseClient()
+  ) => {
+    try {
+      const response =
+        await client.auth.getSession();
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables');
-    throw new Error('Supabase configuration is missing. Please check your .env.local file.');
-  }
+      if (
+        response.error &&
+        isInvalidRefreshTokenError(
+          response.error
+        )
+      ) {
+        clearSupabaseAuthStorage();
+      }
 
-  if (!publicSupabaseClient) {
-    publicSupabaseClient = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        persistSession: false,
-        storageKey: 'gosh-public-no-session',
-      },
-      global: {
-        headers: {
-          'x-client-info': 'gosh-perfume-public-client',
-        },
-      },
-    });
-  }
+      return response;
+    } catch (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        clearSupabaseAuthStorage();
+      }
 
-  return publicSupabaseClient;
-};
+      throw error;
+    }
+  };
 
-export const createFreshSupabaseAuthClient = () => {
-  clearSupabaseAuthStorage();
-  supabaseClient = null;
-  return createSupabaseClient();
-};
+/**
+ * ------------------------------------------------------------
+ * Default compatibility export
+ * ------------------------------------------------------------
+ *
+ * Some existing GOSH code may import:
+ *
+ * import { supabase } from "@/lib/supabase/client";
+ *
+ * We keep the export for compatibility.
+ *
+ * It is intentionally a lazy Proxy so the actual Supabase
+ * client is not created until it is used in the browser.
+ * ------------------------------------------------------------
+ */
 
-export const getSupabaseUser = async (client = createSupabaseClient()) => {
-  if (hasExpiredStoredSupabaseSession()) {
-    clearSupabaseAuthStorage();
-    return {
-      data: { user: null },
-      error: null,
-    };
-  }
-
-  const response = await client.auth.getUser();
-
-  if (response.error && isInvalidRefreshTokenError(response.error)) {
-    clearSupabaseAuthStorage();
-  }
-
-  return response;
-};
-
-export { supabaseClient as supabase };
+export const supabase =
+  typeof window !== "undefined"
+    ? createSupabaseClient()
+    : null;

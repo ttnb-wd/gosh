@@ -11,7 +11,7 @@ declare global {
           sitekey: string;
           callback: (token: string) => void;
           "expired-callback": () => void;
-          "error-callback": () => void;
+          "error-callback": (errorCode?: string) => boolean | void;
           theme?: "light" | "dark" | "auto";
           action?: string;
           "response-field"?: boolean;
@@ -26,6 +26,7 @@ interface TurnstileWidgetProps {
   action: string;
   onVerify: (token: string) => void;
   onExpire: () => void;
+  onError?: (errorCode?: string) => void;
   resetKey?: number;
 }
 
@@ -36,12 +37,14 @@ export default function TurnstileWidget({
   action,
   onVerify,
   onExpire,
+  onError,
   resetKey = 0,
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const isLocalBypass =
     mounted &&
     process.env.NODE_ENV !== "production" &&
@@ -87,6 +90,8 @@ export default function TurnstileWidget({
     if (isLocalBypass) return;
     if (!siteKey || !scriptReady || !window.turnstile || !containerRef.current) return;
 
+    setErrorCode(null);
+
     if (widgetIdRef.current) {
       window.turnstile.remove(widgetIdRef.current);
       widgetIdRef.current = null;
@@ -100,7 +105,14 @@ export default function TurnstileWidget({
       "response-field": false,
       callback: onVerify,
       "expired-callback": onExpire,
-      "error-callback": onExpire,
+      "error-callback": (code?: string) => {
+        setErrorCode(code || "unknown");
+        onError?.(code);
+        if (code !== "110200") {
+          onExpire();
+        }
+        return true;
+      },
     });
 
     return () => {
@@ -109,7 +121,7 @@ export default function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [action, isLocalBypass, onExpire, onVerify, resetKey, scriptReady]);
+  }, [action, isLocalBypass, onError, onExpire, onVerify, resetKey, scriptReady]);
 
   if (isLocalBypass) {
     return (
@@ -131,6 +143,11 @@ export default function TurnstileWidget({
   return (
     <div className="flex justify-center rounded-2xl border border-yellow-200 bg-white/70 px-3 py-3">
       <div ref={containerRef} />
+      {errorCode && (
+        <span className="sr-only">
+          Security check error: {errorCode}
+        </span>
+      )}
     </div>
   );
 }
