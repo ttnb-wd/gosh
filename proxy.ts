@@ -1,112 +1,15 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  /*
-   * ------------------------------------------------------------
-   * SUPABASE CONFIGURATION
-   * ------------------------------------------------------------
-   */
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
-      "[Proxy] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
-    );
-
-    return NextResponse.next();
-  }
-
-  /*
-   * ------------------------------------------------------------
-   * INITIAL RESPONSE
-   * ------------------------------------------------------------
-   */
-
-  let response = NextResponse.next({
-    request,
-  });
-
-  /*
-   * ------------------------------------------------------------
-   * REQUEST-SCOPED SUPABASE CLIENT
-   * ------------------------------------------------------------
-   *
-   * IMPORTANT:
-   * Never create this client globally.
-   * Every request must use its own cookie state.
-   */
-
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-
-        setAll(cookiesToSet) {
-          /*
-           * Update request cookies first.
-           *
-           * This allows refreshed authentication cookies
-           * to be available during the current request.
-           */
-
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-
-          /*
-           * Recreate response with updated request cookies.
-           */
-
-          response = NextResponse.next({
-            request,
-          });
-
-          /*
-           * Send refreshed cookies back to browser.
-           */
-
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-
-  /*
-   * ------------------------------------------------------------
-   * AUTHENTICATION SESSION CHECK
-   * ------------------------------------------------------------
-   *
-   * getClaims() validates the JWT and allows Supabase SSR
-   * to refresh the session when necessary.
-   */
-
-  const {
-    data: claimsData,
-    error: claimsError,
-  } = await supabase.auth.getClaims();
-
-  const claims = claimsData?.claims ?? null;
-
   const pathname = request.nextUrl.pathname;
 
   /*
    * ------------------------------------------------------------
-   * PUBLIC AUTH ROUTES
+   * PUBLIC ROUTES
    * ------------------------------------------------------------
-   *
-   * These routes must remain accessible without authentication.
    */
 
-  const isPublicAuthRoute =
+  const isPublicRoute =
     pathname === "/login" ||
     pathname.startsWith("/login/") ||
     pathname === "/admin/login" ||
@@ -114,61 +17,39 @@ export async function proxy(request: NextRequest) {
 
   /*
    * ------------------------------------------------------------
-   * ADMIN PAGE PROTECTION
+   * ADMIN ROUTES
    * ------------------------------------------------------------
    *
-   * /admin/login is public.
+   * Firebase authentication/authorization is handled by:
    *
-   * Every other /admin page requires authentication.
+   * app/admin/(protected)/layout.tsx
+   * requireAdmin()
    */
 
   const isAdminPage =
     pathname.startsWith("/admin") &&
-    !isPublicAuthRoute;
-
-  if (isAdminPage) {
-    if (claimsError || !claims) {
-      const loginUrl = new URL(
-        "/admin/login",
-        request.url
-      );
-
-      loginUrl.searchParams.set(
-        "redirect",
-        pathname
-      );
-
-      return NextResponse.redirect(loginUrl);
-    }
-  }
+    !isPublicRoute;
 
   /*
    * ------------------------------------------------------------
-   * ADMIN API PROTECTION
+   * ADMIN API
    * ------------------------------------------------------------
    *
-   * API routes must return HTTP status codes instead of
-   * redirecting to a login page.
+   * Server API routes handle their own Firebase auth.
    */
 
   const isAdminApi =
     pathname.startsWith("/api/admin");
 
-  if (isAdminApi) {
-    if (claimsError || !claims) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-        },
-        {
-          status: 401,
-          headers: {
-            "Cache-Control": "no-store",
-          },
-        }
-      );
-    }
-  }
+  /*
+   * ------------------------------------------------------------
+   * RESPONSE
+   * ------------------------------------------------------------
+   */
+
+  const response = NextResponse.next({
+    request,
+  });
 
   /*
    * ------------------------------------------------------------
@@ -191,10 +72,6 @@ export async function proxy(request: NextRequest) {
     "none"
   );
 
-  /*
-   * Prevent framing of authenticated/admin pages.
-   */
-
   if (isAdminPage || isAdminApi) {
     response.headers.set(
       "X-Frame-Options",
@@ -207,27 +84,8 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  /*
-   * ------------------------------------------------------------
-   * RETURN RESPONSE
-   * ------------------------------------------------------------
-   */
-
   return response;
 }
-
-/*
- * ------------------------------------------------------------
- * NEXT.JS PROXY MATCHER
- * ------------------------------------------------------------
- *
- * Run proxy for application routes while skipping:
- *
- * - Next static files
- * - Next image optimizer
- * - favicon
- * - public image assets
- */
 
 export const config = {
   matcher: [

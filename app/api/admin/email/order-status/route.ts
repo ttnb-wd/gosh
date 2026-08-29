@@ -1,70 +1,43 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
+import { adminDb } from "@/lib/firebase/admin";
 import { sendCustomerOrderStatusEmail, type OrderEmailData } from "@/lib/email";
 
-const createAuthenticatedSupabase = (accessToken: string) => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase is not configured.");
-  }
-
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false },
-    global: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  });
-};
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    await requireAdminApiAuth(request);
+
     const body = (await request.json()) as {
       orderId?: string;
       previousStatus?: string;
       nextStatus?: string;
     };
-    const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-    if (!body.orderId || !body.previousStatus || !body.nextStatus || !accessToken) {
+    if (!body.orderId || !body.previousStatus || !body.nextStatus) {
       return NextResponse.json({ error: "Missing order status email details." }, { status: 400 });
     }
 
-    const supabase = createAuthenticatedSupabase(accessToken);
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const orderSnap = await adminDb.collection("orders").doc(body.orderId).get();
 
-    if (userError || !user) {
-      return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+    if (!orderSnap.exists) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const orderData = orderSnap.data() as Record<string, unknown>;
 
-    if (profileError || profile?.role !== "admin") {
-      return NextResponse.json({ error: "Admin access required." }, { status: 403 });
-    }
-
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("id, order_number, customer_name, customer_email, total, status")
-      .eq("id", body.orderId)
-      .single();
-
-    if (orderError || !order) {
-      return NextResponse.json({ error: orderError?.message || "Order not found." }, { status: 404 });
-    }
+    const order: OrderEmailData = {
+      id: orderSnap.id,
+      order_number: (orderData.order_number as string) || "",
+      customer_name: (orderData.customer_name as string) || "",
+      customer_email: (orderData.customer_email as string) || null,
+      total: Number(orderData.total ?? 0) || 0,
+      status: (orderData.status as string) || null,
+    };
 
     const result = await sendCustomerOrderStatusEmail(
-      order as OrderEmailData,
+      order,
       body.previousStatus,
       body.nextStatus
     );

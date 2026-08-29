@@ -1,60 +1,111 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
-import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
+import {
+  onAuthStateChanged,
+  type User,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase/config";
+import { getUserProfile } from "@/lib/firebase/users";
 
 interface AdminAuthContextType {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextType>({
-  user: null,
-  loading: true,
-});
+const AdminAuthContext =
+  createContext<AdminAuthContextType>({
+    user: null,
+    loading: true,
+    isAdmin: false,
+  });
 
-export const useAdminAuth = () => useContext(AdminAuthContext);
+export const useAdminAuth = () =>
+  useContext(AdminAuthContext);
 
-export default function AdminAuthProvider({ children }: { children: React.ReactNode }) {
+export default function AdminAuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const supabase = createSupabaseClient();
-    let isMounted = true;
+    let mounted = true;
 
-    // Get initial user
-    getSupabaseUser(supabase)
-      .then(({ data, error }) => {
-        if (!isMounted) return;
-        setUser(error ? null : data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setUser(null);
-        setLoading(false);
-      });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (currentUser) => {
+        if (!mounted) return;
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      setUser(session?.user ?? null);
-      router.refresh();
-    });
+        if (!currentUser) {
+          setUser(null);
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
+
+        setUser(currentUser);
+
+        try {
+          const profile = await getUserProfile(
+            currentUser.uid
+          );
+
+          if (!mounted) return;
+
+          const admin =
+            profile?.role === "admin";
+
+          setIsAdmin(admin);
+
+          if (!admin) {
+            console.warn(
+              "Authenticated Firebase user is not an admin."
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Failed to load Firebase admin profile:",
+            error
+          );
+
+          if (!mounted) return;
+
+          setIsAdmin(false);
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
+        }
+      }
+    );
 
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
+      mounted = false;
+      unsubscribe();
     };
   }, [router]);
 
   return (
-    <AdminAuthContext.Provider value={{ user, loading }}>
+    <AdminAuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAdmin,
+      }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );

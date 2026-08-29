@@ -1,108 +1,143 @@
 /**
  * API Route Authentication Utilities
- * Server-side authentication helpers for API routes
+ * Firebase Authentication + Firebase Admin
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
-function getBearerToken(request: NextRequest | Request) {
-  const authHeader = request.headers.get('authorization');
+const SESSION_COOKIE_NAME = "firebase-session";
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+function getBearerToken(request: NextRequest | Request): string | null {
+  const authHeader = request.headers.get("authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
 
-  return authHeader.substring(7);
+  return authHeader.substring(7).trim() || null;
 }
 
-/**
- * Get authenticated user from Bearer token
- * @param request Next.js request object
- * @returns User object or null
- */
-export async function getAuthenticatedUser(request: NextRequest | Request) {
-  const token = getBearerToken(request);
-  if (!token) return null;
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function getSessionCookieToken(
+  request: NextRequest | Request
+): string | null {
+  const cookieHeader = request.headers.get("cookie");
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase configuration missing');
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
+  if (!cookieHeader) {
     return null;
   }
 
-  return user;
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const [name, ...rest] = cookie.trim().split("=");
+
+    if (name === SESSION_COOKIE_NAME) {
+      const value = rest.join("=");
+      return value ? decodeURIComponent(value) : null;
+    }
+  }
+
+  return null;
 }
 
 /**
- * Check if authenticated user is admin
- * @param request Next.js request object
- * @returns Admin status and user object
+ * Get authenticated Firebase user from either a Bearer ID token or the
+ * httpOnly "firebase-session" cookie.
+ *
+ * The admin dashboard client calls use `fetch(..., { credentials: "include" })`
+ * which sends the session cookie on the same origin (no manual Bearer header).
+ * Both are verified server-side with the Firebase Admin SDK.
  */
-export async function checkAdminApiAuth(request: NextRequest | Request) {
+export async function getAuthenticatedUser(
+  request: NextRequest | Request
+) {
+  const bearerToken = getBearerToken(request);
+  const sessionToken = getSessionCookieToken(request);
+
+  const token = bearerToken || sessionToken;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    // Prefer ID-token verification (tokens from the client SDK).
+    if (bearerToken) {
+      return await adminAuth.verifyIdToken(bearerToken);
+    }
+
+    // Fall back to the httpOnly session cookie created by POST /api/auth/session.
+    return await adminAuth.verifySessionCookie(sessionToken!, true);
+  } catch (error) {
+    console.error("Firebase token verification failed:", error);
+    return null;
+  }
+}
+/**
+ * Check if authenticated Firebase user is admin
+ */
+export async function checkAdminApiAuth(
+  request: NextRequest | Request
+) {
   const user = await getAuthenticatedUser(request);
-  const token = getBearerToken(request);
 
-  if (!user || !token) {
-    return { isAdmin: false, user: null };
+  if (!user) {
+    return {
+      isAdmin: false,
+      user: null,
+    };
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  try {
+    const profileSnapshot = await adminDb
+      .collection("users")
+      .doc(user.uid)
+      .get();
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase configuration missing');
+    if (!profileSnapshot.exists) {
+      return {
+        isAdmin: false,
+        user,
+      };
+    }
+
+    const profile = profileSnapshot.data();
+
+    const isAdmin = profile?.role === "admin";
+
+    return {
+      isAdmin,
+      user,
+      profile,
+    };
+  } catch (error) {
+    console.error(
+      "Firebase admin profile check failed:",
+      error
+    );
+
+    return {
+      isAdmin: false,
+      user,
+    };
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const isAdmin = profile?.role === 'admin';
-
-  return { isAdmin, user };
 }
 
 /**
  * Require admin authentication for API route
- * @param request Next.js request object
- * @returns User object if admin, throws error otherwise
  */
-export async function requireAdminApiAuth(request: NextRequest | Request) {
-  const { isAdmin, user } = await checkAdminApiAuth(request);
+export async function requireAdminApiAuth(
+  request: NextRequest | Request
+) {
+  const { isAdmin, user } =
+    await checkAdminApiAuth(request);
 
   if (!isAdmin || !user) {
-    throw new Error('Admin access required');
+    throw new Error("Admin access required");
   }
 
   return user;
 }
+
+export { SESSION_COOKIE_NAME };

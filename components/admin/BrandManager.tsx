@@ -1,9 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Edit, EyeOff, Plus, Search, Tags, Trash2, X } from "lucide-react";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 import { ComponentErrorBoundary } from "../ErrorBoundaries";
+import { useAdminAuth } from "./AdminAuthProvider";
 
 interface Brand {
   id: string;
@@ -11,19 +24,14 @@ interface Brand {
   slug: string;
   description: string | null;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: unknown;
+  updated_at?: unknown;
   products?: { id: string }[];
 }
 
 interface LegacyBrand {
   name: string;
   productCount: number;
-}
-
-interface LegacyProductBrandRow {
-  brand: string | null;
-  brand_id: string | null;
 }
 
 const makeSlug = (value: string) =>
@@ -34,7 +42,14 @@ const makeSlug = (value: string) =>
     .replace(/^-+|-+$/g, "") || `brand-${Date.now()}`;
 
 function BrandManagerContent() {
-  const supabase = useMemo(() => createSupabaseClient(), []);
+  /*
+   * Firestore reads/writes for admin collections require an authenticated
+   * admin token. The browser Firebase client auth is restored asynchronously
+   * after a full page load / refresh, so we must not run any Firestore query
+   * until the admin session has been fully restored and verified.
+   */
+  const { user, isAdmin, loading: authLoading } = useAdminAuth();
+
   const [brands, setBrands] = useState<Brand[]>([]);
   const [legacyBrands, setLegacyBrands] = useState<LegacyBrand[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,48 +65,113 @@ function BrandManagerContent() {
     setLoading(true);
     setError("");
 
-    const { data, error } = await supabase
-      .from("brands")
-      .select("*, products(id)")
-      .order("name", { ascending: true });
+    try {
+      const brandsQuery = query(
+        collection(db, "brands"),
+        orderBy("name", "asc")
+      );
 
-    if (error) {
-      setError(error.message || "Could not load brands.");
-      setLoading(false);
-      return;
-    }
+      const productsSnapshot = await getDocs(
+        collection(db, "products")
+      );
 
-    const loadedBrands = (data || []) as Brand[];
-    setBrands(loadedBrands);
+      const productRows = productsSnapshot.docs.map((productDoc) => {
+        const data = productDoc.data();
 
-    const { data: productData, error: productError } = await supabase
-      .from("products")
-      .select("brand, brand_id")
-      .not("brand", "is", null);
+        return {
+          id: productDoc.id,
+          brand:
+            typeof data.brand === "string" ? data.brand : null,
+          brand_id:
+            typeof data.brand_id === "string"
+              ? data.brand_id
+              : null,
+        };
+      });
 
-    if (!productError && productData) {
-      const existingNames = new Set(loadedBrands.map((brand) => brand.name.toLowerCase()));
+      const productIdsByBrand = new Map<string, string[]>();
+
+      productRows.forEach((product) => {
+        if (!product.brand_id) return;
+
+        const ids = productIdsByBrand.get(product.brand_id) || [];
+        ids.push(product.id);
+        productIdsByBrand.set(product.brand_id, ids);
+      });
+
+      const brandsSnapshot = await getDocs(brandsQuery);
+
+      const loadedBrands: Brand[] = brandsSnapshot.docs.map(
+        (brandDoc) => {
+          const data = brandDoc.data();
+
+          return {
+            id: brandDoc.id,
+            name: typeof data.name === "string" ? data.name : "",
+            slug: typeof data.slug === "string" ? data.slug : "",
+            description:
+              typeof data.description === "string"
+                ? data.description
+                : null,
+            is_active: data.is_active !== false,
+            products:
+              (productIdsByBrand.get(brandDoc.id) || []).map(
+                (productId) => ({ id: productId })
+              ),
+          };
+        }
+      );
+
+      setBrands(loadedBrands);
+
+      const existingNames = new Set(
+        loadedBrands.map((brand) => brand.name.toLowerCase())
+      );
       const counts = new Map<string, number>();
 
-      (productData as LegacyProductBrandRow[]).forEach((product) => {
-        const brandName = typeof product.brand === "string" ? product.brand.trim() : "";
-        if (!brandName || product.brand_id || existingNames.has(brandName.toLowerCase())) return;
-        counts.set(brandName, (counts.get(brandName) || 0) + 1);
+      productRows.forEach((product) => {
+        const brandName =
+          typeof product.brand === "string"
+            ? product.brand.trim()
+            : "";
+
+        if (
+          !brandName ||
+          product.brand_id ||
+          existingNames.has(brandName.toLowerCase())
+        ) {
+          return;
+        }
+
+        counts.set(
+          brandName,
+          (counts.get(brandName) || 0) + 1
+        );
       });
 
       setLegacyBrands(
         Array.from(counts.entries())
-          .map(([legacyName, productCount]) => ({ name: legacyName, productCount }))
+          .map(([legacyName, productCount]) => ({
+            name: legacyName,
+            productCount,
+          }))
           .sort((a, b) => a.name.localeCompare(b.name))
       );
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load brands."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
+    if (authLoading || !user || !isAdmin) return;
     loadBrands();
-  }, [loadBrands]);
+  }, [loadBrands, authLoading, user, isAdmin]);
 
   const resetForm = () => {
     setName("");
@@ -125,38 +205,54 @@ function BrandManagerContent() {
       description: description.trim() || null,
     };
 
-    const response = editingBrand
-      ? await supabase.from("brands").update(payload).eq("id", editingBrand.id)
-      : await supabase.from("brands").insert({ ...payload, is_active: true });
+    try {
+      if (editingBrand) {
+        await updateDoc(doc(db, "brands", editingBrand.id), {
+          ...payload,
+          updated_at: serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, "brands"), {
+          ...payload,
+          is_active: true,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+        });
+      }
 
-    if (response.error) {
-      setError(response.error.message || "Could not save brand.");
+      setMessage(editingBrand ? "Brand updated." : "Brand added.");
+      resetForm();
+      await loadBrands();
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save brand."
+      );
+    } finally {
       setSaving(false);
-      return;
     }
-
-    setMessage(editingBrand ? "Brand updated." : "Brand added.");
-    resetForm();
-    await loadBrands();
-    setSaving(false);
   };
 
   const toggleBrand = async (brand: Brand) => {
     setMessage("");
     setError("");
 
-    const { error } = await supabase
-      .from("brands")
-      .update({ is_active: !brand.is_active })
-      .eq("id", brand.id);
+    try {
+      await updateDoc(doc(db, "brands", brand.id), {
+        is_active: !brand.is_active,
+        updated_at: serverTimestamp(),
+      });
 
-    if (error) {
-      setError(error.message || "Could not update brand status.");
-      return;
+      setMessage(!brand.is_active ? "Brand activated." : "Brand deactivated.");
+      await loadBrands();
+    } catch (toggleError) {
+      setError(
+        toggleError instanceof Error
+          ? toggleError.message
+          : "Could not update brand status."
+      );
     }
-
-    setMessage(!brand.is_active ? "Brand activated." : "Brand deactivated.");
-    loadBrands();
   };
 
   const deleteBrand = async (brand: Brand) => {
@@ -164,34 +260,33 @@ function BrandManagerContent() {
     setError("");
 
     const productCount = brand.products?.length || 0;
-    if (productCount > 0) {
-      const { error } = await supabase
-        .from("brands")
-        .update({ is_active: false })
-        .eq("id", brand.id);
 
-      if (error) {
-        setError(error.message || "Could not deactivate brand.");
+    try {
+      if (productCount > 0) {
+        await updateDoc(doc(db, "brands", brand.id), {
+          is_active: false,
+          updated_at: serverTimestamp(),
+        });
+
+        setMessage(`${brand.name} has products, so it was deactivated instead of deleted.`);
+        await loadBrands();
         return;
       }
 
-      setMessage(`${brand.name} has products, so it was deactivated instead of deleted.`);
-      loadBrands();
-      return;
+      await deleteDoc(doc(db, "brands", brand.id));
+
+      setMessage("Brand deleted.");
+      await loadBrands();
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Could not delete brand."
+      );
     }
-
-    const { error } = await supabase.from("brands").delete().eq("id", brand.id);
-
-    if (error) {
-      setError(error.message || "Could not delete brand.");
-      return;
-    }
-
-    setMessage("Brand deleted.");
-    loadBrands();
   };
 
-  const saveLegacyBrand = async (legacyBrand: LegacyBrand, isActive: boolean) => {
+  const saveLegacyBrand = async (legacyBrand: LegacyBrand, isActive: boolean): Promise<Brand | null> => {
     setMessage("");
     setError("");
 
@@ -202,31 +297,47 @@ function BrandManagerContent() {
       is_active: isActive,
     };
 
-    const { data, error } = await supabase
-      .from("brands")
-      .insert(payload)
-      .select("*, products(id)")
-      .single();
+    try {
+      const brandRef = await addDoc(collection(db, "brands"), {
+        ...payload,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
 
-    if (error) {
-      setError(error.message || "Could not save old brand.");
+      const savedBrand: Brand = {
+        id: brandRef.id,
+        ...payload,
+        products: [],
+      };
+
+      const productsQuery = query(
+        collection(db, "products"),
+        where("brand", "==", legacyBrand.name)
+      );
+      const productsSnapshot = await getDocs(productsQuery);
+
+      const linkUpdates = productsSnapshot.docs
+        .filter((productDoc) => !productDoc.data().brand_id)
+        .map((productDoc) =>
+          updateDoc(productDoc.ref, {
+            brand_id: savedBrand.id,
+            brand: savedBrand.name,
+            updated_at: serverTimestamp(),
+          })
+        );
+
+      await Promise.all(linkUpdates);
+
+      await loadBrands();
+      return savedBrand;
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save old brand."
+      );
       return null;
     }
-
-    const savedBrand = data as Brand;
-    const { error: linkError } = await supabase
-      .from("products")
-      .update({ brand_id: savedBrand.id, brand: savedBrand.name })
-      .eq("brand", legacyBrand.name)
-      .is("brand_id", null);
-
-    if (linkError) {
-      setError(linkError.message || "Brand saved, but old products could not be linked.");
-      return savedBrand;
-    }
-
-    await loadBrands();
-    return savedBrand;
   };
 
   const editLegacyBrand = async (legacyBrand: LegacyBrand) => {
@@ -250,19 +361,33 @@ function BrandManagerContent() {
     setMessage("");
     setError("");
 
-    const { error } = await supabase
-      .from("products")
-      .update({ brand: null })
-      .eq("brand", legacyBrand.name)
-      .is("brand_id", null);
+    try {
+      const productsQuery = query(
+        collection(db, "products"),
+        where("brand", "==", legacyBrand.name)
+      );
+      const productsSnapshot = await getDocs(productsQuery);
 
-    if (error) {
-      setError(error.message || "Could not delete old brand text.");
-      return;
+      const updates = productsSnapshot.docs
+        .filter((productDoc) => !productDoc.data().brand_id)
+        .map((productDoc) =>
+          updateDoc(productDoc.ref, {
+            brand: null,
+            updated_at: serverTimestamp(),
+          })
+        );
+
+      await Promise.all(updates);
+
+      setMessage(`${legacyBrand.name} was removed from old unlinked products.`);
+      await loadBrands();
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Could not delete old brand text."
+      );
     }
-
-    setMessage(`${legacyBrand.name} was removed from old unlinked products.`);
-    loadBrands();
   };
 
   const filteredBrands = brands.filter((brand) =>

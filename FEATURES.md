@@ -43,10 +43,10 @@
 
 ### Security
 - ✅ Cloudflare Turnstile (CAPTCHA)
-- ✅ Supabase authentication
-- ✅ Row-level security (RLS)
+- ✅ Firebase authentication
+- ✅ Firestore security rules
 - ✅ Admin-only routes protection
-- ✅ SQL injection prevention
+- ✅ Input validation
 - ✅ XSS protection
 
 ### Accessibility (WCAG 2.1 Level AA)
@@ -138,11 +138,10 @@
 - Lucide Icons
 
 ### Backend
-- Supabase (PostgreSQL)
-- Supabase Auth
-- Supabase Storage
-- Supabase Realtime
-- Edge Functions
+- Firebase (Firestore)
+- Firebase Auth
+- Firebase Admin SDK
+- ImageKit (image storage)
 
 ### Services
 - Resend (Email)
@@ -169,7 +168,7 @@ gosh-perfume/
 ├── lib/                     # Utility functions
 │   ├── analytics.ts        # Analytics functions (NEW!)
 │   ├── auth/               # Authentication
-│   ├── supabase/           # Database
+│   ├── firebase/           # Database
 │   └── siteSettings.ts     # Site configuration
 ├── hooks/                   # Custom React hooks
 ├── public/                  # Static assets
@@ -185,7 +184,7 @@ gosh-perfume/
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
-- Supabase account
+- Firebase account
 - Resend account (for emails)
 - Cloudflare account (for Turnstile)
 - Google Analytics account (optional, for analytics)
@@ -193,10 +192,14 @@ gosh-perfume/
 ### Environment Variables
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# Firebase
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_PRIVATE_KEY=your_private_key
 
 # Cloudflare Turnstile
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_site_key
@@ -228,8 +231,8 @@ npm install
 cp .env.example .env
 # Edit .env with your values
 
-# Run database migrations
-# (See Supabase setup guide)
+# Run Firestore security rules
+# (See firestore.rules)
 
 # Start development server
 npm run dev
@@ -260,7 +263,7 @@ See `ANALYTICS_SETUP.md` for detailed instructions.
 
 ## 🔐 Security Features
 
-- Supabase Row Level Security (RLS)
+- Firebase Auth and Firestore security rules
 - Admin role verification
 - Cloudflare Turnstile protection
 - SQL injection prevention

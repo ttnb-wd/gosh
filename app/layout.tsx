@@ -9,11 +9,17 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  fallback: ["system-ui", "Arial", "sans-serif"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  fallback: ["ui-monospace", "Courier New", "monospace"],
 });
 
 export const metadata: Metadata = {
@@ -81,15 +87,11 @@ export default function RootLayout({
             __html: `
               (function () {
                 try {
-                  var theme = localStorage.getItem("theme");
-                  if (theme === "dark") {
-                    document.documentElement.classList.add("dark");
-                    document.documentElement.style.colorScheme = "dark";
-                  } else {
-                    localStorage.setItem("theme", "light");
-                    document.documentElement.classList.remove("dark");
-                    document.documentElement.style.colorScheme = "light";
-                  }
+                  // Always start in Light Mode on first open.
+                  // Dark Mode is ONLY applied when the user manually clicks
+                  // the theme toggle. Never restore a previously saved theme.
+                  document.documentElement.classList.remove("dark");
+                  document.documentElement.style.colorScheme = "light";
                 } catch (_) {}
               })();
             `,

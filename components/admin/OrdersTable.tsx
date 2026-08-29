@@ -1,9 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, Package, Search, XCircle } from "lucide-react";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { getFirebaseAuthorizationHeader } from "@/lib/firebase/client-auth";
+import { db } from "@/lib/firebase/config";
+import { useAdminAuth } from "./AdminAuthProvider";
+import {
+  collection,
+  getDocs,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import PremiumStatusSelect from "@/components/admin/PremiumStatusSelect";
 import { ComponentErrorBoundary } from "../ErrorBoundaries";
 
@@ -54,11 +62,17 @@ const paymentStatusGuidance: Record<string, string> = {
 };
 
 function OrdersTableContent() {
-  const supabase = useMemo(() => createSupabaseClient(), []);
   const searchParams = useSearchParams();
   const orderIdFromNotification = searchParams.get("orderId");
   const statusFromUrl = searchParams.get("status");
   const paymentFromUrl = searchParams.get("payment");
+
+  /*
+   * Firestore admin queries require an authenticated admin token. The browser
+   * Firebase client auth is restored asynchronously after a full page load,
+   * so wait until it is restored + verified before querying.
+   */
+  const { isAdmin, loading: authLoading } = useAdminAuth();
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<string>("All");
@@ -83,50 +97,113 @@ function OrdersTableContent() {
     try {
       setLoading(true);
 
-      const from = (currentPage - 1) * ORDERS_PER_PAGE;
-      const to = from + ORDERS_PER_PAGE - 1;
-      const search = searchQuery.trim();
+      const ordersQuery = query(
+        collection(db, "orders"),
+        orderBy("created_at", "desc")
+      );
 
-      let query = supabase
-        .from("orders")
-        .select("*, order_items(*)", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      const ordersSnap = await getDocs(ordersQuery);
+
+      const allOrders: Order[] = await Promise.all(
+        ordersSnap.docs.map(async (doc) => {
+          const data = doc.data() as Record<string, unknown>;
+
+          const itemsSnap = await getDocs(
+            collection(db, "orders", doc.id, "items")
+          );
+
+          const orderItems: OrderItem[] = itemsSnap.docs.map((itemDoc) => {
+            const itemData = itemDoc.data() as Record<string, unknown>;
+            return {
+              id: itemDoc.id,
+              product_name: (itemData.product_name as string) || "",
+              product_brand: (itemData.product_brand as string) || null,
+              product_image: (itemData.product_image as string) || null,
+              selected_size: (itemData.selected_size as string) || null,
+              price: Number(itemData.price ?? 0) || 0,
+              quantity: Number(itemData.quantity ?? 0) || 1,
+            };
+          });
+
+          const toIso = (val: unknown): string => {
+            if (!val) return "";
+            if (val instanceof Date) return val.toISOString();
+            if (typeof val === "string") return val;
+            if (
+              typeof val === "object" &&
+              "toDate" in val &&
+              typeof (val as { toDate: () => Date }).toDate === "function"
+            ) {
+              return (val as { toDate: () => Date }).toDate().toISOString();
+            }
+            return "";
+          };
+
+          return {
+            id: doc.id,
+            order_number: (data.order_number as string) || "",
+            user_id: (data.user_id as string) || null,
+            customer_name: (data.customer_name as string) || "",
+            customer_email: (data.customer_email as string) || null,
+            phone: (data.phone as string) || "",
+            address: (data.address as string) || "",
+            city: (data.city as string) || null,
+            payment_method: (data.payment_method as string) || "",
+            payment_status: (data.payment_status as string) || "",
+            payment_account_name: (data.payment_account_name as string) || null,
+            payment_phone: (data.payment_phone as string) || null,
+            payment_account_number: (data.payment_account_number as string) || null,
+            payment_screenshot_url: (data.payment_screenshot_url as string) || null,
+            subtotal: Number(data.subtotal ?? 0) || 0,
+            delivery_fee: Number(data.delivery_fee ?? 0) || 0,
+            discount: Number(data.discount ?? 0) || 0,
+            total: Number(data.total ?? 0) || 0,
+            status: (data.status as Order["status"]) || "Pending",
+            created_at: toIso(data.created_at),
+            order_items: orderItems,
+          };
+        })
+      );
+
+      // Client-side filter/search/sort
+      let filtered = [...allOrders];
 
       if (filter !== "All") {
-        query = query.eq("status", filter);
+        filtered = filtered.filter((o) => o.status === filter);
       }
 
       if (paymentFilter !== "All") {
-        query = query.eq("payment_status", paymentFilter);
+        filtered = filtered.filter((o) => o.payment_status === paymentFilter);
       }
 
+      const search = searchQuery.trim().toLowerCase();
       if (search) {
-        const escapedSearch = search.replace(/[%_]/g, "\\$&");
-        query = query.or(
-          `order_number.ilike.%${escapedSearch}%,customer_name.ilike.%${escapedSearch}%,customer_email.ilike.%${escapedSearch}%,phone.ilike.%${escapedSearch}%`
+        filtered = filtered.filter(
+          (o) =>
+            o.order_number.toLowerCase().includes(search) ||
+            o.customer_name.toLowerCase().includes(search) ||
+            (o.customer_email || "").toLowerCase().includes(search) ||
+            o.phone.toLowerCase().includes(search)
         );
       }
 
-      const { data, error, count } = await query;
+      const total = filtered.length;
+      const from = (currentPage - 1) * ORDERS_PER_PAGE;
+      const paged = filtered.slice(from, from + ORDERS_PER_PAGE);
 
-      if (error) {
-        console.error("Error loading orders:", error);
-        return;
-      }
-
-      setOrders((data || []) as Order[]);
-      setTotalOrders(count || 0);
+      setOrders(paged);
+      setTotalOrders(total);
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filter, paymentFilter, searchQuery, supabase]);
+  }, [currentPage, filter, paymentFilter, searchQuery]);
 
   useEffect(() => {
+    if (authLoading || !isAdmin) return;
     loadOrders();
-  }, [loadOrders]);
+  }, [loadOrders, authLoading, isAdmin]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -169,41 +246,19 @@ function OrdersTableContent() {
 
   const getPaymentScreenshotUrl = async (pathOrUrl: string) => {
     if (!pathOrUrl) return null;
-    
-    // If already a full public URL, use directly
-    if (pathOrUrl.startsWith("http")) {
-      return pathOrUrl;
-    }
-    
-    // If only storage path is saved, create signed URL
-    const { data, error } = await supabase.storage
-      .from("payment-screenshots")
-      .createSignedUrl(pathOrUrl, 60 * 10);
-    
-    if (error) {
-      console.error("Create signed screenshot URL error:", {
-        message: error.message,
-      });
-      return null;
-    }
-    
-    return data.signedUrl;
+
+    // Payment receipts are stored as full ImageKit URLs in Firestore.
+    return pathOrUrl;
   };
 
   const callOrderStatusAction = async (body: Record<string, unknown>) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      throw new Error("Admin session expired. Please sign in again.");
-    }
+    const headers = await getFirebaseAuthorizationHeader();
 
     const response = await fetch("/api/admin/orders/status", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        ...headers,
       },
       body: JSON.stringify(body),
     });
@@ -237,16 +292,12 @@ function OrdersTableContent() {
       setActionMessage({ type: "success", text: "Order status updated." });
 
       if (previousStatus && previousStatus !== newStatus) {
-        void supabase.auth.getSession().then((response: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
-          const { data } = response;
-          const accessToken = data.session?.access_token;
-          if (!accessToken) return;
-
+        void getFirebaseAuthorizationHeader().then((authHeaders) => {
           return fetch("/api/admin/email/order-status", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
+              ...authHeaders,
             },
             body: JSON.stringify({
               orderId,
@@ -783,7 +834,7 @@ function OrdersTableContent() {
               {!paymentScreenshotError && paymentScreenshotUrl !== "error" ? (
                 <img
                   src={paymentScreenshotUrl}
-                  alt="Payment screenshot from Supabase Storage"
+                  alt="Payment screenshot"
                   className="block h-auto w-auto max-h-[76vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl sm:max-h-[78vh] sm:max-w-[820px]"
                   onError={() => setPaymentScreenshotError(true)}
                 />
@@ -791,7 +842,7 @@ function OrdersTableContent() {
                 <div className="flex min-h-[260px] w-[86vw] max-w-md flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 p-6 text-center sm:min-h-[320px]">
                   <p className="text-lg font-black text-red-700">Could not load payment screenshot.</p>
                   <p className="mt-2 text-sm text-red-600">
-                    Please check if the Supabase Storage file URL is public or signed correctly.
+                    Please check if the file URL is public or signed correctly.
                   </p>
                 </div>
               )}

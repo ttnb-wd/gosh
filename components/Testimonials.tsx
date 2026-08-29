@@ -2,8 +2,15 @@
 
 import { motion } from "framer-motion";
 import { Star, UserCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { createPublicSupabaseClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase/config";
+import {
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
 
 interface Testimonial {
   id: string;
@@ -25,26 +32,37 @@ const getInitials = (name: string) =>
 export default function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
-  const supabase = useMemo(() => createPublicSupabaseClient(), []);
-
   useEffect(() => {
     const loadTestimonials = async () => {
-      const { data, error: fetchError } = await supabase
-        .from("testimonials")
-        .select("id, name, role, comment, rating, avatar_url")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+      const q = query(
+        collection(db, "testimonials"),
+        where("is_active", "==", true),
+        orderBy("created_at", "desc")
+      );
 
-      if (fetchError) {
-        console.error("Testimonials fetch error:", fetchError);
-        return;
-      }
+      const snapshot = await getDocs(q);
 
-      setTestimonials((data || []) as Testimonial[]);
+      const loaded: Testimonial[] = snapshot.docs.map((doc) => {
+        const data = doc.data() as Record<string, unknown>;
+
+        return {
+          id: doc.id,
+          name: typeof data.name === "string" ? data.name : "",
+          role: typeof data.role === "string" ? data.role : null,
+          comment: typeof data.comment === "string" ? data.comment : "",
+          rating: Number(data.rating ?? 0) || 0,
+          avatar_url:
+            typeof data.avatar_url === "string" ? data.avatar_url : null,
+        };
+      });
+
+      setTestimonials(loaded);
     };
 
-    loadTestimonials();
-  }, [supabase]);
+    loadTestimonials().catch((error) => {
+      console.error("Testimonials fetch error:", error);
+    });
+  }, []);
 
   return (
     <section role="region" aria-label="Customer testimonials" className="bg-[var(--site-bg)] py-16 lg:py-24">

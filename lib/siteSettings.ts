@@ -1,4 +1,5 @@
-import { createPublicSupabaseClient, createSupabaseClient } from "./supabase/client";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "./firebase/config";
 
 export interface SiteSettings {
   id: number;
@@ -84,35 +85,20 @@ const defaultSettings: SiteSettings = {
 };
 
 /**
- * Get site settings from Supabase
+ * Get site settings from Firestore
  * Returns default settings if none exist or on error
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
-    const supabase = createPublicSupabaseClient();
+    const snapshot = await getDoc(doc(db, "site_settings", "1"));
 
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error fetching site settings:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
+    if (!snapshot.exists()) {
       return defaultSettings;
     }
 
-    if (!data) {
-      // No site settings found, using defaults
-      return defaultSettings;
-    }
+    const data = snapshot.data() as Partial<SiteSettings>;
 
-    return data as SiteSettings;
+    return { ...defaultSettings, ...data };
   } catch (err) {
     console.error("Unexpected error fetching site settings:", err);
     return defaultSettings;
@@ -120,36 +106,26 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 }
 
 /**
- * Update site settings in Supabase
- * Uses upsert to create or update the singleton row
+ * Update site settings in Firestore
+ * Uses a singleton document to create or update the row
  */
 export async function updateSiteSettings(
   settings: Partial<SiteSettings>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createSupabaseClient();
+    const rest = { ...settings };
+    delete rest.id;
+    delete rest.created_at;
+    delete rest.updated_at;
 
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert(
-        {
-          id: 1,
-          ...settings,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      )
-      .eq("id", 1);
-
-    if (error) {
-      console.error("Error updating site settings:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
-      return { success: false, error: error.message };
-    }
+    await setDoc(
+      doc(db, "site_settings", "1"),
+      {
+        ...rest,
+        updated_at: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     return { success: true };
   } catch (err: unknown) {

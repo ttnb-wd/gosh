@@ -1,53 +1,74 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const authorization = request.headers.get("authorization");
 
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+    if (!authorization?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { error: "Not authenticated." },
+        { status: 401 }
+      );
     }
 
-    const supabase = getSupabaseAdmin();
-    const email = user.email ?? "";
+    const idToken = authorization.substring(7).trim();
+
+    if (!idToken) {
+      return NextResponse.json(
+        { error: "Missing Firebase ID token." },
+        { status: 401 }
+      );
+    }
+
+    // Verify Firebase ID token on the server
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+
+    const uid = decodedToken.uid;
+    const email = decodedToken.email ?? "";
+
     const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
+      typeof decodedToken.name === "string"
+        ? decodedToken.name
         : null;
 
-    const { data: existingProfile, error: readError } = await supabase
-      .from("profiles")
-      .select("id, email, role, full_name")
-      .eq("id", user.id)
-      .maybeSingle();
+    const profileRef = adminDb.collection("users").doc(uid);
 
-    if (readError) {
-      return NextResponse.json({ error: "Could not load user profile." }, { status: 500 });
+    const existingProfile = await profileRef.get();
+
+    if (existingProfile.exists) {
+      return NextResponse.json({
+        profile: {
+          id: uid,
+          ...existingProfile.data(),
+        },
+      });
     }
 
-    if (existingProfile) {
-      return NextResponse.json({ profile: existingProfile });
-    }
+    // New users are customers by default.
+    // Admin users will be promoted separately.
+    const profile = {
+      id: uid,
+      email,
+      full_name: fullName,
+      role: "customer",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    const { data: profile, error: insertError } = await supabase
-      .from("profiles")
-      .insert({
-        id: user.id,
-        email,
-        full_name: fullName,
-        role: "customer",
-      })
-      .select("id, email, role, full_name")
-      .single();
+    await profileRef.set(profile);
 
-    if (insertError) {
-      return NextResponse.json({ error: "Could not create user profile." }, { status: 500 });
-    }
+    return NextResponse.json({
+      profile,
+    });
+  } catch (error) {
+    console.error("Firebase ensure-profile error:", error);
 
-    return NextResponse.json({ profile });
-  } catch {
-    return NextResponse.json({ error: "Could not verify user profile." }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Could not verify or create user profile.",
+      },
+      { status: 500 }
+    );
   }
 }

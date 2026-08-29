@@ -3,7 +3,15 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
-import { createPublicSupabaseClient } from "@/lib/supabase/client";
+import { db } from "@/lib/firebase/config";
+import {
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
 
 interface ProductImage {
   id: string;
@@ -18,12 +26,6 @@ const getSafeBrandStoryImage = (image?: string | null) => {
   const value = image?.trim();
   if (!value) return fallbackBrandStoryImage;
   if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-  if (supabaseUrl && (value.startsWith("products/") || value.startsWith("product-images/"))) {
-    const path = value.startsWith("product-images/") ? value.replace(/^product-images\//, "") : value;
-    return `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
-  }
 
   return fallbackBrandStoryImage;
 };
@@ -78,23 +80,38 @@ export default function BrandStory() {
     }
   ];
 
-  // Fetch product images from Supabase
+  // Fetch product images from Firestore (ImageKit CDN URLs)
   useEffect(() => {
     async function fetchProductImages() {
       try {
-        const supabase = createPublicSupabaseClient();
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, name, image")
-          .eq("is_active", true)
-          .not("image", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(8);
+        const productsQuery = query(
+          collection(db, "products"),
+          where("is_active", "==", true),
+          orderBy("createdAt", "desc"),
+          limit(8)
+        );
 
-        if (error) throw error;
+        const snapshot = await getDocs(productsQuery);
 
-        if (data && data.length > 0) {
-          setProductImages(data);
+        const images = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+
+            return {
+              id: doc.id,
+              name: typeof data.name === "string" ? data.name : "",
+              image:
+                typeof data.image === "string"
+                  ? data.image
+                  : typeof data.image_url === "string"
+                    ? data.image_url
+                    : "",
+            };
+          })
+          .filter((product) => product.image);
+
+        if (images.length > 0) {
+          setProductImages(images);
         }
       } catch (error) {
         console.error("Error fetching product images:", error);

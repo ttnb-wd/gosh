@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
 import { validateEmail } from "@/lib/validation";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { adminDb } from "@/lib/firebase/admin";
+import { Timestamp } from "firebase-admin/firestore";
 
 export async function POST(request: Request) {
   try {
@@ -42,28 +43,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .upsert(
-        {
-          email: body.email!.trim().toLowerCase(),
-          status: "subscribed",
-          source: "vip_club",
-          subscribed_at: new Date().toISOString(),
-          unsubscribed_at: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "email" }
-      );
+    const email = body.email!.trim().toLowerCase();
 
-    if (error) {
-      // Don't expose database errors to users
-      return NextResponse.json(
-        { error: "Could not subscribe. Please try again or contact support." },
-        { status: 400 }
-      );
-    }
+    await adminDb.collection("newsletter_subscribers").doc(email).set(
+      {
+        email,
+        status: "subscribed",
+        source: "vip_club",
+        subscribed_at: Timestamp.now(),
+        unsubscribed_at: null,
+        updated_at: Timestamp.now(),
+      },
+      { merge: true }
+    );
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -1,70 +1,137 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
+
+const SESSION_COOKIE_NAME = "firebase-session";
 
 export async function checkAdminAuth() {
-  const supabase = await createSupabaseServerClient();
+  try {
+    const cookieStore = await cookies();
 
-  // Get current user (validates with Supabase Auth server)
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    const sessionCookie = cookieStore.get(
+      SESSION_COOKIE_NAME
+    )?.value;
 
-  if (userError || !user) {
-    return { isAdmin: false, user: null };
+    if (!sessionCookie) {
+      return {
+        isAdmin: false,
+        user: null,
+        profile: null,
+      };
+    }
+
+    /*
+     * Verify the Firebase server session cookie.
+     */
+    const decodedClaims =
+      await adminAuth.verifySessionCookie(
+        sessionCookie,
+        true
+      );
+
+    const uid = decodedClaims.uid;
+
+    /*
+     * IMPORTANT:
+     *
+     * The client-side auth/profile system uses:
+     *
+     * users/{uid}
+     *
+     * Therefore the server-side admin check MUST use
+     * the same collection.
+     */
+    const profileSnapshot = await adminDb
+      .collection("users")
+      .doc(uid)
+      .get();
+
+    if (!profileSnapshot.exists) {
+      console.warn(
+        "[ADMIN AUTH] User profile not found:",
+        uid
+      );
+
+      return {
+        isAdmin: false,
+        user: null,
+        profile: null,
+      };
+    }
+
+    const profile = profileSnapshot.data();
+
+    /*
+     * Admin access is controlled by the Firestore role.
+     */
+    if (profile?.role !== "admin") {
+      console.warn(
+        "[ADMIN AUTH] User is not an admin:",
+        uid
+      );
+
+      return {
+        isAdmin: false,
+        user: null,
+        profile,
+      };
+    }
+
+    /*
+     * Everything is valid.
+     */
+    console.log(
+      "[ADMIN AUTH] Admin session verified:",
+      uid
+    );
+
+    return {
+      isAdmin: true,
+      user: {
+        uid,
+        email: decodedClaims.email ?? null,
+      },
+      profile,
+    };
+  } catch (error) {
+    console.error(
+      "[ADMIN AUTH] Session verification failed:",
+      error
+    );
+
+    return {
+      isAdmin: false,
+      user: null,
+      profile: null,
+    };
   }
-
-  // Check if user has admin role in profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileError || !profile) {
-    return { isAdmin: false, user };
-  }
-
-  const isAdmin = profile.role === "admin";
-
-  return { isAdmin, user, profile };
 }
 
 export async function requireAdminAuth() {
-  const { isAdmin, user } = await checkAdminAuth();
+  const result = await checkAdminAuth();
 
-  if (!isAdmin) {
+  if (!result.isAdmin) {
     return null;
   }
 
-  return user;
+  return result.user;
 }
 
 export async function requireAdmin() {
-  const supabase = await createSupabaseServerClient();
+  const result = await checkAdminAuth();
 
-  // Get current user (validates with Supabase Auth server)
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  // If not logged in, redirect to login
-  if (userError || !user) {
-    redirect("/login");
+  /*
+   * Only protected admin routes call requireAdmin().
+   *
+   * /admin/login is outside the protected layout.
+   */
+  if (!result.isAdmin) {
+    redirect("/admin/login");
   }
 
-  // Check if user has admin role in profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // If no profile or not admin, redirect to home
-  if (profileError || !profile || profile.role !== "admin") {
-    redirect("/");
-  }
-
-  return user;
+  return {
+    uid: result.user!.uid,
+    email: result.user!.email,
+    profile: result.profile,
+  };
 }

@@ -10,16 +10,15 @@
 
 ### 2. Secret Keys Protection
 **Status**: ✅ PASS
-- `SUPABASE_SERVICE_ROLE_KEY` only in server-side code
-- Found in: `lib/supabase/server.ts` (server-only)
+- `FIREBASE_PRIVATE_KEY` only in server-side code
+- Found in: `lib/firebase/admin.ts` (server-only)
 - NOT exposed to client
 
 ### 3. Environment Variables
 **Status**: ✅ PASS
 ```env
-✅ NEXT_PUBLIC_SUPABASE_URL (public, safe)
-✅ NEXT_PUBLIC_SUPABASE_ANON_KEY (public, safe with RLS)
-✅ SUPABASE_SERVICE_ROLE_KEY (server-only, secure)
+✅ NEXT_PUBLIC_FIREBASE_* (public, safe)
+✅ FIREBASE_PRIVATE_KEY (server-only, secure)
 ```
 
 ### 4. .gitignore Protection
@@ -41,8 +40,8 @@
 ### 6. Admin Authentication
 **Status**: ✅ WORKING
 - Admin account: `goshadmin@gmail.com`
-- Role checked from `profiles` table
-- Uses `profile.role === 'admin'`
+- Role checked from Firestore users collection
+- Uses `role === 'admin'`
 - Secure server-side validation
 
 ### 7. Admin Protection
@@ -115,7 +114,7 @@ All admin routes protected:
 ### Step 1: Push to GitHub
 ```bash
 git add .
-git commit -m "Production-ready admin dashboard with Supabase auth"
+git commit -m "Production-ready admin dashboard with Firebase auth"
 git push origin main
 ```
 
@@ -128,14 +127,14 @@ git push origin main
 In Vercel Project Settings → Environment Variables:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL
-Value: your Supabase project URL
+NEXT_PUBLIC_FIREBASE_API_KEY
+Value: your Firebase web API key
 
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-Value: eyJhbGci... (your anon key)
+NEXT_PUBLIC_FIREBASE_PROJECT_ID
+Value: your Firebase project ID
 
-SUPABASE_SERVICE_ROLE_KEY
-Value: eyJhbGci... (your service role key)
+FIREBASE_PRIVATE_KEY
+Value: your Firebase Admin private key
 ```
 
 ### Step 4: Redeploy
@@ -182,7 +181,7 @@ npm run dev
 - [x] Service role key server-only
 - [x] No secrets in client code
 - [x] .env.local in .gitignore
-- [x] RLS policies enabled
+- [x] Firestore security rules enabled
 - [x] Admin role validation
 - [x] Proper redirects
 - [x] Error handling
@@ -212,14 +211,14 @@ npm run dev
 ### ✅ Security:
 - No exposed secrets
 - Server-side validation
-- RLS policies
+- Firestore security rules enabled
 - Secure authentication
 
 ## 🔮 Future Enhancements
 
 ### Phase 2 (Post-MVP):
 - [ ] Complete product add/edit forms
-- [ ] Migrate to Supabase (from localStorage)
+- [ ] Remove localStorage fallback after Firebase migration
 - [ ] Customer management page
 - [ ] Settings page
 - [ ] Email notifications

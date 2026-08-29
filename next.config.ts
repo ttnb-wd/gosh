@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const supabaseHost = "wfiejzhiuuegfxjbdupq.supabase.co";
-
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -12,8 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: supabaseHost,
-        pathname: "/storage/v1/object/public/**",
+        hostname: "ik.imagekit.io",
       },
     ],
   },
@@ -59,8 +56,8 @@ const nextConfig: NextConfig = {
            * ============================================================
            *
            * Required for:
-           * - Supabase Auth
-           * - Supabase Realtime
+           * - Firebase Auth
+           * - Firebase Firestore
            * - Cloudflare Turnstile
            * - Sentry
            * - Google Tag Manager / Analytics
@@ -94,21 +91,36 @@ const nextConfig: NextConfig = {
               /*
                * Network requests
                *
-               * Supabase REST/Auth/Storage
-               * Supabase Realtime
+               * Firebase Authentication
+               * Firebase Firestore
+               * ImageKit uploads
                * Turnstile
                * Sentry
                * Google Analytics
                */
               [
                 "connect-src 'self'",
-                `https://${supabaseHost}`,
-                `wss://${supabaseHost}`,
+
+                  // Firebase Authentication
+                "https://identitytoolkit.googleapis.com",
+                "https://securetoken.googleapis.com",
+
+                  // Firebase Firestore
+                "https://firestore.googleapis.com",
+
+                  // ImageKit uploads
+                "https://upload.imagekit.io",
+
+                  // Cloudflare Turnstile
                 "https://challenges.cloudflare.com",
                 "https://*.cloudflare.com",
+
+                  // Sentry
                 "https://*.sentry.io",
-                "https://www.google-analytics.com",
-                "https://www.googletagmanager.com",
+
+                 // Google Analytics / Tag Manager
+               "https://www.google-analytics.com",
+               "https://www.googletagmanager.com",
               ].join(" "),
 
               /*

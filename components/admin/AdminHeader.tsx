@@ -2,9 +2,20 @@
 
 import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare, Moon, Sun } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { db } from "@/lib/firebase/config";
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  updateDoc,
+  writeBatch,
+} from "firebase/firestore";
+import { signOutUser } from "@/lib/firebase/auth";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -24,21 +35,10 @@ interface AdminNotification {
   created_at: string;
 }
 
-interface ContactMessageNotification {
-  id: string;
-  full_name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: string;
-  created_at: string;
-}
-
 export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
-  const { user } = useAdminAuth();
+  const { user, isAdmin, loading: authLoading } = useAdminAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  const supabase = useMemo(() => createSupabaseClient(), []);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
@@ -47,121 +47,73 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const toContactNotification = (message: ContactMessageNotification): AdminNotification => ({
-    id: message.id,
-    source: "contact",
-    order_id: null,
-    type: "contact_message",
-    title: "New Contact Message",
-    message: `${message.full_name}: ${message.subject}`,
-    is_read: message.status !== "unread",
-    created_at: message.created_at,
-  });
+  const toNotification = (raw: Record<string, unknown>, source: "order" | "contact", type: string, title: string, message: string, isRead: boolean): AdminNotification => {
+    const created = raw.created_at;
+    let createdStr = "";
+    if (typeof created === "string") createdStr = created;
+    else if (created instanceof Date) createdStr = created.toISOString();
+    else if (typeof created === "object" && created && "toDate" in created && typeof (created as { toDate: () => Date }).toDate === "function") createdStr = (created as { toDate: () => Date }).toDate().toISOString();
+
+    return {
+      id: typeof raw.id === "string" ? raw.id : String(source),
+      source,
+      order_id: source === "order" && typeof raw.id === "string" ? raw.id : null,
+      type,
+      title,
+      message,
+      is_read: isRead,
+      created_at: createdStr,
+    };
+  };
 
   const fetchNotifications = async () => {
     if (!user) return;
 
     try {
-      const [orderNotifications, contactMessages] = await Promise.all([
-        supabase
-          .from("admin_notifications")
-          .select("*")
-          .in("type", ["new_order", "order_cancelled", "payment_uploaded", "payment_verifying", "order_status_changed"])
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("contact_messages")
-          .select("id, full_name, email, subject, message, status, created_at")
-          .order("created_at", { ascending: false })
-          .limit(10),
+      const [ordersSnap, messagesSnap] = await Promise.all([
+        getDocs(query(collection(db, "orders"), orderBy("created_at", "desc"), limit(10))),
+        getDocs(query(collection(db, "messages"), orderBy("created_at", "desc"), limit(10))),
       ]);
 
-      if (orderNotifications.error) {
-        console.error("Notification fetch error:", orderNotifications.error);
-      }
+      const orderNots: AdminNotification[] = ordersSnap.docs.map((d) => {
+        const data = d.data();
+        return toNotification(
+          { ...data, id: d.id },
+          "order",
+          "new_order",
+          "New Order",
+          `${typeof data.customer_name === "string" ? data.customer_name : "Customer"} placed order ${typeof data.order_number === "string" ? data.order_number : d.id}`,
+          false
+        );
+      });
 
-      if (contactMessages.error) {
-        console.error("Contact notification fetch error:", contactMessages.error);
-      }
+      const msgNots: AdminNotification[] = messagesSnap.docs.map((d) => {
+        const data = d.data();
+        return toNotification(
+          { ...data, id: d.id },
+          "contact",
+          "contact_message",
+          "New Contact Message",
+          `${typeof data.full_name === "string" ? data.full_name : ""}: ${typeof data.subject === "string" ? data.subject : ""}`,
+          (data.status as string) !== "unread"
+        );
+      });
 
-      const mappedOrderNotifications = ((orderNotifications.data || []) as Omit<AdminNotification, "source">[]).map((item) => ({
-        ...item,
-        source: "order" as const,
-        order_id: item.order_id || null,
-      }));
-      const mappedContactMessages = ((contactMessages.data || []) as ContactMessageNotification[]).map(toContactNotification);
+      const all = [...orderNots, ...msgNots].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
 
-      const uniqueNotifications = Array.from(
-        new Map(
-          [...mappedOrderNotifications, ...mappedContactMessages]
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .map((item) => [`${item.source}-${item.id}`, item])
-        ).values()
-      ).slice(0, 12);
-
-      setNotifications(uniqueNotifications);
+      setNotifications(all.slice(0, 12));
     } catch (error) {
       console.error("Notification fetch error:", error);
     }
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user || !isAdmin) return;
 
     fetchNotifications();
-
-    const channel = supabase
-      .channel("admin-notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "admin_notifications",
-        },
-        (payload: { new: Record<string, unknown> }) => {
-          // Prevent duplicate notifications
-          setNotifications((prev) => {
-            const next = {
-              ...(payload.new as Omit<AdminNotification, "source">),
-              source: "order" as const,
-              order_id: (payload.new as { order_id?: string | null }).order_id || null,
-            };
-            
-            // Check if notification already exists
-            if (prev.some((item) => item.source === next.source && item.id === next.id)) {
-              return prev;
-            }
-            
-            return [next, ...prev];
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "contact_messages",
-        },
-        (payload: { new: Record<string, unknown> }) => {
-          setNotifications((prev) => {
-            const next = toContactNotification(payload.new as unknown as ContactMessageNotification);
-
-            if (prev.some((item) => item.source === next.source && item.id === next.id)) {
-              return prev;
-            }
-
-            return [next, ...prev];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, user]);
+  }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -186,10 +138,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
     try {
       if (notification.source === "contact") {
-        await supabase.from("contact_messages").update({ status: "read" }).eq("id", notification.id);
-      } else {
-        await supabase.from("admin_notifications").update({ is_read: true }).eq("id", notification.id);
+        await updateDoc(doc(db, "messages", notification.id), { status: "read" });
       }
+      // Orders do not have an is_read field in Firestore; keep local state only.
 
       setNotifications((prev) =>
         prev.map((item) =>
@@ -207,10 +158,15 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     if (!user) return;
 
     try {
-      await Promise.all([
-        supabase.from("admin_notifications").update({ is_read: true }).eq("is_read", false),
-        supabase.from("contact_messages").update({ status: "read" }).eq("status", "unread"),
-      ]);
+      const batch = writeBatch(db);
+
+      notifications.forEach((item) => {
+        if (item.source === "contact" && !item.is_read) {
+          batch.update(doc(db, "messages", item.id), { status: "read" });
+        }
+      });
+
+      await batch.commit();
 
       setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error) {
@@ -238,8 +194,20 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await supabase.auth.signOut();
-      router.push("/login");
+      // Sign out of Firebase client-side auth.
+      await signOutUser();
+
+      // Clear the server-side Firebase session cookie.
+      try {
+        await fetch("/api/auth/session", {
+          method: "DELETE",
+          credentials: "include",
+        });
+      } catch (sessionError) {
+        console.error("Session cookie cleanup error:", sessionError);
+      }
+
+      router.push("/admin/login");
       router.refresh();
     } catch (error) {
       console.error("Logout error:", error);

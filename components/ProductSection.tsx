@@ -8,8 +8,15 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import QuickViewModal from "./QuickViewModal";
-import { createPublicSupabaseClient } from "@/lib/supabase/client";
+import { db } from "@/lib/firebase/config";
 import { SCENT_COLLECTIONS, isScentCollection } from "@/lib/collections";
+import {
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
 
 interface Product {
   id: string | number;
@@ -30,10 +37,13 @@ interface Product {
   notes?: ProductQuickViewNotes;
 }
 
-type SupabaseProduct = Partial<Omit<Product, "decants">> & {
+type FirestoreProductDoc = Partial<Omit<Product, "decants" | "id">> & {
   decants?: unknown;
   notes?: unknown;
-  brands?: unknown;
+  image_url?: string | null;
+  is_active?: boolean;
+  createdAt?: unknown;
+  created_at?: unknown;
 };
 
 interface BrandOption {
@@ -598,7 +608,6 @@ interface ProductSectionProps {
 const scentCollectionOptions = SCENT_COLLECTIONS;
 
 export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
-  const supabase = createPublicSupabaseClient();
   const searchParams = useSearchParams();
   const collectionParam = searchParams.get("collection");
   const urlCollection = isScentCollection(collectionParam) ? collectionParam : null;
@@ -791,36 +800,44 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const [isMounted, setIsMounted] = useState(false);
   const brandMenuRef = useRef<HTMLDivElement>(null);
   const collectionMenuRef = useRef<HTMLDivElement>(null);
-  
-  // Normalize Supabase product to match original product shape
-  const normalizeProduct = (product: SupabaseProduct): Product => {
-    // Validate and fix image URL
-    let imageUrl = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
-    if (product.image && typeof product.image === "string" && product.image.trim() !== "") {
-      const img = product.image.trim();
-      // If it's a valid URL (starts with http/https), use it
-      if (img.startsWith("http://") || img.startsWith("https://")) {
-        imageUrl = img;
-      } 
-      // If it's a local path starting with /, use it
-      else if (img.startsWith("/")) {
+  const loadRequestRef = useRef(0);
+  const activeBrandsRef = useRef<BrandOption[]>([]);
+
+  const normalizeProduct = (
+    productId: string,
+    product: FirestoreProductDoc,
+    brandMap: Map<string, BrandOption>
+  ): Product => {
+    const rawImage =
+      (typeof product.image === "string" && product.image) ||
+      (typeof product.image_url === "string" && product.image_url) ||
+      "";
+
+    let imageUrl =
+      "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+
+    if (rawImage.trim() !== "") {
+      const img = rawImage.trim();
+      if (
+        img.startsWith("http://") ||
+        img.startsWith("https://") ||
+        img.startsWith("/")
+      ) {
         imageUrl = img;
       }
-      // Otherwise use placeholder
     }
 
-    const brandRelation =
-      product.brands &&
-      typeof product.brands === "object" &&
-      !Array.isArray(product.brands)
-        ? (product.brands as BrandOption)
-        : null;
+    const brandId =
+      typeof product.brand_id === "string" ? product.brand_id : null;
+    const brandRelation = brandId ? brandMap.get(brandId) || null : null;
+    const legacyBrand =
+      typeof product.brand === "string" ? product.brand : "";
 
     return {
-      id: product.id || Math.random(),
+      id: productId,
       name: product.name || "Untitled Perfume",
-      brand: brandRelation?.name || product.brand || "",
-      brand_id: product.brand_id || null,
+      brand: brandRelation?.name || legacyBrand || "",
+      brand_id: brandId,
       brands: brandRelation,
       price: Number(product.price) || 0,
       description: product.description || "",
@@ -829,18 +846,18 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       category: product.category || "",
       scent_collection: product.scent_collection || null,
       notes: normalizeQuickViewNotes(product.notes),
-      decants: Array.isArray(product.decants) && product.decants.length > 0
-        ? product.decants
-        : [
-            { label: "5ml", price: 13 },
-            { label: "10ml", price: 25 },
-            { label: "20ml", price: 42 },
-            { label: "30ml", price: 58 },
-          ],
+      decants:
+        Array.isArray(product.decants) && product.decants.length > 0
+          ? product.decants
+          : [
+              { label: "5ml", price: 13 },
+              { label: "10ml", price: 25 },
+              { label: "20ml", price: 42 },
+              { label: "30ml", price: 58 },
+            ],
     };
   };
 
-  // Fetch Supabase products and merge with fallback (safely)
   useEffect(() => {
     setIsMounted(true);
     loadActiveBrands();
@@ -858,67 +875,122 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   }, [selectedCollection]);
 
   const loadActiveBrands = async () => {
-    const { data, error } = await supabase
-      .from("brands")
-      .select("id, name, slug, is_active")
-      .eq("is_active", true)
-      .order("name", { ascending: true });
+    try {
+      const brandsQuery = query(
+        collection(db, "brands"),
+              where("is_active", "==", true),
+              orderBy("name", "asc")
+            );
 
-    if (!error && data) {
-      setActiveBrands(data as BrandOption[]);
+      const snapshot = await getDocs(brandsQuery);
+
+      const loadedBrands: BrandOption[] = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: typeof data.name === "string" ? data.name : "",
+            slug: typeof data.slug === "string" ? data.slug : "",
+            is_active: data.is_active !== false,
+          };
+        })
+        .filter((brand) => brand.is_active && brand.name);
+
+      activeBrandsRef.current = loadedBrands;
+      setActiveBrands(loadedBrands);
+    } catch (error) {
+      console.error("Error loading Firebase brands:", error);
     }
   };
 
   const loadProducts = async () => {
+    const requestId = ++loadRequestRef.current;
+
     try {
       setLoading(true);
-      
+
       const hasCollectionFilter =
-        selectedCollection !== "All Collections" && isScentCollection(selectedCollection);
+        selectedCollection !== "All Collections" &&
+        isScentCollection(selectedCollection);
+
       let loadedProducts = hasCollectionFilter ? [] : [...fallbackProducts];
-      
-      // Use Supabase as the production source of truth.
-      // Fallback products are only for empty/failing Supabase projects.
+
       try {
-        let query = supabase
-          .from("products")
-          .select("*, brands(id, name, slug, is_active)")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
-
-        if (hasCollectionFilter) {
-          query = query.eq("scent_collection", selectedCollection);
+        if (activeBrandsRef.current.length === 0) {
+          await loadActiveBrands();
         }
 
-        const { data, error } = await query;
-
-        if (!error && data) {
-          loadedProducts = (data as SupabaseProduct[])
-            .filter((product) => {
-              const brandRelation =
-                product.brands &&
-                typeof product.brands === "object" &&
-                !Array.isArray(product.brands)
-                  ? (product.brands as BrandOption)
-                  : null;
-              return !product.brand_id || brandRelation?.is_active === true;
-            })
-            .map(normalizeProduct);
+        if (requestId !== loadRequestRef.current) {
+          return;
         }
-      } catch {
-        // Supabase products failed, using fallback products
+
+        const productsQuery = query(
+          collection(db, "products"),
+                  where("is_active", "==", true),
+                  orderBy("createdAt", "desc")
+                );
+
+        const snapshot = await getDocs(productsQuery);
+
+        if (requestId !== loadRequestRef.current) {
+          return;
+        }
+
+        const brandMap = new Map(
+          activeBrandsRef.current.map((brand) => [brand.id, brand])
+        );
+
+        const firebaseProducts = snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            data: doc.data() as FirestoreProductDoc,
+          }))
+          .filter(({ data }) => data.is_active !== false)
+          .map(({ id, data }) => normalizeProduct(id, data, brandMap))
+          .filter((product) => {
+            if (
+              product.brand_id &&
+              product.brands?.is_active !== true
+            ) {
+              return false;
+            }
+
+            if (hasCollectionFilter) {
+              return product.scent_collection === selectedCollection;
+            }
+
+            return true;
+          });
+
+        if (firebaseProducts.length > 0) {
+          loadedProducts = firebaseProducts;
+        }
+      } catch (error) {
+        console.error("Error loading Firebase products:", error);
       }
-      
+
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       setProducts(loadedProducts);
-    } catch {
-      // Error loading products, using fallback products
+    } catch (error) {
+      console.error("Error loading products:", error);
+
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       setProducts(
-        selectedCollection !== "All Collections" && isScentCollection(selectedCollection)
+        selectedCollection !== "All Collections" &&
+          isScentCollection(selectedCollection)
           ? []
           : fallbackProducts
       );
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 

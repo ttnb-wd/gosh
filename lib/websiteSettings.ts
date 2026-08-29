@@ -1,4 +1,14 @@
-import { createPublicSupabaseClient, createSupabaseClient } from "./supabase/client";
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
+import { db } from "./firebase/config";
 
 export interface WebsiteSettings {
   id?: string;
@@ -41,24 +51,25 @@ export const defaultWebsiteSettings: WebsiteSettings = {
 
 export async function getWebsiteSettings(): Promise<WebsiteSettings> {
   try {
-    const supabase = createPublicSupabaseClient();
-    const { data, error } = await supabase
-      .from("website_settings")
-      .select("*")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    const q = query(
+      collection(db, "website_settings"),
+      orderBy("created_at", "asc"),
+      limit(1)
+    );
 
-    if (error) {
-      console.error("Error fetching website settings:", error.message);
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
       return defaultWebsiteSettings;
     }
 
-    if (!data) {
-      return defaultWebsiteSettings;
-    }
+    const data = snapshot.docs[0].data() as WebsiteSettings;
 
-    return { ...defaultWebsiteSettings, ...(data as WebsiteSettings) };
+    return {
+      ...defaultWebsiteSettings,
+      ...data,
+      id: snapshot.docs[0].id,
+    };
   } catch (error) {
     console.error("Unexpected website settings fetch error:", error);
     return defaultWebsiteSettings;
@@ -69,7 +80,6 @@ export async function updateWebsiteSettings(
   settings: WebsiteSettings
 ): Promise<{ success: boolean; error?: string; data?: WebsiteSettings }> {
   try {
-    const supabase = createSupabaseClient();
     const payload = {
       website_name: settings.website_name || defaultWebsiteSettings.website_name,
       tagline: settings.tagline || null,
@@ -86,26 +96,26 @@ export async function updateWebsiteSettings(
       delivery_note: settings.delivery_note || null,
       footer_text: settings.footer_text || null,
       about_text: settings.about_text || null,
-      updated_at: new Date().toISOString(),
     };
 
-    const query = settings.id
-      ? supabase
-          .from("website_settings")
-          .update(payload)
-          .eq("id", settings.id)
-          .select("*")
-          .single()
-      : supabase.from("website_settings").insert(payload).select("*").single();
+    const targetDoc = settings.id
+      ? doc(db, "website_settings", settings.id)
+      : doc(collection(db, "website_settings"));
 
-    const { data, error } = await query;
+    await setDoc(
+      targetDoc,
+      {
+        ...payload,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    if (error) {
-      console.error("Error updating website settings:", error.message);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: data as WebsiteSettings };
+    return {
+      success: true,
+      data: { ...defaultWebsiteSettings, ...payload, id: targetDoc.id },
+    };
   } catch (error) {
     console.error("Unexpected website settings update error:", error);
     return {

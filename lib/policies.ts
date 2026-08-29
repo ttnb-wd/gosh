@@ -28,7 +28,7 @@ export const privacyPolicy: PolicyPageData = {
       body: [
         "We may share necessary delivery details with delivery partners or couriers only for completing the order.",
         "We do not sell customer personal information.",
-        "Order, customer, message, and payment proof records are stored in secure business systems such as Supabase and email/support tools used by GOSH PERFUME.",
+        "Order, customer, message, and payment proof records are stored in secure business systems such as Firebase and email/support tools used by GOSH PERFUME.",
       ],
     },
     {

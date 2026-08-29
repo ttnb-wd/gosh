@@ -18,15 +18,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    // Always start in Light Mode on first load.
+    // Dark Mode only activates when the user manually clicks the toggle.
+    // The persisted theme (if any) is intentionally ignored.
+    setTheme("light");
+    document.documentElement.classList.remove("dark");
   }, []);
 
   const toggleTheme = () => {

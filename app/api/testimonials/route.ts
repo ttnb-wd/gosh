@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
 import { validateName, validateMessage, sanitizeInput } from "@/lib/validation";
+import { adminDb } from "@/lib/firebase/admin";
+import { Timestamp } from "firebase-admin/firestore";
 
 export async function POST(request: Request) {
   try {
@@ -47,16 +48,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json(
-        { error: "Service temporarily unavailable." },
-        { status: 500 }
-      );
-    }
-
     // Validate name
     const nameValidation = validateName(body.name || '', 'Name');
     if (!nameValidation.isValid) {
@@ -97,32 +88,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
+    const docRef = await adminDb.collection("testimonials").add({
+      name: sanitizedName,
+      role: sanitizedRole,
+      comment: sanitizedComment,
+      rating,
+      avatar_url: body.avatarUrl?.trim() || null,
+      is_active: false, // Admin must approve
+      created_at: Timestamp.now(),
+      updated_at: Timestamp.now(),
     });
 
-    const { data, error } = await supabase
-      .from("testimonials")
-      .insert({
+    return NextResponse.json({
+      ok: true,
+      testimonial: {
+        id: docRef.id,
         name: sanitizedName,
         role: sanitizedRole,
         comment: sanitizedComment,
         rating,
         avatar_url: body.avatarUrl?.trim() || null,
-        is_active: false, // Admin must approve
-      })
-      .select("id, name, role, comment, rating, avatar_url")
-      .single();
-
-    if (error) {
-      // Don't expose database errors to users
-      return NextResponse.json(
-        { error: "Could not submit your testimonial. Please try again." },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({ ok: true, testimonial: data });
+      },
+    });
   } catch (error) {
     // Log error for debugging but don't expose details
     console.error('Testimonial submission error:', error instanceof Error ? error.message : 'Unknown error');

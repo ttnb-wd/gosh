@@ -11,10 +11,10 @@
     "test:a11y": "node scripts/test-accessibility.js"
   },
   "dependencies": {
+    "@imagekit/nodejs": "^7.11.0",
     "@sentry/nextjs": "^10.51.0",
-    "@supabase/auth-helpers-nextjs": "^0.15.0",
-    "@supabase/ssr": "^0.10.2",
-    "@supabase/supabase-js": "^2.104.1",
+    "firebase": "^12.18.0",
+    "firebase-admin": "^14.3.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "^16.2.7",

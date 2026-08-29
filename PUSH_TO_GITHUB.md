@@ -14,7 +14,7 @@ git add .
 
 ### 3. Commit Changes
 ```bash
-git commit -m "Add Supabase authentication and admin dashboard with role-based access control"
+git commit -m "Add Firebase authentication and admin dashboard with role-based access control"
 ```
 
 ### 4. Push to GitHub
@@ -32,10 +32,10 @@ git push origin master
 If you want a more detailed commit message:
 
 ```bash
-git commit -m "Add Supabase authentication and admin dashboard
+git commit -m "Add Firebase authentication and admin dashboard
 
 Features:
-- Supabase authentication with email/password
+- Firebase authentication with email/password
 - Role-based access control (admin/customer)
 - Admin dashboard with orders and products management
 - Login/signup pages with proper redirects
@@ -79,7 +79,7 @@ git status
 ```
 
 ### Make sure these are NOT included:
-- ❌ `.env.local` (contains Supabase keys)
+- ❌ `.env.local` (contains Firebase keys)
 - ❌ `.env` (if it has secrets)
 - ❌ `node_modules/` (too large)
 - ❌ `.next/` (build files)
@@ -94,7 +94,7 @@ git status
 git add .
 
 # 3. Commit with message
-git commit -m "Add Supabase auth and admin dashboard with role-based access"
+git commit -m "Add Firebase auth and admin dashboard with role-based access"
 
 # 4. Push to GitHub
 git push origin main
@@ -115,7 +115,7 @@ git init
 git add .
 
 # 3. Commit
-git commit -m "Initial commit: GOSH Perfume ecommerce with Supabase auth"
+git commit -m "Initial commit: GOSH Perfume ecommerce with Firebase auth"
 
 # 4. Add remote (replace with your GitHub repo URL)
 git remote add origin https://github.com/yourusername/gosh-perfume.git
@@ -130,7 +130,7 @@ If you don't have a GitHub repo yet:
 
 1. Go to https://github.com/new
 2. Repository name: `gosh-perfume` (or your choice)
-3. Description: "Luxury perfume ecommerce with Supabase authentication"
+3. Description: "Luxury perfume ecommerce with Firebase authentication"
 4. Choose Public or Private
 5. Do NOT initialize with README (you already have files)
 6. Click "Create repository"
@@ -147,10 +147,10 @@ If you want to create a feature branch:
 
 ```bash
 # Create and switch to new branch
-git checkout -b feature/supabase-auth
+git checkout -b feature/firebase-auth
 
 # Push to new branch
-git push -u origin feature/supabase-auth
+git push -u origin feature/firebase-auth
 ```
 
 ## 🔄 Update Existing Repo
@@ -165,7 +165,7 @@ git pull origin main
 git add .
 
 # Commit
-git commit -m "Add Supabase authentication and admin dashboard"
+git commit -m "Add Firebase authentication and admin dashboard"
 
 # Push
 git push origin main

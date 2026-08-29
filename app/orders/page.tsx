@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Package, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import type { User } from "@supabase/supabase-js";
+import type { User } from "firebase/auth";
+import { auth, db } from "@/lib/firebase/config";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 interface Order {
   id: string;
@@ -61,9 +62,22 @@ const paymentStatusLabels: Record<string, { label: string; detail: string; class
   },
 };
 
+const toIsoDate = (value: unknown): string => {
+  if (!value) return "";
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate: () => Date }).toDate === "function"
+  ) {
+    return (value as { toDate: () => Date }).toDate().toISOString();
+  }
+  return "";
+};
+
 export default function OrdersPage() {
   const router = useRouter();
-  const supabase = createSupabaseClient();
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,36 +109,74 @@ export default function OrdersPage() {
 
   const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
 
-  // Check authentication and load orders
+  // Check authentication (Firebase) and load orders
   useEffect(() => {
+    let mounted = true;
+
+    const loadOrdersForUser = async (uid: string) => {
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("user_id", "==", uid)
+      );
+
+      const snapshot = await getDocs(ordersQuery);
+
+      const rows: Order[] = snapshot.docs.map((doc) => {
+        const data = doc.data() as Record<string, unknown>;
+
+        return {
+          id: doc.id,
+          order_number:
+            typeof data.order_number === "string"
+              ? data.order_number
+              : doc.id,
+          customer_name:
+            typeof data.customer_name === "string" ? data.customer_name : "",
+          phone: typeof data.phone === "string" ? data.phone : "",
+          address: typeof data.address === "string" ? data.address : "",
+          city: typeof data.city === "string" ? data.city : "",
+          payment_method:
+            typeof data.payment_method === "string" ? data.payment_method : "",
+          payment_status:
+            typeof data.payment_status === "string" ? data.payment_status : "",
+          status: typeof data.status === "string" ? data.status : "",
+          total: Number(data.total ?? 0),
+          created_at: toIsoDate(data.created_at),
+        };
+      });
+
+      rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      if (mounted) setOrders(rows);
+    };
+
     const checkAuthAndLoadOrders = async () => {
-      const { data: { user } } = await getSupabaseUser(supabase);
-      
-      if (!user) {
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
         router.push("/login?redirect=/orders");
         return;
       }
 
-      setUser(user);
+      setUser(currentUser);
 
-      // Load orders for this user
-      const { data: ordersData, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
+      try {
+        await loadOrdersForUser(currentUser.uid);
+      } catch (error) {
         console.error("Failed to load orders:", error);
-      } else {
-        setOrders(ordersData || []);
+      } finally {
+        if (mounted) setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    checkAuthAndLoadOrders();
-  }, [router, supabase]);
+    const unsubscribe = auth.onAuthStateChanged(() => {
+      checkAuthAndLoadOrders();
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [router]);
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -162,20 +214,52 @@ export default function OrdersPage() {
 
   const refreshOrders = async () => {
     if (!user) return;
-    
-    setLoading(true);
-    const { data: ordersData, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
 
-    if (error) {
+    setLoading(true);
+
+    const loadOrdersByUser = async (uid: string) => {
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("user_id", "==", uid)
+      );
+
+      const snapshot = await getDocs(ordersQuery);
+
+      const rows: Order[] = snapshot.docs.map((doc) => {
+        const data = doc.data() as Record<string, unknown>;
+
+        return {
+          id: doc.id,
+          order_number:
+            typeof data.order_number === "string"
+              ? data.order_number
+              : doc.id,
+          customer_name:
+            typeof data.customer_name === "string" ? data.customer_name : "",
+          phone: typeof data.phone === "string" ? data.phone : "",
+          address: typeof data.address === "string" ? data.address : "",
+          city: typeof data.city === "string" ? data.city : "",
+          payment_method:
+            typeof data.payment_method === "string" ? data.payment_method : "",
+          payment_status:
+            typeof data.payment_status === "string" ? data.payment_status : "",
+          status: typeof data.status === "string" ? data.status : "",
+          total: Number(data.total ?? 0),
+          created_at: toIsoDate(data.created_at),
+        };
+      });
+
+      rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      setOrders(rows);
+    };
+
+    try {
+      await loadOrdersByUser(user.uid);
+    } catch (error) {
       console.error("Failed to load orders:", error);
-    } else {
-      setOrders(ordersData || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {

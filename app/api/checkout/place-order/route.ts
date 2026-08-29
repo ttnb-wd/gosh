@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { placeOrder } from "@/lib/firebase/orders-server";
 
 export async function POST(request: Request) {
   try {
@@ -23,36 +23,33 @@ export async function POST(request: Request) {
       paymentPhone: string | null;
       paymentAccountNumber: string | null;
       paymentScreenshotUrl: string | null;
+      paymentScreenshotFileId: string | null;
       items: Array<{
         product_id: string;
         selected_size: string | null;
         quantity: number;
       }>;
     };
-    const supabase = getSupabaseAdmin();
 
-    const { data, error } = await supabase.rpc("server_place_order", {
-      p_actor_id: user.id,
-      p_actor_email: user.email || null,
-      p_customer_name: body.customerName,
-      p_phone: body.phone,
-      p_address: body.address,
-      p_city: body.city,
-      p_payment_method: body.paymentMethod,
-      p_payment_account_name: body.paymentAccountName,
-      p_payment_phone: body.paymentPhone,
-      p_payment_account_number: body.paymentAccountNumber,
-      p_payment_screenshot_url: body.paymentScreenshotUrl,
-      p_items: body.items,
+    const data = await placeOrder({
+      user_id: user.uid,
+      customer_email: user.email || null,
+      customer_name: body.customerName,
+      phone: body.phone,
+      address: body.address,
+      city: body.city,
+      payment_method: body.paymentMethod,
+      payment_account_name: body.paymentAccountName,
+      payment_phone: body.paymentPhone,
+      payment_account_number: body.paymentAccountNumber,
+      payment_screenshot_url: body.paymentScreenshotUrl,
+      payment_screenshot_file_id: body.paymentScreenshotFileId,
+      items: body.items,
     });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
 
     return NextResponse.json({ data });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not place order.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

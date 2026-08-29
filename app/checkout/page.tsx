@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Check, CheckCircle, Banknote, Building2, Smartphone } from "lucide-react";
-import { createSupabaseClient, getSupabaseUser } from "@/lib/supabase/client";
+import { getFirebaseAuthorizationHeader } from "@/lib/firebase/client-auth";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { PageErrorBoundary } from "@/components/ErrorBoundaries";
@@ -54,14 +54,14 @@ interface PlacedOrder extends SuccessOrder {
   created_at: string;
 }
 
-type SupabaseErrorLike = {
+type OrderErrorResponse = {
   message?: string;
   details?: string;
   hint?: string;
   code?: string;
 };
 
-const getOrderErrorMessage = (error: SupabaseErrorLike | null | undefined) => {
+const getOrderErrorMessage = (error: OrderErrorResponse | null | undefined) => {
   if (!error) return "Could not save order. Please refresh and try again.";
 
   if (typeof error.message === "string" && error.message.trim()) {
@@ -189,7 +189,6 @@ const paymentMethods = [
 ];
 
 function CheckoutPageContent() {
-  const supabase = createSupabaseClient();
   const router = useRouter();
   const { settings } = useSiteSettings();
   const { settings: websiteSettings } = useWebsiteSettings();
@@ -334,43 +333,59 @@ function CheckoutPageContent() {
     window.dispatchEvent(new Event("cart-updated"));
   };
 
-  const uploadPaymentScreenshot = async () => {
-    const selectedFile = selectedPayment ? paymentScreenshots[selectedPayment] : null;
+  const uploadPaymentProof = async (
+    authorizationHeader: Record<string, string>
+  ): Promise<{ url: string; fileId: string } | null> => {
+    const selectedFile = selectedPayment
+      ? paymentScreenshots[selectedPayment]
+      : null;
+
     if (!selectedFile) {
       return null;
     }
 
-    const fileExt = selectedFile.name.split(".").pop();
-    const filePath = `guest-orders/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const formData = new FormData();
+    formData.append("file", selectedFile);
 
-    const { error: uploadError } = await supabase.storage
-      .from("payment-screenshots")
-      .upload(filePath, selectedFile, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const response = await fetch("/api/checkout/upload-payment-proof", {
+      method: "POST",
+      headers: authorizationHeader,
+      body: formData,
+    });
 
-    if (uploadError) {
-      console.error("Payment screenshot upload error:", {
-        message: uploadError.message,
-        name: uploadError.name,
-      });
-      throw uploadError;
+    const result = (await response.json()) as {
+      success?: boolean;
+      url?: string;
+      fileId?: string;
+      error?: string;
+    };
+
+    if (!response.ok || !result.success || !result.url || !result.fileId) {
+      throw new Error(result.error || "Could not upload your payment proof.");
     }
 
-    return filePath;
+    return { url: result.url, fileId: result.fileId };
   };
 
-  const deleteUploadedPaymentScreenshot = async (filePath: string | null) => {
-    if (!filePath) return;
+  const deleteUploadedPaymentScreenshot = async (
+    fileId: string | null
+  ) => {
+    if (!fileId) return;
 
-    const { error: deleteError } = await supabase.storage
-      .from("payment-screenshots")
-      .remove([filePath]);
+    try {
+      const headers = await getFirebaseAuthorizationHeader();
 
-    if (deleteError) {
+      await fetch("/api/checkout/delete-payment-proof", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        body: JSON.stringify({ fileId }),
+      });
+    } catch (error) {
       // Payment screenshot cleanup failed (non-critical) - log for debugging
-      console.error("Failed to delete payment screenshot:", deleteError);
+      console.error("Failed to delete payment screenshot:", error);
     }
   };
 
@@ -379,13 +394,12 @@ function CheckoutPageContent() {
     setSubmittingOrder(true);
 
     try {
-      // Check if user is authenticated
-      const {
-        data: { user },
-        error: userError,
-      } = await getSupabaseUser(supabase);
+      // Check if user is authenticated via Firebase
+      let authorizationHeader: Record<string, string>;
 
-      if (userError || !user) {
+      try {
+        authorizationHeader = await getFirebaseAuthorizationHeader();
+      } catch {
         setSubmitError("Please login or create an account to place your order.");
         setSubmittingOrder(false);
         router.push("/login?redirect=/checkout");
@@ -458,7 +472,12 @@ function CheckoutPageContent() {
         return;
       }
 
-      const paymentScreenshotUrl = await uploadPaymentScreenshot();
+      let paymentScreenshotUrl: string | null = null;
+      let paymentScreenshotFileId: string | null = null;
+
+      const paymentUploadResult = await uploadPaymentProof(authorizationHeader);
+      paymentScreenshotUrl = paymentUploadResult?.url ?? null;
+      paymentScreenshotFileId = paymentUploadResult?.fileId ?? null;
 
       const orderItemsPayload = cartItems.map((item) => ({
         product_id: String(item.id),
@@ -466,23 +485,11 @@ function CheckoutPageContent() {
         quantity: Number(item.qty || 1),
       }));
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
-        setSubmitError("Please login or create an account to place your order.");
-        setSubmittingOrder(false);
-        router.push("/login?redirect=/checkout");
-        return;
-      }
-
       const orderResponse = await fetch("/api/checkout/place-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          ...authorizationHeader,
         },
         body: JSON.stringify({
           customerName: SHOW_DELIVERY_INFORMATION ? customerForm.fullName : "Guest Customer",
@@ -494,6 +501,7 @@ function CheckoutPageContent() {
           paymentPhone: selectedPaymentInfo.payment_phone,
           paymentAccountNumber: selectedPaymentInfo.payment_account_number,
           paymentScreenshotUrl,
+          paymentScreenshotFileId,
           items: orderItemsPayload,
         }),
       });
@@ -506,7 +514,7 @@ function CheckoutPageContent() {
       if (!orderResponse.ok || orderError || !savedOrder) {
         const orderMessage = getOrderErrorMessage(orderError);
 
-        await deleteUploadedPaymentScreenshot(paymentScreenshotUrl);
+        await deleteUploadedPaymentScreenshot(paymentScreenshotFileId);
 
         // Log error for debugging and show user-friendly message
         console.error("Order creation failed:", orderError);
@@ -517,33 +525,20 @@ function CheckoutPageContent() {
 
       const order = savedOrder as PlacedOrder;
 
-      const { data: trustedOrderItems, error: orderItemsError } = await supabase
-        .from("order_items")
-        .select("order_id, product_id, product_name, product_brand, product_image, selected_size, price, quantity")
-        .eq("order_id", order.id)
-        .order("created_at", { ascending: true });
-
-      if (orderItemsError) {
-        // Order items fetch failed (non-critical) - log for debugging but continue with empty array
-        console.error("Failed to fetch order items:", orderItemsError);
-      }
-
-      const savedOrderItems = ((trustedOrderItems || []) as SavedOrderItem[]).map((item) => ({
+      // The Firestore place-order route returns order_items directly.
+      const trustedOrderItems = (order as unknown as { order_items?: SavedOrderItem[] }).order_items || [];
+      const savedOrderItems = trustedOrderItems.map((item) => ({
         ...item,
         price: Number(item.price || 0),
         quantity: Number(item.quantity || 1),
       }));
 
-      void supabase.auth.getSession().then((response: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
-        const { data } = response;
-        const accessToken = data.session?.access_token;
-        if (!accessToken) return;
-
+      void getFirebaseAuthorizationHeader().then((headers) => {
         return fetch("/api/email/order-created", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+            ...headers,
           },
           body: JSON.stringify({ orderId: order.id }),
         }).catch((emailError) => {
@@ -551,7 +546,7 @@ function CheckoutPageContent() {
         });
       });
 
-      // NOTE: Admin notifications are now created by Supabase database triggers
+      // NOTE: Admin notifications are created by the server-side order flow
       // This prevents duplicate notifications from frontend + backend sources
 
       // Save to localStorage as backup
@@ -1321,15 +1316,20 @@ function CheckoutPageContent() {
                   : null;
 
                 const isPaymentReady =
-                  Boolean(normalizedCustomer.fullName) &&
-                  Boolean(normalizedCustomer.phone) &&
-                  Boolean(normalizedCustomer.address) &&
-                  Boolean(normalizedCustomer.city) &&
                   Boolean(selectedPayment) &&
                   cartItems.length > 0 &&
                   (!requiresScreenshot || Boolean(selectedPaymentScreenshot)) &&
                   !isBelowMinimumOrder &&
-                  settings.enable_checkout;
+                  settings.enable_checkout &&
+                  // Delivery-information fields are only required when the
+                  // delivery form is visible. When hidden (guest checkout), the
+                  // submit uses "Guest Customer"/"N/A" defaults and these are
+                  // intentionally not stored, so they must not gate readiness.
+                  (!SHOW_DELIVERY_INFORMATION ||
+                    (Boolean(normalizedCustomer.fullName) &&
+                      Boolean(normalizedCustomer.phone) &&
+                      Boolean(normalizedCustomer.address) &&
+                      Boolean(normalizedCustomer.city)));
 
                 const confirmDisabled = submittingOrder || !isPaymentReady;
 

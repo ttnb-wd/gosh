@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { Timestamp } from "firebase-admin/firestore";
 import { sendAdminContactEmail } from "@/lib/email";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { validateEmail, validateName, validateSubject, validateMessage, sanitizeInput } from "@/lib/validation";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { adminDb } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -65,44 +66,32 @@ export async function POST(request: Request) {
     const sanitizedSubject = sanitizeInput(body.subject!.trim());
     const sanitizedMessage = sanitizeInput(body.message!.trim());
 
-    const supabase = getSupabaseAdmin();
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const oneHourAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000));
 
-    const { count: recentCount, error: rateLimitError } = await supabase
-      .from("contact_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("email", sanitizedEmail)
-      .gt("created_at", oneHourAgo);
+    const recentSnapshot = await adminDb
+      .collection("messages")
+      .where("email", "==", sanitizedEmail)
+      .where("created_at", ">", oneHourAgo)
+      .get();
 
-    if (rateLimitError) {
-      return NextResponse.json(
-        { error: "Could not send your message. Please try again or contact us directly." },
-        { status: 400 }
-      );
-    }
+    const recentCount = recentSnapshot.size;
 
-    if ((recentCount || 0) >= 3) {
+    if (recentCount >= 3) {
       return NextResponse.json(
         { error: "Too many messages sent recently. Please try again later." },
         { status: 429 }
       );
     }
 
-    const { error } = await supabase.from("contact_messages").insert({
+    await adminDb.collection("messages").add({
       full_name: sanitizedName,
       email: sanitizedEmail,
       subject: sanitizedSubject,
       message: sanitizedMessage,
       status: "unread",
+      created_at: Timestamp.now(),
+      updated_at: Timestamp.now(),
     });
-
-    if (error) {
-      // Don't expose database errors to users
-      return NextResponse.json(
-        { error: "Could not send your message. Please try again or contact us directly." },
-        { status: 400 }
-      );
-    }
 
     // Send email notification to admin (non-blocking)
     sendAdminContactEmail({
