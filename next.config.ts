@@ -1,6 +1,22 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+/*
+ * Vercel only injects its preview tooling (Live Feedback, the preview
+ * toolbar/SSO manifest) into non-production deployments. These resources
+ * must NOT appear in the production CSP, so we gate them on VERCEL_ENV
+ * (set to "production" exclusively for production deployments on Vercel).
+ */
+const isVercelProduction = process.env.VERCEL_ENV === "production";
+
+const vercelPreviewScript = isVercelProduction
+  ? []
+  : ["https://vercel.live/_next-live/feedback/feedback.js"];
+
+const vercelPreviewConnect = isVercelProduction ? [] : ["https://vercel.com"];
+
+const vercelPreviewManifest = isVercelProduction ? [] : ["https://vercel.com"];
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -71,7 +87,10 @@ const nextConfig: NextConfig = {
               /*
                * JavaScript
                */
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.cloudflare.com https://*.sentry.io https://www.googletagmanager.com https://www.google-analytics.com",
+              [
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.cloudflare.com https://*.sentry.io https://www.googletagmanager.com https://www.google-analytics.com",
+                ...vercelPreviewScript,
+              ].join(" "),
 
               /*
                * Styles
@@ -121,7 +140,13 @@ const nextConfig: NextConfig = {
                  // Google Analytics / Tag Manager
                "https://www.google-analytics.com",
                "https://www.googletagmanager.com",
+               ...vercelPreviewConnect,
               ].join(" "),
+
+              /*
+               * Vercel preview web-app manifest (non-production only).
+               */
+              ["manifest-src 'self'", ...vercelPreviewManifest].join(" "),
 
               /*
                * Turnstile iframe
