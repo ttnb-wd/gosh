@@ -2,14 +2,14 @@
 
 import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare, Moon, Sun } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase/config";
 import {
   collection,
   doc,
-  getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   updateDoc,
@@ -42,8 +42,18 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [orderNots, setOrderNots] = useState<AdminNotification[]>([]);
+  const [msgNots, setMsgNots] = useState<AdminNotification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
   const notiRef = useRef<HTMLDivElement>(null);
+  const markingRef = useRef<Set<string>>(new Set());
+
+  const notifications = useMemo<AdminNotification[]>(() => {
+    const all = [...orderNots, ...msgNots].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    return all.slice(0, 12);
+  }, [orderNots, msgNots]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -66,53 +76,84 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     };
   };
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-
-    try {
-      const [ordersSnap, messagesSnap] = await Promise.all([
-        getDocs(query(collection(db, "orders"), orderBy("created_at", "desc"), limit(10))),
-        getDocs(query(collection(db, "messages"), orderBy("created_at", "desc"), limit(10))),
-      ]);
-
-      const orderNots: AdminNotification[] = ordersSnap.docs.map((d) => {
-        const data = d.data();
-        return toNotification(
-          { ...data, id: d.id },
-          "order",
-          "new_order",
-          "New Order",
-          `${typeof data.customer_name === "string" ? data.customer_name : "Customer"} placed order ${typeof data.order_number === "string" ? data.order_number : d.id}`,
-          false
-        );
-      });
-
-      const msgNots: AdminNotification[] = messagesSnap.docs.map((d) => {
-        const data = d.data();
-        return toNotification(
-          { ...data, id: d.id },
-          "contact",
-          "contact_message",
-          "New Contact Message",
-          `${typeof data.full_name === "string" ? data.full_name : ""}: ${typeof data.subject === "string" ? data.subject : ""}`,
-          (data.status as string) !== "unread"
-        );
-      });
-
-      const all = [...orderNots, ...msgNots].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      setNotifications(all.slice(0, 12));
-    } catch (error) {
-      console.error("Notification fetch error:", error);
-    }
-  };
-
   useEffect(() => {
     if (authLoading || !user || !isAdmin) return;
 
-    fetchNotifications();
+    let disposed = false;
+    let pendingSubscriptions = 2;
+    const ordersQ = query(
+      collection(db, "orders"),
+      orderBy("created_at", "desc"),
+      limit(10)
+    );
+    const messagesQ = query(
+      collection(db, "messages"),
+      orderBy("created_at", "desc"),
+      limit(10)
+    );
+
+    // Called once per subscription's first emission/error so the loading flag
+    // clears only after both listeners have reported in.
+    const markSubscribed = () => {
+      pendingSubscriptions -= 1;
+      if (pendingSubscriptions <= 0) setLoadingNotifications(false);
+    };
+
+    const unsubscribeOrders = onSnapshot(
+      ordersQ,
+      (snap) => {
+        if (disposed) return;
+        const next: AdminNotification[] = snap.docs.map((d) => {
+          const data = d.data();
+          return toNotification(
+            { ...data, id: d.id },
+            "order",
+            "new_order",
+            "New Order",
+            `${typeof data.customer_name === "string" ? data.customer_name : "Customer"} placed order ${typeof data.order_number === "string" ? data.order_number : d.id}`,
+            data.is_read === true
+          );
+        });
+        setOrderNots(next);
+        markSubscribed();
+      },
+      (error) => {
+        if (disposed) return;
+        console.error("Order notification listen error:", error);
+        markSubscribed();
+      }
+    );
+
+    const unsubscribeMessages = onSnapshot(
+      messagesQ,
+      (snap) => {
+        if (disposed) return;
+        const next: AdminNotification[] = snap.docs.map((d) => {
+          const data = d.data();
+          return toNotification(
+            { ...data, id: d.id },
+            "contact",
+            "contact_message",
+            "New Contact Message",
+            `${typeof data.full_name === "string" ? data.full_name : ""}: ${typeof data.subject === "string" ? data.subject : ""}`,
+            (data.status as string) !== "unread"
+          );
+        });
+        setMsgNots(next);
+        markSubscribed();
+      },
+      (error) => {
+        if (disposed) return;
+        console.error("Message notification listen error:", error);
+        markSubscribed();
+      }
+    );
+
+    return () => {
+      disposed = true;
+      unsubscribeOrders();
+      unsubscribeMessages();
+    };
   }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
@@ -123,8 +164,6 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
     };
 
     if (notiOpen) {
-      // Refresh notifications when dropdown opens
-      fetchNotifications();
       document.addEventListener("mousedown", handleClickOutside);
     }
 
@@ -134,41 +173,63 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   }, [notiOpen]);
 
   const markNotificationRead = async (notification: AdminNotification) => {
-    if (!user) return;
+    if (!user || !isAdmin) return;
+    if (notification.is_read) return;
+
+    const key = `${notification.source}-${notification.id}`;
+    if (markingRef.current.has(key)) return;
+    markingRef.current.add(key);
 
     try {
       if (notification.source === "contact") {
         await updateDoc(doc(db, "messages", notification.id), { status: "read" });
+      } else {
+        await updateDoc(doc(db, "orders", notification.id), { is_read: true });
       }
-      // Orders do not have an is_read field in Firestore; keep local state only.
 
-      setNotifications((prev) =>
-        prev.map((item) =>
-          item.source === notification.source && item.id === notification.id
-            ? { ...item, is_read: true }
-            : item
-        )
-      );
+      // Optimistically reflect the read state locally; the realtime listener
+      // also confirms the change from Firestore.
+      if (notification.source === "contact") {
+        setMsgNots((prev) =>
+          prev.map((item) =>
+            item.id === notification.id ? { ...item, is_read: true } : item
+          )
+        );
+      } else {
+        setOrderNots((prev) =>
+          prev.map((item) =>
+            item.id === notification.id ? { ...item, is_read: true } : item
+          )
+        );
+      }
     } catch (error) {
       console.error("Mark read error:", error);
+    } finally {
+      markingRef.current.delete(key);
     }
   };
 
   const markAllNotificationsRead = async () => {
-    if (!user) return;
+    if (!user || !isAdmin) return;
+
+    const unreadItems = notifications.filter((item) => !item.is_read);
+    if (unreadItems.length === 0) return;
 
     try {
       const batch = writeBatch(db);
 
-      notifications.forEach((item) => {
-        if (item.source === "contact" && !item.is_read) {
+      unreadItems.forEach((item) => {
+        if (item.source === "contact") {
           batch.update(doc(db, "messages", item.id), { status: "read" });
+        } else {
+          batch.update(doc(db, "orders", item.id), { is_read: true });
         }
       });
 
       await batch.commit();
 
-      setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+      setOrderNots((prev) => prev.map((item) => ({ ...item, is_read: true })));
+      setMsgNots((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error) {
       console.error("Mark all read error:", error);
     }
@@ -283,7 +344,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   </div>
 
                   <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-2 sm:max-h-[360px]">
-                    {notifications.length === 0 ? (
+                    {!loadingNotifications && notifications.length === 0 ? (
                       <div className="p-6 text-center">
                         <p className="text-sm font-bold text-[#7a6a55]">No notifications yet.</p>
                       </div>
