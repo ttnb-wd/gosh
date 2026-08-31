@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin";
+import { checkRateLimit, createRateLimitId, getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,26 @@ export const runtime = "nodejs";
  */
 export async function POST(request: Request) {
   try {
+    /*
+     * Rate limit (5 per hour per IP) to prevent password-reset email abuse /
+     * spam. Best-effort in-memory limiting on serverless.
+     */
+    const rateLimit = checkRateLimit({
+      identifier: createRateLimitId(
+        getClientIp(request.headers),
+        "password-reset"
+      ),
+      maxRequests: 5,
+      windowSeconds: 3600,
+    });
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json().catch(() => ({}))) as {
       email?: string;
     };

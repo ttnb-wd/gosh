@@ -130,7 +130,7 @@ export async function placeOrder(input: PlaceOrderInput) {
     settings
   );
 
-  return adminDb.runTransaction(async (transaction) => {
+  const result = await adminDb.runTransaction(async (transaction) => {
     const trustedItems: OrderItem[] = [];
     let computedSubtotal = 0;
 
@@ -324,6 +324,23 @@ export async function placeOrder(input: PlaceOrderInput) {
       })),
     };
   });
+
+  /*
+   * The payment screenshot is now referenced by the order/payment records, so
+   * the temporary upload-ownership record in payment_uploads/{fileId} is no
+   * longer needed. Best-effort cleanup keeps the collection from growing.
+   */
+  if (input.payment_screenshot_file_id) {
+    await adminDb
+      .collection("payment_uploads")
+      .doc(input.payment_screenshot_file_id)
+      .delete()
+      .catch(() => {
+        // Non-critical cleanup.
+      });
+  }
+
+  return result;
 }
 
 export async function updateOrderStatus(

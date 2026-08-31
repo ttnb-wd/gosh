@@ -3,10 +3,28 @@ import { Timestamp } from "firebase-admin/firestore";
 import { sendAdminContactEmail } from "@/lib/email";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { validateEmail, validateName, validateSubject, validateMessage, sanitizeInput } from "@/lib/validation";
+import { checkRateLimit, createRateLimitId, getClientIp } from "@/lib/rateLimit";
 import { adminDb } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
+    /*
+     * Per-IP rate limit (10 per 10 minutes) as defense-in-depth on top of
+     * Turnstile and the per-email Firestore dedupe below.
+     */
+    const rateLimit = checkRateLimit({
+      identifier: createRateLimitId(getClientIp(request.headers), "contact"),
+      maxRequests: 10,
+      windowSeconds: 600,
+    });
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many messages. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as {
       fullName?: string;
       email?: string;

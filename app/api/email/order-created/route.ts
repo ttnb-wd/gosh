@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { checkAdminApiAuth } from "@/lib/auth/apiAuth";
+import { checkRateLimit, createRateLimitId } from "@/lib/rateLimit";
 import { sendAdminNewOrderEmail, sendCustomerOrderConfirmationEmail, type OrderEmailData } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -21,9 +22,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
     }
 
+    /*
+     * Rate limit per user to prevent a customer from repeatedly re-triggering
+     * the admin/order emails (inbox flooding). Best-effort in-memory limiting.
+     */
+    const rateLimit = checkRateLimit({
+      identifier: createRateLimitId(auth.user.uid, "order-email"),
+      maxRequests: 30,
+      windowSeconds: 600, // 30 per 10 minutes
+    });
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as { orderId?: string };
 
-    if (!body.orderId) {
+    if (!body.orderId || typeof body.orderId !== "string" || body.orderId.length > 200) {
       return NextResponse.json({ error: "Missing order." }, { status: 400 });
     }
 

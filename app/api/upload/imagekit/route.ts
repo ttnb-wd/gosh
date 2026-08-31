@@ -20,6 +20,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /*
+     * Restrict the ImageKit folder to a safe "/gosh/..." path (no path
+     * traversal / control characters). Admin-only route, but this prevents an
+     * admin account with a compromised client from writing outside the app's
+     * folder tree.
+     */
+    const rawFolder = typeof folder === "string" ? folder.trim() : "";
+    const safeFolder =
+      rawFolder.startsWith("/gosh/") && !rawFolder.includes("..")
+        ? rawFolder
+        : "/gosh/uploads";
+
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -49,10 +61,7 @@ export async function POST(request: NextRequest) {
     const uploadResult = await imagekit.files.upload({
       file: buffer.toString("base64"),
       fileName: file.name,
-      folder:
-        typeof folder === "string" && folder.trim()
-          ? folder
-          : "/gosh/uploads",
+      folder: safeFolder,
       useUniqueFileName: true,
     });
 

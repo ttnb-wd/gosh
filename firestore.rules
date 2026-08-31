@@ -42,8 +42,15 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow create: if isSignedIn()
-        && request.resource.data.user_id == request.auth.uid;
+      /*
+       * Orders are created ONLY by the authenticated server route
+       * /api/checkout/place-order (Firebase Admin SDK), which recomputes every
+       * price, subtotal, delivery fee, discount, total and payment status from
+       * trusted Firestore product records. Direct client-side creation is
+       * DENIED so a malicious client cannot forge orders with arbitrary prices,
+       * totals, stock or a "Paid" payment status.
+       */
+      allow create: if false;
 
       allow read: if isAdmin()
         || (
@@ -67,13 +74,27 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow create: if true;
+      /*
+       * Contact messages are created ONLY by the /api/contact server route
+       * (Firebase Admin SDK), after Turnstile + input validation. Direct
+       * client writes are DENIED to prevent spam / forged submissions.
+       */
+      allow create: if false;
       allow read, update, delete: if isAdmin();
     }
 
     match /testimonials/{testimonialId} {
       allow read: if resource.data.is_active == true || isAdmin();
-      allow create: if isSignedIn();
+
+      /*
+       * Testimonials may only be created through /api/testimonials (server),
+       * which always sets is_active = false so every submission passes through
+       * admin moderation. A client submitting directly can no longer mark its
+       * own testimonial as active (which would publish it without approval).
+       */
+      allow create: if isSignedIn()
+        && request.resource.data.is_active == false;
+
       allow update, delete: if isAdmin();
     }
 
@@ -97,7 +118,12 @@ service cloud.firestore {
     }
 
     match /newsletter_subscribers/{email} {
-      allow create: if true;
+      /*
+       * Subscriptions are created ONLY by /api/newsletter (server) after rate
+       * limiting + Turnstile. Direct client writes are DENIED to prevent spam
+       * and arbitrary subscription manipulation.
+       */
+      allow create: if false;
       allow read, update, delete: if isAdmin();
     }
 
