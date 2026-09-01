@@ -495,7 +495,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
 
       <div
         aria-hidden="true"
-        className="h-[89px] bg-[#fef5e7] dark:bg-[#0f0b07] sm:h-[113px]"
+        className="h-[66px] bg-[#fef5e7] dark:bg-[#0f0b07] sm:h-[74px] md:h-[86px]"
       />
     </>
   );

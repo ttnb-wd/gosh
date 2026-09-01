@@ -27,7 +27,20 @@ export default function Hero() {
           priority
           sizes="65vw"
           className="object-contain opacity-100"
-          style={{ objectFit: 'contain', objectPosition: 'right top' }}
+          style={{
+            objectFit: 'contain',
+            objectPosition: 'right top',
+            // Feather the opaque rectangle edges of the source asset so the image
+            // blends seamlessly into the Hero background without a visible box edge.
+            // The two gradients intersect to fade a soft band around the perimeter;
+            // the center (perfume bottle) stays fully opaque and unchanged.
+            WebkitMaskImage:
+              'linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent)',
+            maskImage:
+              'linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent)',
+            WebkitMaskComposite: 'source-in',
+            maskComposite: 'intersect',
+          }}
           fetchPriority="high"
         />
         {/* Left fade overlay - minimal blend on edge only */}
