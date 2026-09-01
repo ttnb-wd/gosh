@@ -800,6 +800,13 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const [isMounted, setIsMounted] = useState(false);
   const brandMenuRef = useRef<HTMLDivElement>(null);
   const collectionMenuRef = useRef<HTMLDivElement>(null);
+  const brandButtonRef = useRef<HTMLButtonElement>(null);
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
+  const [brandMenuPos, setBrandMenuPos] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 250,
+  });
   const loadRequestRef = useRef(0);
   const activeBrandsRef = useRef<BrandOption[]>([]);
 
@@ -1034,7 +1041,10 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   // Close filter menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isBrandMenuOpen && brandMenuRef.current && !brandMenuRef.current.contains(event.target as Node)) {
+      const insideBrand =
+        (brandMenuRef.current && brandMenuRef.current.contains(event.target as Node)) ||
+        (brandDropdownRef.current && brandDropdownRef.current.contains(event.target as Node));
+      if (isBrandMenuOpen && !insideBrand) {
         setIsBrandMenuOpen(false);
       }
       if (isCollectionMenuOpen && collectionMenuRef.current && !collectionMenuRef.current.contains(event.target as Node)) {
@@ -1050,6 +1060,44 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       document.removeEventListener('click', handleClickOutside);
     };
   }, [isBrandMenuOpen, isCollectionMenuOpen]);
+
+  const updateBrandMenuPosition = () => {
+    const btn = brandButtonRef.current;
+    if (!btn) return;
+
+    const rect = btn.getBoundingClientRect();
+    const viewportPadding = 12;
+    const width = Math.min(250, window.innerWidth - viewportPadding * 2);
+    const maxLeft = window.innerWidth - width - viewportPadding;
+
+    // Center the dropdown on the Brands button but always keep it fully inside the
+    // viewport so it is never clipped nor collides with neighbouring content.
+    let left = rect.left + rect.width / 2 - width / 2;
+    left = Math.max(viewportPadding, Math.min(left, maxLeft));
+
+    let top = rect.bottom + 10;
+    const estimatedMenuHeight = Math.min(230, window.innerHeight - viewportPadding * 2) + 64;
+    if (top + estimatedMenuHeight > window.innerHeight - viewportPadding) {
+      top = Math.max(viewportPadding, rect.top - estimatedMenuHeight - 10);
+    }
+
+    setBrandMenuPos({ top, left, width });
+  };
+
+  // Keep the portal dropdown pinned to the trigger while open / scrolling / resizing.
+  useEffect(() => {
+    if (!isBrandMenuOpen) return;
+    updateBrandMenuPosition();
+    const handleUpdate = () => requestAnimationFrame(updateBrandMenuPosition);
+    window.addEventListener("scroll", handleUpdate, true);
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("orientationchange", handleUpdate);
+    return () => {
+      window.removeEventListener("scroll", handleUpdate, true);
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("orientationchange", handleUpdate);
+    };
+  }, [isBrandMenuOpen]);
   
   const handleQuickView = (product: typeof products[0]) => {
     setQuickViewProduct(product);
@@ -1196,7 +1244,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           ))}
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[26px] border border-[#d4af37]/20 bg-white/85 p-3 shadow-[0_18px_45px_rgba(212,175,55,0.1)] sm:flex-row sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <motion.div
             ref={collectionMenuRef}
             initial={{ opacity: 0, y: 10 }}
@@ -1291,6 +1339,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
           >
             <button
+              ref={brandButtonRef}
               type="button"
               onClick={() => {
                 setIsCollectionMenuOpen(false);
@@ -1311,57 +1360,9 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               />
             </button>
 
-            <AnimatePresence>
-              {/* Desktop dropdown - compact */}
-              {isBrandMenuOpen && (
-                <motion.div
-                  key="desktop-brand-dropdown"
-                  initial={{ opacity: 0, x: 22 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 22 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute right-0 top-[calc(100%+10px)] z-[999] hidden w-[250px] overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur sm:block"
-                >
-                  <div className="mb-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
-                      aria-label="Close brands menu"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
-                    {brands.map((brand, index) => (
-                      <motion.button
-                        key={`desktop-${isBrandMenuOpen}-${brand.id}-${index}`}
-                        type="button"
-                        initial={{ opacity: 0, x: 22 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.52,
-                          delay: index * 0.09,
-                          ease: [0.22, 1, 0.36, 1]
-                        }}
-                        onClick={() => {
-                          onBrandSelect?.(brand.id);
-                          setIsBrandMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
-                          selectedBrand === brand.id
-                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
-                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
-                        }`}
-                      >
-                        <span className="truncate">{brand.name || "Unbranded"}</span>
-                        {selectedBrand === brand.id && <Check className="h-3.5 w-3.5 shrink-0" />}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Desktop/tablet brand dropdown now renders via a portal at the bottom of this
+                component (see createPortal below) so it is never clipped by overflow-hidden
+                parents and always stacks above neighbouring content. */}
           </motion.div>
         )}
         </div>
@@ -1525,6 +1526,62 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       {isMounted &&
         createPortal(
           <AnimatePresence>
+            {/* Desktop/tablet brand dropdown - rendered in a portal so it is never clipped
+                by overflow-hidden parents and always stacks above neighbouring content. */}
+            {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
+              <motion.div
+                ref={brandDropdownRef}
+                key="desktop-brand-overlay"
+                className="fixed z-[9999] hidden sm:block"
+                style={{ top: brandMenuPos.top, left: brandMenuPos.left, width: brandMenuPos.width }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, x: 22 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 22 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur"
+                >
+                  <div className="mb-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsBrandMenuOpen(false)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
+                      aria-label="Close brands menu"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
+                    {brands.map((brand, index) => (
+                      <motion.button
+                        key={`desktop-${isBrandMenuOpen}-${brand.id}-${index}`}
+                        type="button"
+                        initial={{ opacity: 0, x: 22 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.52,
+                          delay: index * 0.09,
+                          ease: [0.22, 1, 0.36, 1]
+                        }}
+                        onClick={() => {
+                          onBrandSelect?.(brand.id);
+                          setIsBrandMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
+                          selectedBrand === brand.id
+                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
+                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
+                        }`}
+                      >
+                        <span className="truncate">{brand.name || "Unbranded"}</span>
+                        {selectedBrand === brand.id && <Check className="h-3.5 w-3.5 shrink-0" />}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
             {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
               <motion.div
                 key="mobile-brand-popup"
