@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useMemo, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -86,7 +87,7 @@ export default function AdminMessagesPage() {
 
       setMessages(loaded);
     } catch (fetchError) {
-      console.error("Contact messages fetch error:", fetchError);
+      devLog.error("Contact messages fetch error:", fetchError);
       setError("Could not load contact messages.");
     } finally {
       setLoading(false);
@@ -130,7 +131,7 @@ export default function AdminMessagesPage() {
         prev.map((message) => (message.id === messageId ? { ...message, status } : message))
       );
     } catch (updateError) {
-      console.error("Contact message update error:", updateError);
+      devLog.error("Contact message update error:", updateError);
       setError("Could not update the message.");
     } finally {
       setUpdatingId(null);

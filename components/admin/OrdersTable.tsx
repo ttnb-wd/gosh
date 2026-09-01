@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -194,7 +195,7 @@ function OrdersTableContent() {
       setOrders(paged);
       setTotalOrders(total);
     } catch (error) {
-      console.error("Error loading orders:", error);
+      devLog.error("Error loading orders:", error);
     } finally {
       setLoading(false);
     }
@@ -305,12 +306,12 @@ function OrdersTableContent() {
               nextStatus: newStatus,
             }),
           }).catch((emailError) => {
-            console.error("Order status email failed:", emailError);
+            devLog.error("Order status email failed:", emailError);
           });
         });
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
+      devLog.error("Error updating order status:", error);
       setActionMessage({ type: "error", text: "Failed to update order status." });
     } finally {
       setUpdatingOrders(prev => {
@@ -353,7 +354,7 @@ function OrdersTableContent() {
       ));
       setActionMessage({ type: "success", text: "Payment status updated." });
     } catch (error) {
-      console.error("Error updating payment status:", error);
+      devLog.error("Error updating payment status:", error);
       setActionMessage({ type: "error", text: "Failed to update payment status." });
     } finally {
       setUpdatingOrders(prev => {

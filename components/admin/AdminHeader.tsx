@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { Bell, User, LogOut, ShoppingBag, XCircle, MessageSquare, Moon, Sun } from "lucide-react";
 import { useAdminAuth } from "./AdminAuthProvider";
@@ -119,7 +120,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       },
       (error) => {
         if (disposed) return;
-        console.error("Order notification listen error:", error);
+        devLog.error("Order notification listen error:", error);
         markSubscribed();
       }
     );
@@ -144,7 +145,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       },
       (error) => {
         if (disposed) return;
-        console.error("Message notification listen error:", error);
+        devLog.error("Message notification listen error:", error);
         markSubscribed();
       }
     );
@@ -203,7 +204,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
         );
       }
     } catch (error) {
-      console.error("Mark read error:", error);
+      devLog.error("Mark read error:", error);
     } finally {
       markingRef.current.delete(key);
     }
@@ -231,7 +232,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       setOrderNots((prev) => prev.map((item) => ({ ...item, is_read: true })));
       setMsgNots((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error) {
-      console.error("Mark all read error:", error);
+      devLog.error("Mark all read error:", error);
     }
   };
 
@@ -265,13 +266,13 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           credentials: "include",
         });
       } catch (sessionError) {
-        console.error("Session cookie cleanup error:", sessionError);
+        devLog.error("Session cookie cleanup error:", sessionError);
       }
 
       router.push("/admin/login");
       router.refresh();
     } catch (error) {
-      console.error("Logout error:", error);
+      devLog.error("Logout error:", error);
     } finally {
       setLoggingOut(false);
     }

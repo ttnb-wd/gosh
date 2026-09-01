@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -225,7 +226,7 @@ function CheckoutPageContent() {
         const items = Array.isArray(parsed) ? parsed : [];
         setCartItems(items);
       } catch (error) {
-        console.error("Failed to load checkout cart:", error);
+        devLog.error("Failed to load checkout cart:", error);
         setCartItems([]);
       }
     };
@@ -385,7 +386,7 @@ function CheckoutPageContent() {
       });
     } catch (error) {
       // Payment screenshot cleanup failed (non-critical) - log for debugging
-      console.error("Failed to delete payment screenshot:", error);
+      devLog.error("Failed to delete payment screenshot:", error);
     }
   };
 
@@ -517,7 +518,7 @@ function CheckoutPageContent() {
         await deleteUploadedPaymentScreenshot(paymentScreenshotFileId);
 
         // Log error for debugging and show user-friendly message
-        console.error("Order creation failed:", orderError);
+        devLog.error("Order creation failed:", orderError);
         setSubmitError(orderMessage);
         setSubmittingOrder(false);
         return;
@@ -542,7 +543,7 @@ function CheckoutPageContent() {
           },
           body: JSON.stringify({ orderId: order.id }),
         }).catch((emailError) => {
-          console.error("Order email notification failed:", emailError);
+          devLog.error("Order email notification failed:", emailError);
         });
       });
 
@@ -574,7 +575,7 @@ function CheckoutPageContent() {
       clearCart();
 
     } catch (error) {
-      console.error("Checkout submit unexpected error:", error);
+      devLog.error("Checkout submit unexpected error:", error);
       setSubmitError("Could not place order. Please try again.");
       setSubmittingOrder(false);
     } finally {
@@ -600,7 +601,7 @@ function CheckoutPageContent() {
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 1500);
     } catch (error) {
-      console.error("Copy failed:", error);
+      devLog.error("Copy failed:", error);
     }
   };
 

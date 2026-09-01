@@ -1,4 +1,5 @@
 'use client'
+import devLog from "@/lib/dev-log";
 
 import React, { Component, ReactNode } from 'react'
 import * as Sentry from '@sentry/nextjs'
@@ -37,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
         errorBoundary: this.props.context || 'unknown',
       },
     })
-    console.error(`Error in ${this.props.context || 'component'}:`, error, errorInfo)
+    devLog.error(`Error in ${this.props.context || 'component'}:`, error, errorInfo)
   }
 
   render() {
@@ -85,7 +86,7 @@ export class PageErrorBoundary extends Component<Props, State> {
         page: this.props.context || 'unknown',
       },
     })
-    console.error(`Page error in ${this.props.context || 'page'}:`, error, errorInfo)
+    devLog.error(`Page error in ${this.props.context || 'page'}:`, error, errorInfo)
   }
 
   handleReset = () => {
@@ -188,7 +189,7 @@ export class ComponentErrorBoundary extends Component<Props, State> {
         component: this.props.context || 'unknown',
       },
     })
-    console.error(`Component error in ${this.props.context || 'component'}:`, error, errorInfo)
+    devLog.error(`Component error in ${this.props.context || 'component'}:`, error, errorInfo)
   }
 
   handleRetry = () => {
@@ -254,7 +255,7 @@ export class FormErrorBoundary extends Component<Props, State> {
         form: this.props.context || 'unknown',
       },
     })
-    console.error(`Form error in ${this.props.context || 'form'}:`, error, errorInfo)
+    devLog.error(`Form error in ${this.props.context || 'form'}:`, error, errorInfo)
   }
 
   render() {

@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
@@ -151,7 +152,7 @@ function ContactSectionContent() {
       setFormStatus({ type: "success", text: "Message sent. Our team will reply soon." });
       resetTurnstile();
     } catch (error) {
-      console.error("Contact form submit error:", error);
+      devLog.error("Contact form submit error:", error);
       setFormStatus({ type: "error", text: "Could not send your message. Please try again." });
       resetTurnstile();
     } finally {
@@ -206,7 +207,7 @@ function ContactSectionContent() {
       });
       setCommentStatus({ type: "success", text: "Thank you for your comment!" });
     } catch (error) {
-      console.error("Testimonial comment submit error:", error);
+      devLog.error("Testimonial comment submit error:", error);
       setCommentStatus({ type: "error", text: "Could not submit your comment. Please try again." });
     } finally {
       setCommentSubmitting(false);

@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import {
   createContext,
@@ -71,12 +72,12 @@ export default function AdminAuthProvider({
           setIsAdmin(admin);
 
           if (!admin) {
-            console.warn(
+            devLog.warn(
               "Authenticated Firebase user is not an admin."
             );
           }
         } catch (error) {
-          console.error(
+          devLog.error(
             "Failed to load Firebase admin profile:",
             error
           );

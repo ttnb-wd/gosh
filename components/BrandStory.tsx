@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -114,7 +115,7 @@ export default function BrandStory() {
           setProductImages(images);
         }
       } catch (error) {
-        console.error("Error fetching product images:", error);
+        devLog.error("Error fetching product images:", error);
       }
     }
 

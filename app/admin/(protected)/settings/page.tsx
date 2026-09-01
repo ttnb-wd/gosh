@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -50,7 +51,7 @@ export default function AdminSettingsPage() {
       setSettings(siteData);
       setWebsiteSettings(websiteData);
     } catch (error) {
-      console.error("Error loading settings:", error);
+      devLog.error("Error loading settings:", error);
       setMessage({ type: "error", text: "Failed to load settings" });
     } finally {
       setLoading(false);
@@ -91,7 +92,7 @@ export default function AdminSettingsPage() {
         });
       }
     } catch (error) {
-      console.error("Error saving settings:", error);
+      devLog.error("Error saving settings:", error);
       setMessage({ type: "error", text: "Failed to save settings" });
     } finally {
       setSaving(false);

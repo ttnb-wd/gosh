@@ -1,3 +1,4 @@
+import devLog from "@/lib/dev-log";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase/config";
 
@@ -100,7 +101,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
     return { ...defaultSettings, ...data };
   } catch (err) {
-    console.error("Unexpected error fetching site settings:", err);
+    devLog.error("Unexpected error fetching site settings:", err);
     return defaultSettings;
   }
 }
@@ -129,7 +130,7 @@ export async function updateSiteSettings(
 
     return { success: true };
   } catch (err: unknown) {
-    console.error("Unexpected error updating site settings:", err);
+    devLog.error("Unexpected error updating site settings:", err);
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to update settings",

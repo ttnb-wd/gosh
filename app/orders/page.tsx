@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -93,7 +94,7 @@ export default function OrdersPage() {
           setCartItems(JSON.parse(savedCart));
         }
       } catch (error) {
-        console.error("Failed to load cart:", error);
+        devLog.error("Failed to load cart:", error);
       }
     };
 
@@ -162,7 +163,7 @@ export default function OrdersPage() {
       try {
         await loadOrdersForUser(currentUser.uid);
       } catch (error) {
-        console.error("Failed to load orders:", error);
+        devLog.error("Failed to load orders:", error);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -256,7 +257,7 @@ export default function OrdersPage() {
     try {
       await loadOrdersByUser(user.uid);
     } catch (error) {
-      console.error("Failed to load orders:", error);
+      devLog.error("Failed to load orders:", error);
     } finally {
       setLoading(false);
     }

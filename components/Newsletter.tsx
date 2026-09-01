@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { motion } from "framer-motion";
 import { Mail, Gift } from "lucide-react";
@@ -56,7 +57,7 @@ function NewsletterContent() {
       setStatus({ type: "success", text: "You are subscribed to the VIP club." });
       resetTurnstile();
     } catch (error) {
-      console.error("Newsletter signup error:", error);
+      devLog.error("Newsletter signup error:", error);
       setStatus({ type: "error", text: "Could not subscribe right now. Please try again." });
       resetTurnstile();
     } finally {

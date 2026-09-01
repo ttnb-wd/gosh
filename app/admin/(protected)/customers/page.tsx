@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useRef, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -140,7 +141,7 @@ export default function AdminCustomersPage() {
       const result = (await response.json()) as { data?: CustomerSummaryRow[]; error?: string };
 
       if (!response.ok || result.error) {
-        console.error("Customers fetch error:", {
+        devLog.error("Customers fetch error:", {
           message: result.error,
         });
         throw new Error(result.error || "Failed to fetch customers");

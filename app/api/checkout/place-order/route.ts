@@ -245,7 +245,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ data });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Could not place order.";
-    return NextResponse.json({ error: message }, { status: 400 });
+      error instanceof Error ? error.message : "";
+
+    // Only pass through the known, user-facing business messages from placeOrder().
+    // Anything else is an unexpected internal error (e.g. a Firestore/transaction
+    // failure) — log it for server diagnostics but never surface it to the user.
+    const knownUserErrors = [
+      "must include at least one item",
+      "Quantity is too high",
+      "One product in your cart is no longer available",
+      "left in stock",
+      "Selected decant size is no longer available",
+    ];
+
+    if (
+      message &&
+      knownUserErrors.some((known) => message.includes(known))
+    ) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    console.error("Place order unexpected error:", error);
+
+    return NextResponse.json(
+      { error: "Could not place order. Please try again." },
+      { status: 500 }
+    );
   }
 }

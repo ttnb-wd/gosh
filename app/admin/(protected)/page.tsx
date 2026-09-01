@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -348,7 +349,7 @@ function AdminDashboardContent() {
         statusBreakdown,
       });
     } catch (err) {
-      console.error("Dashboard load error:", err);
+      devLog.error("Dashboard load error:", err);
       setError("Could not load dashboard data.");
     } finally {
       setLoading(false);

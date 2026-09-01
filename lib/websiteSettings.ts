@@ -1,3 +1,4 @@
+import devLog from "@/lib/dev-log";
 import {
   collection,
   doc,
@@ -71,7 +72,7 @@ export async function getWebsiteSettings(): Promise<WebsiteSettings> {
       id: snapshot.docs[0].id,
     };
   } catch (error) {
-    console.error("Unexpected website settings fetch error:", error);
+    devLog.error("Unexpected website settings fetch error:", error);
     return defaultWebsiteSettings;
   }
 }
@@ -117,7 +118,7 @@ export async function updateWebsiteSettings(
       data: { ...defaultWebsiteSettings, ...payload, id: targetDoc.id },
     };
   } catch (error) {
-    console.error("Unexpected website settings update error:", error);
+    devLog.error("Unexpected website settings update error:", error);
     return {
       success: false,
       error:

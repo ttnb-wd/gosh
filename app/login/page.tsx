@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -197,7 +198,7 @@ forceRefresh?: boolean
 ) => Promise<string>;
 }
 ) => {
-console.log(
+devLog.log(
 "[AUTH] Creating Firebase server session..."
 );
 
@@ -229,13 +230,13 @@ const sessionResult =
     error?: string;
   };
 
-console.log(
+devLog.log(
   "[AUTH] Session HTTP status:",
   sessionResponse.status
 );
 
 if (!sessionResponse.ok) {
-  console.error(
+  devLog.error(
     "[AUTH] Session creation failed:",
     sessionResult
   );
@@ -246,7 +247,7 @@ if (!sessionResponse.ok) {
   );
 }
 
-console.log(
+devLog.log(
   "[AUTH] Server session created successfully."
 );
 
@@ -270,7 +271,7 @@ try {
    * STEP 1
    * Validate form
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 1: Validating form"
   );
 
@@ -283,7 +284,7 @@ try {
    * STEP 2
    * Turnstile check
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 2: Turnstile check"
   );
 
@@ -304,7 +305,7 @@ try {
    * Verify Turnstile
    */
   if (turnstileToken) {
-    console.log(
+    devLog.log(
       "[AUTH] STEP 3: Verifying Turnstile"
     );
 
@@ -341,11 +342,11 @@ try {
       return;
     }
 
-    console.log(
+    devLog.log(
       "[AUTH] STEP 3 SUCCESS"
     );
   } else {
-    console.log(
+    devLog.log(
       "[AUTH] STEP 3 SKIPPED - Turnstile unavailable"
     );
   }
@@ -354,7 +355,7 @@ try {
    * SIGNUP
    */
   if (mode === "signup") {
-    console.log(
+    devLog.log(
       "[AUTH] SIGNUP: Creating Firebase account"
     );
 
@@ -376,7 +377,7 @@ try {
     try {
       await signOutUser();
     } catch (signOutError) {
-      console.error(
+      devLog.error(
         "[AUTH] Sign out error:",
         signOutError
       );
@@ -393,7 +394,7 @@ try {
    * STEP 4
    * Firebase Login
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 4: Firebase login"
   );
 
@@ -412,7 +413,7 @@ try {
     );
   }
 
-  console.log(
+  devLog.log(
     "[AUTH] STEP 4 SUCCESS",
     {
       uid: firebaseUser.uid,
@@ -424,7 +425,7 @@ try {
    * STEP 5
    * Load Firestore profile
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 5: Loading profile"
   );
 
@@ -437,7 +438,7 @@ try {
    * Create profile if missing
    */
   if (!profile) {
-    console.log(
+    devLog.log(
       "[AUTH] Profile missing. Creating profile..."
     );
 
@@ -457,7 +458,7 @@ try {
     );
   }
 
-  console.log(
+  devLog.log(
     "[AUTH] Profile loaded:",
     {
       role: profile.role,
@@ -471,7 +472,7 @@ try {
   const isAdmin =
     profile.role === "admin";
 
-  console.log(
+  devLog.log(
     "[AUTH] STEP 6: Account role",
     {
       role: profile.role,
@@ -494,7 +495,7 @@ try {
    * Admin access is controlled later
    * by requireAdmin().
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 7: Creating server session"
   );
 
@@ -502,7 +503,7 @@ try {
     firebaseUser
   );
 
-  console.log(
+  devLog.log(
     "[AUTH] STEP 7 SUCCESS"
   );
 
@@ -519,7 +520,7 @@ try {
    * be displayed by the website UI
    * based on profile.role.
    */
-  console.log(
+  devLog.log(
     "[AUTH] STEP 8: Redirecting to website"
   );
 
@@ -551,7 +552,7 @@ try {
 
   router.refresh();
 
-  console.log(
+  devLog.log(
     "[AUTH] LOGIN COMPLETE",
     {
       role: profile.role,
@@ -559,19 +560,19 @@ try {
     }
   );
 } catch (error) {
-  console.error(
+  devLog.error(
     "========================================"
   );
 
-  console.error(
+  devLog.error(
     "[AUTH] AUTHENTICATION FAILED"
   );
 
-  console.error(
+  devLog.error(
     error
   );
 
-  console.error(
+  devLog.error(
     "========================================"
   );
 

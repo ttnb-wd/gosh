@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useState } from "react";
 import {
@@ -19,7 +20,7 @@ export function useSiteSettings() {
       const data = await getSiteSettings();
       setSettings(data);
     } catch (err: unknown) {
-      console.error("useSiteSettings error:", err);
+      devLog.error("useSiteSettings error:", err);
       setError(err instanceof Error ? err.message : "Failed to load site settings");
       setSettings(getDefaultSettings());
     } finally {

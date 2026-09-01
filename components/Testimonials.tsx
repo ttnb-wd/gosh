@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { motion } from "framer-motion";
 import { Star, UserCircle } from "lucide-react";
@@ -60,7 +61,7 @@ export default function Testimonials() {
     };
 
     loadTestimonials().catch((error) => {
-      console.error("Testimonials fetch error:", error);
+      devLog.error("Testimonials fetch error:", error);
     });
   }, []);
 

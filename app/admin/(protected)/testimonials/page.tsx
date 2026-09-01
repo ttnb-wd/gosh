@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useEffect, useMemo, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -103,7 +104,7 @@ export default function AdminTestimonialsPage() {
 
       setTestimonials(loaded);
     } catch (fetchError) {
-      console.error("Testimonials fetch error:", fetchError);
+      devLog.error("Testimonials fetch error:", fetchError);
       setError("Could not load testimonials.");
     } finally {
       setLoading(false);
@@ -165,7 +166,7 @@ export default function AdminTestimonialsPage() {
         )
       );
     } catch (updateError) {
-      console.error("Testimonial update error:", updateError);
+      devLog.error("Testimonial update error:", updateError);
       setError("Could not update the testimonial.");
     } finally {
       setUpdatingId(null);
@@ -183,7 +184,7 @@ export default function AdminTestimonialsPage() {
 
       setTestimonials((prev) => prev.filter((testimonial) => testimonial.id !== testimonialId));
     } catch (deleteError) {
-      console.error("Testimonial delete error:", deleteError);
+      devLog.error("Testimonial delete error:", deleteError);
       setError("Could not delete the testimonial.");
     } finally {
       setUpdatingId(null);

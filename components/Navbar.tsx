@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useState, useEffect } from "react";
 import {
@@ -67,7 +68,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
 
         setProfileName(displayName);
       } catch (error) {
-        console.error("Failed to load Firebase user profile:", error);
+        devLog.error("Failed to load Firebase user profile:", error);
 
         if (!mounted) return;
 
@@ -127,10 +128,10 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
           credentials: "include",
         });
       } catch (sessionError) {
-        console.error("Session cookie cleanup error:", sessionError);
+        devLog.error("Session cookie cleanup error:", sessionError);
       }
     } catch (error) {
-      console.error("Firebase logout error:", error);
+      devLog.error("Firebase logout error:", error);
     } finally {
       setUser(null);
       setIsAdmin(false);

@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -48,7 +49,7 @@ function ProductsPageContent() {
           setCartItems(Array.isArray(parsed) ? parsed : []);
         }
       } catch (error) {
-        console.error("Failed to load cart:", error);
+        devLog.error("Failed to load cart:", error);
       }
     };
     loadCart();
@@ -60,7 +61,7 @@ function ProductsPageContent() {
       localStorage.setItem("gosh_cart", JSON.stringify(cartItems));
       window.dispatchEvent(new Event("cart-updated"));
     } catch (error) {
-      console.error("Failed to save cart:", error);
+      devLog.error("Failed to save cart:", error);
     }
   }, [cartItems]);
 

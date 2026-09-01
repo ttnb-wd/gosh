@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import {
   useCallback,
@@ -641,7 +642,7 @@ function ProductManagerContent() {
 
       setLegacyBrandNames(legacyNames);
     } catch (error) {
-      console.error(
+      devLog.error(
         "Error loading Firebase brands:",
         error
       );
@@ -737,7 +738,7 @@ function ProductManagerContent() {
 
       setProducts(enrichedProducts);
     } catch (error) {
-      console.error(
+      devLog.error(
         "Error loading Firebase products:",
         error
       );
@@ -1207,7 +1208,7 @@ function ProductManagerContent() {
           imageFileId =
             uploadedImage.fileId;
         } catch (uploadError) {
-          console.error(
+          devLog.error(
             "ImageKit upload error:",
             uploadError
           );
@@ -1385,7 +1386,7 @@ function ProductManagerContent() {
 
       await loadProducts();
     } catch (err) {
-      console.error(
+      devLog.error(
         editingProduct
           ? "Update product error:"
           : "Add product error:",
@@ -1430,7 +1431,7 @@ function ProductManagerContent() {
 
       await loadProducts();
     } catch (error) {
-      console.error(
+      devLog.error(
         "Error updating product status:",
         error
       );
@@ -1490,7 +1491,7 @@ function ProductManagerContent() {
 
         await loadProducts();
       } catch (error) {
-        console.error(
+        devLog.error(
           "Error deleting product:",
           error
         );

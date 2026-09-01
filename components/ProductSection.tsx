@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
@@ -906,7 +907,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
       activeBrandsRef.current = loadedBrands;
       setActiveBrands(loadedBrands);
     } catch (error) {
-      console.error("Error loading Firebase brands:", error);
+      devLog.error("Error loading Firebase brands:", error);
     }
   };
 
@@ -973,7 +974,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           loadedProducts = firebaseProducts;
         }
       } catch (error) {
-        console.error("Error loading Firebase products:", error);
+        devLog.error("Error loading Firebase products:", error);
       }
 
       if (requestId !== loadRequestRef.current) {
@@ -982,7 +983,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
       setProducts(loadedProducts);
     } catch (error) {
-      console.error("Error loading products:", error);
+      devLog.error("Error loading products:", error);
 
       if (requestId !== loadRequestRef.current) {
         return;
