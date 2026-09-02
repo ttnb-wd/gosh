@@ -40,7 +40,7 @@ export default function WhyChooseUs() {
           <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
             Trusted Shopping Experience
           </p>
-          <h2 className="text-4xl font-black text-[#1f1a14] sm:text-5xl">
+          <h2 className="whitespace-nowrap text-2xl font-black text-[#1f1a14] sm:text-4xl lg:text-5xl">
             Shop with Confidence
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-[#7a6a55]">

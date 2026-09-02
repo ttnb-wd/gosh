@@ -64,8 +64,8 @@ export default function Hero() {
             {/* Mobile: Content area with background image | Desktop: Normal content */}
             <div className="relative w-full mx-0 px-0 py-4 pb-4 mb-0 sm:static sm:max-w-2xl sm:mx-auto sm:px-0 sm:py-0 sm:pb-0 sm:mb-0 text-center sm:text-left">
               
-              {/* Mobile-only background inside content area only */}
-              <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden sm:hidden">
+              {/* Mobile-only background inside content area only - Hidden */}
+              <div className="hidden absolute inset-0 z-0 pointer-events-none overflow-hidden sm:hidden">
                 <Image
                   src="/images/hero/perfumebottle (2).png"
                   alt="Perfume bottle background"
@@ -76,8 +76,8 @@ export default function Hero() {
                 <div className="absolute inset-0 bg-white/10 dark:bg-[#0f0b07]/25" />
               </div>
 
-              {/* Mobile readability overlay */}
-              <div className="absolute inset-0 z-[1] bg-white/20 pointer-events-none dark:bg-[#0f0b07]/20 sm:hidden" />
+              {/* Mobile readability overlay - Hidden */}
+              <div className="hidden absolute inset-0 z-[1] bg-white/20 pointer-events-none dark:bg-[#0f0b07]/20 sm:hidden" />
 
               {/* Content - Above background */}
               <div className="relative z-10 px-5 sm:px-0">

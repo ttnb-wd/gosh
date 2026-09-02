@@ -174,9 +174,9 @@ export default function BrandStory() {
             <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
               Our Authenticity Note
             </p>
-            <h2 className="mb-6 text-4xl font-black text-[#1f1a14] sm:text-5xl">
-              Curated with
-              <span className="block text-[#b88705]">Confidence</span>
+            <h2 className="mb-6 whitespace-nowrap text-2xl font-black text-[#1f1a14] sm:text-4xl lg:text-5xl">
+              <span>Curated with </span>
+              <span className="text-[#b88705]">Confidence</span>
             </h2>
             <div className="space-y-4 text-lg leading-relaxed text-[#7a6a55]">
               <p>

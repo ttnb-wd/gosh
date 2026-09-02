@@ -7,7 +7,6 @@ import { Sparkles, Heart, Award, Leaf, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
-import AdsBanner from "@/components/AdsBanner";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 // Cart item type definition
@@ -171,8 +170,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      <AdsBanner />
 
       {/* Why Choose Us Section */}
       <section className="-mt-px bg-[var(--site-bg)] py-10 lg:py-16">

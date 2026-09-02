@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import BrandMarqueeSlider from "@/components/BrandMarqueeSlider";
 import CollectionPreview from "@/components/CollectionPreview";
-import FragranceCreationSection from "@/components/FragranceCreationSection";
 import ScentQuiz from "@/components/ScentQuiz";
 import IngredientShowcase from "@/components/IngredientShowcase";
 import BrandStory from "@/components/BrandStory";
@@ -60,7 +59,6 @@ export default function Page() {
       />
       <Hero />
       <CollectionPreview />
-      <FragranceCreationSection />
       {SHOW_BRAND_GALLERY_SECTION && (
         <section
           role="region"

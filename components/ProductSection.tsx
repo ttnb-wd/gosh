@@ -1346,7 +1346,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                 setIsCollectionMenuOpen(false);
                 setIsBrandMenuOpen((prev) => !prev);
               }}
-              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
+              className="group inline-flex h-11 w-auto items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
               aria-haspopup="listbox"
               aria-expanded={isBrandMenuOpen}
             >
@@ -1585,68 +1585,64 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             )}
             {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
               <motion.div
-                key="mobile-brand-popup"
-                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                onClick={() => setIsBrandMenuOpen(false)}
+                key="mobile-brand-overlay"
+                ref={brandDropdownRef}
+                className="fixed z-[100000] sm:hidden"
+                style={{ top: brandMenuPos.top, left: brandMenuPos.left, width: brandMenuPos.width }}
               >
                 <motion.div
                   role="listbox"
                   aria-label="Choose brand"
-                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
-                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                  onClick={(event) => event.stopPropagation()}
-                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
+                  <div className="mb-3 flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
                         Filter by brand
                       </p>
-                      <h3 className="mt-1 text-xl font-black text-neutral-950">
+                      <h3 className="mt-1 text-base font-black text-neutral-950">
                         Choose Brand
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
-                      aria-label="Close brands popup"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-base font-black text-black shadow-[0_8px_18px_rgba(234,179,8,0.22)] transition active:scale-95"
+                      aria-label="Close brands menu"
                     >
                       ×
                     </button>
                   </div>
 
-                  <div className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1">
+                  <div className="scrollbar-auto-hide grid max-h-[50vh] gap-2 overflow-y-auto pr-1">
                     {brands.map((brand, index) => {
                       const active = selectedBrand === brand.id;
                       const label = brand.name || "Unbranded";
 
                       return (
                         <motion.button
-                          key={`mobile-popup-${brand.id}-${index}`}
+                          key={`mobile-dropdown-${brand.id}-${index}`}
                           type="button"
                           role="option"
                           aria-selected={active}
-                          initial={{ opacity: 0, y: 8 }}
+                          initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
-                            duration: 0.24,
-                            delay: Math.min(index * 0.025, 0.18),
+                            duration: 0.22,
+                            delay: Math.min(index * 0.025, 0.15),
                             ease: [0.22, 1, 0.36, 1],
                           }}
                           onClick={() => {
                             onBrandSelect?.(brand.id);
                             setIsBrandMenuOpen(false);
                           }}
-                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
+                          className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-black transition-all duration-300 ${
                             active
-                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
+                              ? "bg-yellow-400 text-black shadow-[0_8px_18px_rgba(234,179,8,0.18)]"
                               : "bg-white text-neutral-700 active:bg-yellow-50"
                           }`}
                         >
