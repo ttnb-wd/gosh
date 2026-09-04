@@ -13,12 +13,15 @@ export async function checkAdminAuth() {
     )?.value;
 
     if (!sessionCookie) {
+      console.log("[ADMIN AUTH] No session cookie found");
       return {
         isAdmin: false,
         user: null,
         profile: null,
       };
     }
+
+    console.log("[ADMIN AUTH] Session cookie found, verifying...");
 
     /*
      * Verify the Firebase server session cookie.
@@ -30,6 +33,8 @@ export async function checkAdminAuth() {
       );
 
     const uid = decodedClaims.uid;
+
+    console.log("[ADMIN AUTH] Session cookie verified for user:", uid);
 
     /*
      * IMPORTANT:
@@ -67,7 +72,9 @@ export async function checkAdminAuth() {
     if (profile?.role !== "admin") {
       console.warn(
         "[ADMIN AUTH] User is not an admin:",
-        uid
+        uid,
+        "Role:",
+        profile?.role
       );
 
       return {
@@ -98,6 +105,10 @@ export async function checkAdminAuth() {
       "[ADMIN AUTH] Session verification failed:",
       error
     );
+
+    if (error instanceof Error) {
+      console.error("[ADMIN AUTH] Error message:", error.message);
+    }
 
     return {
       isAdmin: false,

@@ -27,6 +27,34 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "promotions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "testimonials",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

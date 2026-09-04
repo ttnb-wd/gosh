@@ -3,14 +3,13 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import BrandMarqueeSlider from "@/components/BrandMarqueeSlider";
-import CollectionPreview from "@/components/CollectionPreview";
-import ScentQuiz from "@/components/ScentQuiz";
-import IngredientShowcase from "@/components/IngredientShowcase";
+import BrandIntroduction from "@/components/BrandIntroduction";
+import FeaturedProducts from "@/components/FeaturedProducts";
+import PromotionBanner from "@/components/PromotionBanner";
+import CollectionsNavigation from "@/components/CollectionsNavigation";
 import BrandStory from "@/components/BrandStory";
-import WhyChooseUs from "@/components/WhyChooseUs";
-import LuxuryStats from "@/components/LuxuryStats";
 import Testimonials from "@/components/Testimonials";
+import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -24,11 +23,6 @@ export interface CartItem {
   qty: number;
   selectedSize?: string;
 }
-
-// Temporarily hidden. Set to true when we want to show this section again.
-const SHOW_SIGNATURE_SCENT_SECTION = false;
-// Temporarily hidden. Set to true when we want to show this section again.
-const SHOW_BRAND_GALLERY_SECTION = false;
 
 export default function Page() {
   const [cartOpen, setCartOpen] = useState(false);
@@ -57,25 +51,17 @@ export default function Page() {
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
       />
+      {/* HERO - LOCKED, DO NOT MODIFY */}
       <Hero />
-      <CollectionPreview />
-      {SHOW_BRAND_GALLERY_SECTION && (
-        <section
-          role="region"
-          aria-label="Brand gallery"
-          className="bg-[var(--site-bg)] pb-3 pt-5"
-        >
-          <div>
-            <BrandMarqueeSlider />
-          </div>
-        </section>
-      )}
-      {SHOW_SIGNATURE_SCENT_SECTION && <ScentQuiz />}
-      <IngredientShowcase />
+      
+      {/* NEW HOMEPAGE STRUCTURE - VISUAL RHYTHM REDESIGN */}
+      <BrandIntroduction />
+      <FeaturedProducts />
+      <PromotionBanner />
+      <CollectionsNavigation />
       <BrandStory />
-      <WhyChooseUs />
-      <LuxuryStats />
       <Testimonials />
+      <FinalCTA />
       <Footer />
       
       {/* Cart Drawer - Rendered once at page level */}

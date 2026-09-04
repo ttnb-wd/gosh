@@ -1,237 +1,75 @@
 "use client";
-import devLog from "@/lib/dev-log";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
-import { db } from "@/lib/firebase/config";
-import {
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
-
-interface ProductImage {
-  id: string;
-  name: string;
-  image: string;
-}
-
-const fallbackBrandStoryImage =
-  "/images/showcase/perfume-showcase-1.jpg";
-
-const getSafeBrandStoryImage = (image?: string | null) => {
-  const value = image?.trim();
-  if (!value) return fallbackBrandStoryImage;
-  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
-
-  return fallbackBrandStoryImage;
-};
-
-function BrandStorySlideImage({ src, alt }: { src: string; alt: string }) {
-  const [imageSrc, setImageSrc] = useState(() => getSafeBrandStoryImage(src));
-
-  useEffect(() => {
-    setImageSrc(getSafeBrandStoryImage(src));
-  }, [src]);
-
-  return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className="absolute inset-0 h-full w-full object-cover"
-      loading="eager"
-      onError={() => {
-        if (imageSrc !== fallbackBrandStoryImage) {
-          setImageSrc(fallbackBrandStoryImage);
-        }
-      }}
-    />
-  );
-}
 
 export default function BrandStory() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const { settings } = useWebsiteSettings();
   const websiteName = settings.website_name || "GOSH PERFUME";
-  const aboutText = `${websiteName} is an independent curated perfume shop focused on carefully sourced fragrances, clear product details, and a trustworthy shopping experience.`;
-
-  // Fallback static slides if no products
-  const fallbackSlides = [
-    {
-      src: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=1200&auto=format&fit=crop",
-      alt: "Luxury perfume craftsmanship"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?q=80&w=1200&auto=format&fit=crop",
-      alt: "Premium fragrance ingredients"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1587017539504-67cfbddac569?q=80&w=1200&auto=format&fit=crop",
-      alt: "Elegant unbranded perfume bottle"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=1200&auto=format&fit=crop",
-      alt: "Luxury perfume bottle with gold accents"
-    }
-  ];
-
-  // Fetch product images from Firestore (ImageKit CDN URLs)
-  useEffect(() => {
-    async function fetchProductImages() {
-      try {
-        const productsQuery = query(
-          collection(db, "products"),
-          where("is_active", "==", true),
-          orderBy("createdAt", "desc"),
-          limit(8)
-        );
-
-        const snapshot = await getDocs(productsQuery);
-
-        const images = snapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-
-            return {
-              id: doc.id,
-              name: typeof data.name === "string" ? data.name : "",
-              image:
-                typeof data.image === "string"
-                  ? data.image
-                  : typeof data.image_url === "string"
-                    ? data.image_url
-                    : "",
-            };
-          })
-          .filter((product) => product.image);
-
-        if (images.length > 0) {
-          setProductImages(images);
-        }
-      } catch (error) {
-        devLog.error("Error fetching product images:", error);
-      }
-    }
-
-    fetchProductImages();
-  }, []);
-
-  // Use product images if available, otherwise fallback
-  const slides = productImages.length > 0
-    ? productImages.map(product => ({
-        src: getSafeBrandStoryImage(product.image),
-        alt: product.name
-      }))
-    : fallbackSlides;
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 4500);
-
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
-  useEffect(() => {
-    const desktopQuery = window.matchMedia("(min-width: 1024px)");
-    const handleChange = () => setIsDesktop(desktopQuery.matches);
-
-    handleChange();
-    desktopQuery.addEventListener("change", handleChange);
-
-    return () => desktopQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  const textInitial = {
-    opacity: 0,
-    x: isDesktop ? 50 : 0,
-    y: isDesktop ? 0 : 28,
-  };
-
-  const imageInitial = {
-    opacity: 0,
-    x: isDesktop ? -50 : 0,
-    y: isDesktop ? 0 : 28,
-  };
 
   return (
-    <section role="region" aria-label="Brand story" className="bg-[var(--site-bg)] pb-8 pt-8 lg:pb-10 lg:pt-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-2 items-center">
-          <motion.div
-            initial={textInitial}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="lg:order-2"
-          >
-            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
-              Our Authenticity Note
-            </p>
-            <h2 className="mb-6 whitespace-nowrap text-2xl font-black text-[#1f1a14] sm:text-4xl lg:text-5xl">
-              <span>Curated with </span>
-              <span className="text-[#b88705]">Confidence</span>
-            </h2>
-            <div className="space-y-4 text-lg leading-relaxed text-[#7a6a55]">
-              <p>
-                {aboutText}
-              </p>
-              {/* <p>
-                We carefully source authentic perfumes from trusted suppliers and review product details before listing.
-              </p> */}
-              <p>
-                Brand names are shown only to identify products clearly for customers. Find your signature scent with confidence, elegance, and care.
-              </p>
-            </div>
-          </motion.div>
+    <section 
+      role="region" 
+      aria-label="Brand story" 
+      className="bg-[var(--site-bg)] px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
+    >
+      <div className="mx-auto max-w-4xl">
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-center"
+        >
+          {/* Label */}
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#b88700] dark:text-[#d4af37] sm:mb-5 sm:text-sm">
+            The {websiteName} Experience
+          </p>
 
-          <motion.div
-            initial={imageInitial}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative lg:order-1"
+          {/* Main statement */}
+          <h2 className="mb-5 text-[clamp(1.9rem,5.5vw,3rem)] font-black leading-[1.08] tracking-tight text-[#1f1a14] dark:text-[#fff7e6] sm:mb-6 lg:mb-7">
+            Curated with Confidence,
+            <br />
+            <span className="text-[#b88700] dark:text-[#d4af37]">Chosen for You</span>
+          </h2>
+
+          {/* Body text */}
+          <div className="mx-auto mb-8 max-w-2xl space-y-4 text-[15px] leading-[1.7] text-[#7a6a55] dark:text-[#b8a892] sm:mb-10 sm:text-base lg:mb-12 lg:text-[17px] lg:leading-[1.75]">
+            <p>
+              {websiteName} is an independent curated perfume shop focused on carefully sourced fragrances, clear product details, and a trustworthy shopping experience.
+            </p>
+            <p>
+              Every perfume is selected with care from trusted suppliers and reviewed before listing. Brand names are shown only to identify products clearly for customers.
+            </p>
+            <p>
+              Find your signature scent with confidence, elegance, and care.
+            </p>
+          </div>
+
+          {/* Simple CTA link */}
+          <Link
+            href="/about"
+            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] dark:text-[#d4af37] dark:hover:text-[#f0c847]"
           >
-            <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/50 blur-3xl" />
-            <div className="relative h-[500px] overflow-hidden rounded-3xl">
-              {slides.map((slide, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentSlide ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <BrandStorySlideImage
-                    src={slide.src}
-                    alt={slide.alt}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#d4af37]/10 to-transparent" />
-                </div>
-              ))}
-              
-              <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-                {slides.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      index === currentSlide
-                        ? "w-8 bg-[#d4af37]"
-                        : "w-2 bg-white/60 hover:bg-white/80"
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            Learn More About Us
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

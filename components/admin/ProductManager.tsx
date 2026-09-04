@@ -184,6 +184,11 @@ function ProductManagerContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [legacyBrandNames, setLegacyBrandNames] = useState<string[]>([]);
+  const [productPromotions, setProductPromotions] = useState<Map<string, { id: string; promotion_price: number; is_active: boolean; start_at: string; end_at: string }>>(new Map());
+
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [selectorScrollPosition, setSelectorScrollPosition] = useState(0);
 
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -267,6 +272,14 @@ function ProductManagerContent() {
     baseNotes: "",
     madeWith: "",
     bestFor: "",
+    // Promotion fields
+    hasPromotion: false,
+    selectedProductForPromotion: null as Product | null,
+    promotionDiscountPercent: "",
+    promotionPrice: "",
+    promotionStartDate: "",
+    promotionEndDate: "",
+    promotionActive: true,
   });
 
   const isAccessoryForm = formData.category === "Accessories";
@@ -552,6 +565,58 @@ function ProductManagerContent() {
 
     return result.data;
   };
+
+  /**
+   * ---------------------------------------------------------
+   * LOAD PRODUCT PROMOTIONS
+   * ---------------------------------------------------------
+   */
+
+  const loadProductPromotions = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/product-promotions/action", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        devLog.error("Failed to fetch product promotions:", response.status);
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success && Array.isArray(result.promotions)) {
+        const promotionMap = new Map<string, { 
+          id: string; 
+          promotion_price: number; 
+          is_active: boolean; 
+          start_at: string; 
+          end_at: string 
+        }>(
+          result.promotions.map((promo: { 
+            id: string; 
+            product_id: string; 
+            promotion_price: number; 
+            is_active: boolean; 
+            start_at: string; 
+            end_at: string 
+          }) => [
+            promo.product_id,
+            {
+              id: promo.id,
+              promotion_price: promo.promotion_price,
+              is_active: promo.is_active,
+              start_at: promo.start_at,
+              end_at: promo.end_at,
+            },
+          ])
+        );
+        setProductPromotions(promotionMap);
+      }
+    } catch (error) {
+      devLog.error("Error loading product promotions:", error);
+    }
+  }, []);
 
   /**
    * ---------------------------------------------------------
@@ -854,7 +919,8 @@ function ProductManagerContent() {
   useEffect(() => {
     if (authLoading || !user || !isAdmin) return;
     loadBrands();
-  }, [loadBrands, authLoading, user, isAdmin]);
+    loadProductPromotions();
+  }, [loadBrands, loadProductPromotions, authLoading, user, isAdmin]);
 
   useEffect(() => {
     if (authLoading || !user || !isAdmin) return;
@@ -942,6 +1008,13 @@ function ProductManagerContent() {
       baseNotes: "",
       madeWith: "",
       bestFor: "",
+      hasPromotion: false,
+      selectedProductForPromotion: null,
+      promotionDiscountPercent: "",
+      promotionPrice: "",
+      promotionStartDate: "",
+      promotionEndDate: "",
+      promotionActive: true,
     });
 
     setImageFile(null);
@@ -969,6 +1042,22 @@ function ProductManagerContent() {
     product: Product
   ) => {
     setEditingProduct(product);
+
+    const existingPromotion = productPromotions.get(product.id);
+
+    const formatDateForInput = (dateStr: string): string => {
+      try {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      } catch {
+        return "";
+      }
+    };
 
     setFormData({
       name: product.name,
@@ -1029,6 +1118,17 @@ function ProductManagerContent() {
 
       bestFor:
         product.notes?.bestFor || "",
+
+      // Promotion fields
+      hasPromotion: !!existingPromotion,
+      selectedProductForPromotion: existingPromotion ? product : null,
+      promotionDiscountPercent: existingPromotion && product.price > 0 
+        ? String(Math.round(((product.price - existingPromotion.promotion_price) / product.price) * 100))
+        : "",
+      promotionPrice: existingPromotion ? String(existingPromotion.promotion_price) : "",
+      promotionStartDate: existingPromotion ? formatDateForInput(existingPromotion.start_at) : "",
+      promotionEndDate: existingPromotion ? formatDateForInput(existingPromotion.end_at) : "",
+      promotionActive: existingPromotion ? existingPromotion.is_active : true,
     });
 
     setImageFile(null);
@@ -1367,14 +1467,118 @@ function ProductManagerContent() {
        * Existing Firebase admin product action API.
        */
 
-      await callProductAction({
+      const result = await callProductAction({
         action: "save",
 
         productId:
           editingProduct?.id || null,
 
         product: productPayload,
-      });
+      }) as { id: string } | undefined;
+
+      // Get the product ID (either from editing or newly created)
+      const savedProductId = editingProduct?.id || result?.id || null;
+
+      /**
+       * -------------------------------------------------------
+       * HANDLE PROMOTION
+       * -------------------------------------------------------
+       */
+
+      if (formData.hasPromotion) {
+        const targetProductId = editingProduct?.id || formData.selectedProductForPromotion?.id || savedProductId;
+        const targetProductPrice = editingProduct?.price || formData.selectedProductForPromotion?.price || price;
+
+        if (!targetProductId) {
+          setError("Cannot create promotion: No product selected.");
+          return;
+        }
+
+        const promotionDiscountPercent = parseFloat(formData.promotionDiscountPercent);
+        const promotionPrice = parseFloat(formData.promotionPrice);
+
+        // Validate promotion data
+        if (!formData.promotionDiscountPercent || isNaN(promotionDiscountPercent) || promotionDiscountPercent <= 0 || promotionDiscountPercent >= 100) {
+          setError("Valid discount percentage (1-99%) is required when promotion is enabled.");
+          return;
+        }
+
+        if (!formData.promotionPrice || isNaN(promotionPrice) || promotionPrice <= 0) {
+          setError("Valid promotion price is required when promotion is enabled.");
+          return;
+        }
+
+        if (promotionPrice >= targetProductPrice) {
+          setError("Promotion price must be less than the original product price.");
+          return;
+        }
+
+        if (!formData.promotionStartDate || !formData.promotionEndDate) {
+          setError("Promotion start and end dates are required.");
+          return;
+        }
+
+        const existingPromotion = productPromotions.get(targetProductId);
+
+        try {
+          const promotionPayload = {
+            action: existingPromotion ? "update" : "create",
+            promotionId: existingPromotion?.id || undefined,
+            data: {
+              product_id: targetProductId,
+              promotion_price: promotionPrice,
+              is_active: formData.promotionActive,
+              start_at: formData.promotionStartDate,
+              end_at: formData.promotionEndDate,
+            },
+          };
+
+          const promotionResponse = await fetch("/api/admin/product-promotions/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(promotionPayload),
+          });
+
+          if (!promotionResponse.ok) {
+            const promotionResult = await promotionResponse.json();
+            throw new Error(promotionResult.error || "Failed to save promotion");
+          }
+
+          await loadProductPromotions();
+        } catch (promotionError) {
+          devLog.error("Promotion save error:", promotionError);
+          setError(
+            promotionError instanceof Error
+              ? `Product saved, but promotion failed: ${promotionError.message}`
+              : "Product saved, but promotion failed."
+          );
+          return;
+        }
+      } else if (!formData.hasPromotion) {
+        // If promotion checkbox is unchecked, delete existing promotion
+        const targetProductId = editingProduct?.id || savedProductId;
+        if (targetProductId) {
+          const existingPromotion = productPromotions.get(targetProductId);
+          if (existingPromotion) {
+            try {
+              await fetch("/api/admin/product-promotions/action", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  action: "delete",
+                  promotionId: existingPromotion.id,
+                }),
+              });
+              await loadProductPromotions();
+            } catch (deleteError) {
+              devLog.error("Promotion delete error:", deleteError);
+              // Don't fail the whole operation if promotion delete fails
+            }
+          }
+        }
+      }
 
       /**
        * Reset and reload.
@@ -2680,6 +2884,353 @@ function ProductManagerContent() {
                     </div>
                   </div>
                 )}
+
+                {/* Promotion Section */}
+                <div className="rounded-[24px] border border-yellow-200 bg-white/70 p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">
+                        PRODUCT PROMOTION
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {editingProduct ? "Set promotional pricing for this product" : "Add promotion to this new product"}
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.hasPromotion}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            hasPromotion: checked,
+                            selectedProductForPromotion: checked && editingProduct ? editingProduct : prev.selectedProductForPromotion,
+                          }));
+                          if (!checked) {
+                            setShowProductSelector(false);
+                            setProductSearchQuery("");
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-yellow-300 text-yellow-400 focus:ring-2 focus:ring-yellow-400"
+                      />
+                      <span className="text-sm font-semibold text-neutral-800">Enable Promotion</span>
+                    </label>
+                  </div>
+
+                  {formData.hasPromotion && (
+                    <div className="space-y-4">
+                      {/* Existing Product Selector for NEW products */}
+                      {!editingProduct && (
+                        <>
+                          <div>
+                            <label className="mb-2 block text-sm font-bold text-neutral-800">
+                              Select Existing Product for Promotion
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setShowProductSelector(!showProductSelector)}
+                              className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-left text-sm font-semibold text-neutral-900 transition hover:border-yellow-400 focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-200/60"
+                            >
+                              {formData.selectedProductForPromotion ? (
+                                <span className="flex items-center gap-3">
+                                  {formData.selectedProductForPromotion.image && (
+                                    <img 
+                                      src={getSafeProductImage(formData.selectedProductForPromotion.image)} 
+                                      alt={formData.selectedProductForPromotion.name}
+                                      className="h-10 w-10 rounded-lg object-cover"
+                                    />
+                                  )}
+                                  <span className="flex-1">
+                                    <span className="font-bold">{formData.selectedProductForPromotion.name}</span>
+                                    <span className="ml-2 text-neutral-500">• {formData.selectedProductForPromotion.brand}</span>
+                                  </span>
+                                  <span className="font-black text-yellow-600">{formatPrice(formData.selectedProductForPromotion.price)}</span>
+                                </span>
+                              ) : (
+                                "Choose a product..."
+                              )}
+                            </button>
+                          </div>
+
+                          {showProductSelector && (
+                            <div className="rounded-2xl border border-yellow-200 bg-white p-4">
+                              {/* Search */}
+                              <div className="mb-4">
+                                <input
+                                  type="text"
+                                  placeholder="Search products by name or brand..."
+                                  value={productSearchQuery}
+                                  onChange={(e) => setProductSearchQuery(e.target.value)}
+                                  className="w-full rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                                />
+                              </div>
+
+                              {/* Horizontal Product Scroller */}
+                              <div className="relative">
+                                {/* Left Arrow */}
+                                {selectorScrollPosition > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const container = document.getElementById('product-selector-scroll');
+                                      if (container) {
+                                        container.scrollBy({ left: -300, behavior: 'smooth' });
+                                      }
+                                    }}
+                                    className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-yellow-300 bg-white text-yellow-600 shadow-lg transition hover:border-yellow-400 hover:bg-yellow-50"
+                                  >
+                                    <ChevronLeft className="h-5 w-5" />
+                                  </button>
+                                )}
+
+                                {/* Products Container */}
+                                <div 
+                                  id="product-selector-scroll"
+                                  className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-yellow-300"
+                                  onScroll={(e) => {
+                                    const target = e.target as HTMLDivElement;
+                                    setSelectorScrollPosition(target.scrollLeft);
+                                  }}
+                                >
+                                  {products
+                                    .filter(p => {
+                                      if (!productSearchQuery.trim()) return true;
+                                      const search = productSearchQuery.toLowerCase();
+                                      return (
+                                        p.name.toLowerCase().includes(search) ||
+                                        p.brand?.toLowerCase().includes(search) ||
+                                        p.brands?.name.toLowerCase().includes(search)
+                                      );
+                                    })
+                                    .map((product) => (
+                                      <div 
+                                        key={product.id}
+                                        onClick={() => {
+                                          setFormData(prev => ({ 
+                                            ...prev, 
+                                            selectedProductForPromotion: product,
+                                            promotionDiscountPercent: "",
+                                            promotionPrice: "",
+                                          }));
+                                          setShowProductSelector(false);
+                                          setProductSearchQuery("");
+                                        }}
+                                        className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border-2 border-yellow-200 bg-white transition-all hover:border-yellow-400 hover:shadow-lg"
+                                      >
+                                        {/* Product Image */}
+                                        <div className="relative h-[140px] w-full overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
+                                          <img 
+                                            src={getSafeProductImage(product.image)} 
+                                            alt={product.name}
+                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            onError={(e) => {
+                                              const img = e.currentTarget;
+                                              img.src = "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
+                                            }}
+                                          />
+                                          {product.badge && (
+                                            <div className="absolute left-2 top-2 rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-bold uppercase text-black">
+                                              {product.badge}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Product Info */}
+                                        <div className="p-3">
+                                          <p className="truncate text-[10px] font-black uppercase tracking-wider text-yellow-600">
+                                            {product.brands?.name || product.brand}
+                                          </p>
+                                          <h4 className="mt-1 line-clamp-2 min-h-[32px] text-sm font-black text-neutral-900">
+                                            {product.name}
+                                          </h4>
+                                          <p className="mt-2 text-base font-black text-yellow-600">
+                                            {formatPrice(product.price)}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+
+                                {/* Right Arrow */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const container = document.getElementById('product-selector-scroll');
+                                    if (container) {
+                                      container.scrollBy({ left: 300, behavior: 'smooth' });
+                                    }
+                                  }}
+                                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-yellow-300 bg-white text-yellow-600 shadow-lg transition hover:border-yellow-400 hover:bg-yellow-50"
+                                >
+                                  <ChevronRight className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Promotion Details - Show for both new products (if product selected) and editing */}
+                      {(editingProduct || formData.selectedProductForPromotion) && (
+                        <>
+                          {/* Selected Product Display */}
+                          {formData.selectedProductForPromotion && (
+                            <div className="rounded-xl border border-yellow-200 bg-gradient-to-br from-yellow-50/50 to-white p-4">
+                              <div className="flex items-center gap-4">
+                                {formData.selectedProductForPromotion.image && (
+                                  <img 
+                                    src={getSafeProductImage(formData.selectedProductForPromotion.image)} 
+                                    alt={formData.selectedProductForPromotion.name}
+                                    className="h-16 w-16 rounded-lg object-cover"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <p className="text-xs font-bold uppercase text-yellow-600">Selected Product</p>
+                                  <p className="mt-1 font-black text-neutral-900">{formData.selectedProductForPromotion.name}</p>
+                                  <p className="text-sm text-neutral-600">{formData.selectedProductForPromotion.brand}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs font-bold uppercase text-neutral-500">Original Price</p>
+                                  <p className="text-xl font-black text-yellow-600">{formatPrice(formData.selectedProductForPromotion.price)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Or for editing existing product */}
+                          {editingProduct && !formData.selectedProductForPromotion && (
+                            <div className="rounded-xl border border-yellow-200 bg-gradient-to-br from-yellow-50/50 to-white p-4">
+                              <div className="flex items-center gap-4">
+                                {editingProduct.image && (
+                                  <img 
+                                    src={getSafeProductImage(editingProduct.image)} 
+                                    alt={editingProduct.name}
+                                    className="h-16 w-16 rounded-lg object-cover"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <p className="text-xs font-bold uppercase text-yellow-600">Product</p>
+                                  <p className="mt-1 font-black text-neutral-900">{editingProduct.name}</p>
+                                  <p className="text-sm text-neutral-600">{editingProduct.brands?.name || editingProduct.brand}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs font-bold uppercase text-neutral-500">Original Price</p>
+                                  <p className="text-xl font-black text-yellow-600">{formatPrice(editingProduct.price)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Discount Percentage Input */}
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                                Discount Percentage *
+                              </label>
+                              <input
+                                type="number"
+                                name="promotionDiscountPercent"
+                                required={formData.hasPromotion}
+                                min="1"
+                                max="99"
+                                step="1"
+                                value={formData.promotionDiscountPercent}
+                                onChange={(e) => {
+                                  const percent = e.target.value;
+                                  const originalPrice = editingProduct?.price || formData.selectedProductForPromotion?.price || 0;
+                                  const promotionPrice = originalPrice > 0 && percent 
+                                    ? Math.round(originalPrice * (1 - parseFloat(percent) / 100))
+                                    : "";
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    promotionDiscountPercent: percent,
+                                    promotionPrice: String(promotionPrice),
+                                  }));
+                                }}
+                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                                placeholder="25"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                                Promotion Price (MMK)
+                              </label>
+                              <div className="w-full rounded-2xl border border-yellow-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-neutral-500">
+                                {formData.promotionPrice ? formatPrice(parseFloat(formData.promotionPrice)) : '---'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Discount Display */}
+                          {formData.promotionDiscountPercent && formData.promotionPrice && parseFloat(formData.promotionPrice) > 0 && (
+                            <div className="flex items-center gap-3 rounded-2xl bg-green-50 px-4 py-3 border border-green-200">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white font-black text-lg">
+                                %
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-xs font-bold uppercase text-green-700">You Save</p>
+                                <p className="text-lg font-black text-green-600">
+                                  {formData.promotionDiscountPercent}% OFF • {formatPrice((editingProduct?.price || formData.selectedProductForPromotion?.price || 0) - parseFloat(formData.promotionPrice))} Saved
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Promotion Dates */}
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                                Start Date & Time *
+                              </label>
+                              <input
+                                type="datetime-local"
+                                name="promotionStartDate"
+                                required={formData.hasPromotion}
+                                value={formData.promotionStartDate}
+                                onChange={handleInputChange}
+                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                                End Date & Time *
+                              </label>
+                              <input
+                                type="datetime-local"
+                                name="promotionEndDate"
+                                required={formData.hasPromotion}
+                                value={formData.promotionEndDate}
+                                onChange={handleInputChange}
+                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Promotion Active Toggle */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              name="promotionActive"
+                              id="promotion_active"
+                              checked={formData.promotionActive}
+                              onChange={handleInputChange}
+                              className="h-4 w-4 rounded border-yellow-300 text-yellow-400 focus:ring-2 focus:ring-yellow-400"
+                            />
+                            <label
+                              htmlFor="promotion_active"
+                              className="text-sm font-semibold text-neutral-800"
+                            >
+                              Promotion Active (visible to customers)
+                            </label>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Active */}
                 <div className="flex items-center gap-2">

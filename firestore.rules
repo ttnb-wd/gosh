@@ -141,6 +141,21 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /promotions/{promotionId} {
+      // Public can only read active promotions within their date range
+      // The API route /api/promotions/active handles the date filtering
+      allow read: if true;
+      // Only admin can write
+      allow write: if isAdmin();
+    }
+
+    match /product_promotions/{promotionId} {
+      // Public can read active product promotions
+      allow read: if true;
+      // Only admin can write
+      allow write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
