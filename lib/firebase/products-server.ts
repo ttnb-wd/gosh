@@ -63,6 +63,18 @@ export async function getProduct(
   };
 }
 
+/**
+ * Get all products
+ */
+export async function getAllProducts(): Promise<Product[]> {
+  const snapshot = await productsCollection.get();
+  
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Omit<Product, "id">),
+  }));
+}
+
 export async function createProduct(
   data: Omit<Product, "id" | "createdAt">
 ): Promise<Product> {

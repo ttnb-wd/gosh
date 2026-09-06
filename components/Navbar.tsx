@@ -244,6 +244,13 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
             </Link>
 
             <Link
+              href="/promotions"
+              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
+            >
+              Promotions
+            </Link>
+
+            <Link
               href="/about"
               className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
             >

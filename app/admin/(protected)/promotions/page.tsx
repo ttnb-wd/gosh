@@ -1,9 +1,11 @@
-import PromotionManager from "@/components/admin/PromotionManager";
+import { Metadata } from "next";
+import ProductPromotionManager from "@/components/admin/ProductPromotionManager";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Promotions | Admin",
+  description: "Manage product promotions and discounts",
 };
 
 export default function PromotionsPage() {
-  return <PromotionManager />;
+  return <ProductPromotionManager />;
 }

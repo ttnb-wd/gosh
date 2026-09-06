@@ -9,6 +9,8 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import QuickViewModal from "./QuickViewModal";
+import ProductCardWithPromotion from "./ProductCardWithPromotion";
+import { useProductPromotions } from "@/hooks/useProductPromotions";
 import { db } from "@/lib/firebase/config";
 import { SCENT_COLLECTIONS, isScentCollection } from "@/lib/collections";
 import {
@@ -416,7 +418,7 @@ function ProductCard({ product, onAddToBag, onQuickView, priority = false, selec
               loading={priority ? undefined : "lazy"}
               priority={priority}
               sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
-              unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+              unoptimized={imageSrc.includes("ik.imagekit.io")}
               className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
               onError={() => {
                 setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
@@ -498,7 +500,7 @@ function ProductCard({ product, onAddToBag, onQuickView, priority = false, selec
             loading={priority ? undefined : "lazy"}
             priority={priority}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+            unoptimized={imageSrc.includes("ik.imagekit.io")}
             className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
             onError={() => {
               setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
@@ -810,6 +812,9 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   });
   const loadRequestRef = useRef(0);
   const activeBrandsRef = useRef<BrandOption[]>([]);
+
+  // Use the promotion hook to fetch active promotions
+  const { getPromotion, loading: promotionsLoading } = useProductPromotions();
 
   const normalizeProduct = (
     productId: string,
@@ -1480,15 +1485,12 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           >
             {filteredProducts.map((product, index) => (
               <ProductRevealCard key={`${selectedBrand}-${product.id}`} index={index}>
-                <ProductCard 
+                <ProductCardWithPromotion 
                   product={product} 
+                  promotion={getPromotion(product.id)}
                   onAddToBag={onAddToBag}
                   onQuickView={handleQuickView}
                   priority={index === 0}
-                  selectedDecants={selectedDecants}
-                  setSelectedDecants={setSelectedDecants}
-                  openDecantDropdown={openDecantDropdown}
-                  setOpenDecantDropdown={setOpenDecantDropdown}
                 />
               </ProductRevealCard>
             ))}

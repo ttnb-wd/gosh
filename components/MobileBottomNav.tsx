@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, ShoppingBag, Compass, Mail } from "lucide-react";
+import { Home, ShoppingBag, Compass, Mail, Tag } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,6 +19,12 @@ export default function MobileBottomNav() {
       label: "Products",
       icon: ShoppingBag,
       isActive: pathname.startsWith("/products"),
+    },
+    {
+      href: "/promotions",
+      label: "Promos",
+      icon: Tag,
+      isActive: pathname.startsWith("/promotions"),
     },
     {
       href: "/about",

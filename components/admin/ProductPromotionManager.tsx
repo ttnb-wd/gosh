@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Plus, Edit2, Trash2, Power, PowerOff, Tag, Package, Percent, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import DateTimePicker from "@/components/admin/DateTimePicker";
 import type { Product } from "@/lib/firebase/products-server";
 import { Timestamp } from "firebase/firestore";
 
@@ -515,6 +516,14 @@ export default function ProductPromotionManager() {
                     </div>
                   </div>
                 )}
+                
+                {selectedProduct && (
+                  <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-900/20">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Note:</strong> Creating a promotion will NOT change this product's badge. The product badge (like "New" or "Best Seller") is independent and must be managed in the product settings.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Product Selector */}
@@ -653,31 +662,37 @@ export default function ProductPromotionManager() {
               {/* Dates */}
               {selectedProduct && (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">
-                      Start Date & Time <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formData.start_at}
-                      onChange={(e) => setFormData({ ...formData, start_at: e.target.value })}
-                      className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-semibold text-[#1f1a14] transition focus:border-[#d4af37] focus:outline-none focus:ring-4 focus:ring-[#d4af37]/20 dark:border-[#d4af37]/20 dark:bg-[#1f1a14] dark:text-[#fff8e7] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
-                      required
-                    />
-                  </div>
+                  <DateTimePicker
+                    selected={formData.start_at ? new Date(formData.start_at) : null}
+                    onChange={(date) => {
+                      if (date) {
+                        setFormData({ ...formData, start_at: formatDateForInput(date) });
+                      }
+                    }}
+                    label="Start Date & Time"
+                    required
+                    minDate={new Date()}
+                    placeholderText="Select start date and time"
+                    className="rounded-2xl py-3 text-sm font-semibold"
+                  />
 
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">
-                      End Date & Time <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formData.end_at}
-                      onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
-                      className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-semibold text-[#1f1a14] transition focus:border-[#d4af37] focus:outline-none focus:ring-4 focus:ring-[#d4af37]/20 dark:border-[#d4af37]/20 dark:bg-[#1f1a14] dark:text-[#fff8e7] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 dark:[&::-webkit-calendar-picker-indicator]:invert"
-                      required
-                    />
-                  </div>
+                  <DateTimePicker
+                    selected={formData.end_at ? new Date(formData.end_at) : null}
+                    onChange={(date) => {
+                      if (date) {
+                        setFormData({ ...formData, end_at: formatDateForInput(date) });
+                      }
+                    }}
+                    label="End Date & Time"
+                    required
+                    minDate={formData.start_at ? new Date(formData.start_at) : new Date()}
+                    placeholderText="Select end date and time"
+                    className="rounded-2xl py-3 text-sm font-semibold"
+                    showValidationError={
+                      !!(formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at))
+                    }
+                    validationMessage="End date must be after start date"
+                  />
                 </div>
               )}
 

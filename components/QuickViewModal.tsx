@@ -15,6 +15,7 @@ interface Product {
   category?: string;
   decants: { label: string; price: number }[];
   notes?: ProductQuickViewNotes;
+  promotion_price?: number; // Promotional price if available
 }
 
 interface ProductQuickViewNotes {
@@ -144,7 +145,8 @@ export default function QuickViewModal(props: QuickViewModalProps) {
 
               {/* MOBILE IMAGE SECTION */}
               <div className="relative h-[42vh] min-h-[260px] overflow-hidden bg-[#fffdf6] dark:bg-[#141008] sm:h-[56vh] sm:min-h-[420px] lg:hidden">
-                {product.badge && (
+                {/* Only show badge if product does NOT have promotional pricing */}
+                {!product.promotion_price && product.badge && (
                   <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
                     {product.badge}
                   </div>
@@ -154,7 +156,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                   alt={product.name}
                   fill
                   sizes="94vw"
-                  unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+                  unoptimized={imageSrc.includes("ik.imagekit.io")}
                   className="object-cover object-center"
                   onError={() => {
                     setImageSrc(fallbackQuickViewImage);
@@ -165,7 +167,8 @@ export default function QuickViewModal(props: QuickViewModalProps) {
               {/* LEFT IMAGE SECTION - DESKTOP ONLY */}
               {showDesktopImage && (
                 <div className="relative hidden overflow-hidden bg-[#fffdf6] lg:block lg:h-[88vh] lg:max-h-[88vh] lg:min-h-0">
-                  {product.badge && (
+                  {/* Only show badge if product does NOT have promotional pricing */}
+                  {!product.promotion_price && product.badge && (
                     <div className="absolute left-6 top-6 z-20 rounded-full bg-yellow-400 px-5 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)]">
                       {product.badge}
                     </div>
@@ -175,7 +178,7 @@ export default function QuickViewModal(props: QuickViewModalProps) {
                     alt={product.name}
                     fill
                     sizes="(min-width: 1024px) 50vw, 100vw"
-                    unoptimized={!imageSrc.startsWith("/") && !imageSrc.startsWith("https://images.unsplash.com/")}
+                    unoptimized={imageSrc.includes("ik.imagekit.io")}
                     className="object-cover object-center"
                     onError={() => {
                       setImageSrc(fallbackQuickViewImage);

@@ -112,7 +112,8 @@ export default function PromotionBanner() {
   useEffect(() => {
     async function fetchPromotions() {
       try {
-        const response = await fetch("/api/promotions/active");
+        // Use unified endpoint to get both banner and product promotions
+        const response = await fetch("/api/promotions/unified");
         
         if (!response.ok) {
           console.error("Failed to fetch promotions:", response.status, response.statusText);
@@ -123,8 +124,31 @@ export default function PromotionBanner() {
 
         const result = await response.json();
 
-        if (result.success && result.promotions) {
-          setPromotions(result.promotions);
+        if (result.success && result.data) {
+          // Combine banner promotions and product promotions
+          const allPromotions: EnrichedPromotion[] = [
+            ...result.data.bannerPromotions,
+            // Convert product promotions to banner format
+            ...result.data.productPromotions.map((promo: any) => ({
+              id: promo.id,
+              type: 'new_product' as const,
+              title: promo.product?.name || 'Special Offer',
+              description: `Save ${Math.round(((promo.product?.price - promo.promotion_price) / promo.product?.price) * 100)}% on this product!`,
+              image: promo.product?.image,
+              imageFileId: null,
+              cta_text: 'Shop Now',
+              cta_url: `/products/${promo.product_id}`,
+              product_id: promo.product_id,
+              is_active: promo.is_active,
+              start_at: promo.start_at,
+              end_at: promo.end_at,
+              created_at: promo.created_at,
+              updated_at: promo.updated_at,
+              product: promo.product,
+            })),
+          ];
+          
+          setPromotions(allPromotions);
         } else {
           console.error("API returned unsuccessful response:", result);
         }

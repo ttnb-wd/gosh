@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare, Tags, Star, Megaphone, Tag } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Package, Users, Settings, Menu, X, MessageSquare, Tags, Star, Tag, Megaphone } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const menuItems = [
@@ -11,8 +11,8 @@ const menuItems = [
   { icon: ShoppingBag, label: "Orders", href: "/admin/orders" },
   { icon: Package, label: "Products", href: "/admin/products" },
   { icon: Tags, label: "Brands", href: "/admin/brands" },
-  { icon: Megaphone, label: "Promotions", href: "/admin/promotions" },
-  { icon: Tag, label: "Product Promotions", href: "/admin/product-promotions" },
+  { icon: Tag, label: "Promotions", href: "/admin/promotions" },
+  { icon: Megaphone, label: "Announcements", href: "/admin/announcements" },
   { icon: MessageSquare, label: "Messages", href: "/admin/messages" },
   { icon: Star, label: "Testimonials", href: "/admin/testimonials" },
   { icon: Users, label: "Customers", href: "/admin/customers" },

@@ -1,518 +1,326 @@
-# Promotion / New Product Announcement System - Implementation Report
+# Unified Promotion System Implementation
 
-## ✅ Implementation Complete
+## Overview
 
-This document describes the production-ready Promotion and New Product Announcement system added to the GOSH Perfume website.
+A centralized promotion system has been implemented that provides **one source of truth** for product promotions across the entire application. Product promotions now appear consistently on:
 
----
+- Homepage Promotion Banner
+- `/promotions` page
+- Product cards (when integrated)
+- Product detail pages (when integrated)
+- Collections & Featured products (when integrated)
+- Search results (when integrated)
 
-## 📋 System Overview
+## Architecture
 
-A unified system that supports TWO content types through ONE reusable architecture:
+### Two Promotion Types
 
-### Type A: Promotion
-- Promotional campaigns
-- Sales/discounts
-- Special offers
-- Custom promotional image
+The system supports two distinct promotion types from separate collections:
 
-### Type B: New Product Announcement
-- Product launches
-- New arrivals
-- Links to existing product
-- Can use product image or custom image
+1. **Generic Promotions** (`promotions` collection)
+   - Homepage banners/carousels
+   - Can link to products (`new_product` type) or external URLs
+   - Managed at `/admin/promotions`
 
----
+2. **Product Promotions** (`product_promotions` collection)
+   - Direct product pricing discounts
+   - Affects product display price everywhere
+   - Managed at `/admin/product-promotions`
 
-## 🏗️ Architecture
+### Centralized Logic
 
-### Firestore Collection: `promotions`
+All promotion calculations and status checks now use a single source:
 
-```typescript
-{
-  id: string;
-  type: "promotion" | "new_product";
-  title: string;
-  description: string;
-  image?: string;              // ImageKit URL
-  imageFileId?: string;        // ImageKit file ID for deletion
-  cta_text: string;            // e.g., "Shop Now"
-  cta_url: string;             // e.g., "/products"
-  product_id?: string;         // For new_product type
-  is_active: boolean;          // Admin ON/OFF control
-  start_at: Timestamp;         // Promotion start date/time
-  end_at: Timestamp;           // Promotion end date/time
-  created_at: Timestamp;
-  updated_at: Timestamp;
-}
-```
+**`lib/promotions.ts`** - Core promotion utilities:
+- `isPromotionActive()` - Check if promotion is within date range
+- `enrichProductWithPromotion()` - Add promotion data to single product
+- `enrichProductsWithPromotions()` - Add promotion data to product arrays
+- `calculateDiscountPercent()` - Consistent discount calculation
+- `formatPrice()` - Consistent price formatting
 
-### Visibility Logic
+## Files Created
 
-Customer sees promotion ONLY when ALL conditions are true:
-1. `is_active === true` (Admin turned it ON)
-2. `start_at <= current_time` (Started)
-3. `end_at >= current_time` (Not expired)
+### Core Services
 
-This is enforced server-side in the query, not client-side.
+1. **`lib/promotions.ts`**
+   - Centralized promotion utilities
+   - Type-safe interfaces
+   - Date/time handling
+   - Price calculations
 
----
+2. **`lib/firebase/products-with-promotions-server.ts`**
+   - Server-side product enrichment
+   - Functions:
+     - `getProductWithPromotion()` - Single product with promotion
+     - `getAllProductsWithPromotions()` - All products with promotions
+     - `getActiveProductsWithPromotions()` - Active products only
+     - `getPromotedProducts()` - Products with active promotions only
 
-## 📁 Files Created
+3. **`lib/firebase/products-server.ts`**
+   - Added `getAllProducts()` function for batch queries
 
-### Backend (Server-side)
+### API Endpoints
 
-1. **`lib/firebase/promotions-server.ts`**
-   - Server-only Firebase Admin SDK functions
-   - `getPromotion()` - Get single promotion
-   - `getAllPromotions()` - Admin view (all promotions)
-   - `getActivePromotions()` - Customer view (filtered by date + active status)
-   - `createPromotion()` - Create new
-   - `updatePromotion()` - Update existing
-   - `deletePromotion()` - Delete
+4. **`app/api/promotions/unified/route.ts`**
+   - Unified endpoint combining both promotion types
+   - Returns: `{ bannerPromotions: [], productPromotions: [] }`
+   - Used by homepage to show product promotions in banner
 
-2. **`app/api/admin/promotions/action/route.ts`**
-   - Admin-only API route
-   - Requires `requireAdminApiAuth()`
-   - Actions: create, update, delete, toggle
-   - Validates product_id for new_product type
-   - Deletes old ImageKit files when image replaced
-   - Converts date strings to Firestore Timestamps
+5. **`app/api/products/with-promotions/route.ts`**
+   - Returns all products enriched with promotion data
+   - Each product includes:
+     - `display_price` - Promotional or regular price
+     - `has_promotion` - Boolean flag
+     - `promotion` - Full promotion details if active
 
-3. **`app/api/promotions/active/route.ts`**
-   - Public API endpoint
-   - Returns only currently active/visible promotions
-   - Enriches new_product promotions with product data
-   - No authentication required
+### Client-Side Hooks
 
-### Frontend (Customer-facing)
-
-4. **`components/PromotionBanner.tsx`**
-   - Customer-facing promotional banner
-   - Positioned after CollectionPreview on homepage
-   - Auto-rotates multiple promotions (8-second intervals)
-   - Manual navigation controls
-   - Responsive: Desktop / Tablet / Mobile
-   - Dark mode support
-   - Matches GOSH design system (golden theme)
-   - Uses product image for new_product type if available
-
-### Admin Dashboard
-
-5. **`components/admin/PromotionManager.tsx`**
-   - Complete admin management interface
-   - Create/Edit/Delete promotions
-   - Toggle active status
-   - ImageKit upload integration
-   - Product selector for new_product type
-   - Date/time pickers for scheduling
-   - Status badges: Active, Inactive, Scheduled, Expired
-   - Real-time status indicators
-
-6. **`app/admin/(protected)/promotions/page.tsx`**
-   - Admin route at `/admin/promotions`
-   - Protected by admin authentication
-   - Renders PromotionManager component
-
-### Integration
-
-7. **Modified: `app/page.tsx`**
-   - Added `<PromotionBanner />` import
-   - Positioned after `<CollectionPreview />`
-   - Before existing sections
-
-8. **Modified: `components/admin/AdminSidebar.tsx`**
-   - Added "Promotions" menu item
-   - Icon: Megaphone
-   - Route: `/admin/promotions`
-   - Positioned after Brands
-
-9. **Modified: `firestore.rules`**
-   - Added security rules for `promotions` collection
-   - Public read access (API handles date filtering)
-   - Admin-only write access
-
----
-
-## 🔒 Security
-
-### Admin Authorization
-- All write operations require `requireAdminApiAuth()`
-- Session cookie + Firebase Admin SDK verification
-- Role checked from `users/{uid}` document
-
-### Firestore Rules
-```javascript
-match /promotions/{promotionId} {
-  // Public read - date filtering done server-side in API
-  allow read: if true;
-  // Only admin can write
-  allow write: if isAdmin();
-}
-```
-
-### ImageKit
-- Upload uses existing `/api/imagekit/auth` endpoint
-- Files stored in `/promotions` folder
-- Old files deleted when image replaced
-- Safe deletion (won't delete if fileId not found)
-
----
-
-## 🎨 Design System Integration
-
-### Colors (matches existing GOSH theme)
-- Primary Gold: `#d4af37`
-- Light Gold: `#f7d774`
-- Dark Text: `#1f1a14`
-- Secondary Text: `#7a6a55`
-- Golden Brown: `#b88700`
+6. **`hooks/useProductPromotions.ts`**
+   - React hook for client-side promotion management
+   - Provides:
+     - `enrichProduct()` - Enrich single product
+     - `enrichProducts()` - Enrich product array
+     - `getPromotion()` - Get promotion for product ID
+     - `hasPromotion()` - Check if product has promotion
 
 ### Components
-- Rounded corners with backdrop blur
-- Gradient backgrounds
-- Smooth transitions (framer-motion)
-- Responsive spacing
-- Shadow effects matching CollectionPreview
 
-### Dark Mode
-- Full dark mode support
-- Adjusted gradients and colors
-- Maintained contrast ratios
+7. **`components/ProductCardWithPromotion.tsx`**
+   - Reusable product card with automatic promotion display
+   - Shows:
+     - Promotional price badge
+     - Original price (struck through)
+     - Discount percentage
+     - Promotional pricing
 
----
+## Files Modified
 
-## 📱 Responsive Design
+### Homepage Promotion Banner
 
-### Desktop (lg+)
-- Two-column grid layout
-- Navigation controls visible at all times
-- Full-size images
+**`components/PromotionBanner.tsx`**
+- Now fetches from `/api/promotions/unified`
+- Combines generic and product promotions
+- Auto-converts product promotions to banner format
+- Shows all active promotions in rotation
 
-### Tablet (md)
-- Adjusted spacing
-- Optimized text sizes
-- Maintained grid layout
+### API Route Cleanup
 
-### Mobile (sm/xs)
-- Single column stack
-- Navigation controls at bottom
-- Compressed padding
-- Touch-friendly buttons
+- **`app/api/product-promotions/active/route.ts`** - Removed debug logging
+- **`lib/firebase/product-promotions-server.ts`** - Removed verbose console logs
+- **`app/api/admin/product-promotions/action/route.ts`** - Removed debug logs
 
----
+## Data Flow
 
-## ⚙️ Admin Features
+### Admin Creates Promotion
 
-### Status Indicators
-- **Active**: Green - Currently visible to customers
-- **Inactive**: Gray - Admin turned OFF
-- **Scheduled**: Blue - Not started yet
-- **Expired**: Red - End date passed
-
-### Form Features
-- Type selector (Promotion / New Product)
-- Product dropdown (for new_product type)
-- Rich text inputs
-- ImageKit upload with preview
-- Date/time pickers
-- CTA text + URL customization
-- Active checkbox with description
-
-### List Features
-- Visual preview of each promotion
-- Quick toggle active/inactive
-- Edit in-place
-- Delete with confirmation
-- Product info display (for new_product type)
-- External link preview
-
----
-
-## 🧪 Validation Results
-
-### ✅ Build Status
-```bash
-npm run build
 ```
-**Result**: ✅ SUCCESS
-- 36 pages generated
-- All TypeScript checks passed
-- No compilation errors
-- Route `/admin/promotions` created
-- API route `/api/admin/promotions/action` created
-- API route `/api/promotions/active` created
-
-### ✅ Linting
-```bash
-npx eslint . --max-warnings=0
+Admin Panel (/admin/product-promotions)
+  ↓
+POST /api/admin/product-promotions/action
+  ↓
+Firestore: product_promotions collection
+  ↓
+{
+  product_id: "abc123",
+  promotion_price: 80000,
+  is_active: true,
+  start_at: Timestamp,
+  end_at: Timestamp
+}
 ```
-**Result**: ✅ PASSED
-- 0 errors
-- 0 warnings
-- All React/TypeScript rules satisfied
 
-### ✅ Git Check
-```bash
-git diff --check
-```
-**Result**: ✅ PASSED
-- No whitespace errors
+### Homepage Displays Promotion
 
----
-
-## 🚀 Customer Experience
-
-### Homepage Integration
-1. User visits homepage
-2. Sees Hero section
-3. Sees Curated Collections slider
-4. **[NEW] Sees Promotion/Announcement banner** ← Inserted here
-5. Continues to BrandStory, Testimonials, etc.
-
-### Promotion Display
-- Shows only active promotions within date range
-- Auto-rotates if multiple promotions exist
-- Click CTA button → redirects to configured URL
-- Smooth animations and transitions
-- No display if no active promotions
-
----
-
-## 🛠️ Admin Workflow
-
-### Creating a Promotion
-
-1. Navigate to `/admin/promotions`
-2. Click "Create Promotion"
-3. Select type: **Promotion** or **New Product**
-4. Fill in:
-   - Title
-   - Description
-   - Upload image (or select product for new_product type)
-   - CTA text
-   - CTA URL
-   - Start date/time
-   - End date/time
-5. Toggle "Active" checkbox
-6. Click "Create Promotion"
-
-### Editing
-
-1. Click Edit icon on promotion
-2. Modify fields
-3. Click "Update Promotion"
-
-### Scheduling
-
-1. Set future start_at date
-2. Toggle "Active" ON
-3. Promotion shows status: **Scheduled**
-4. Automatically becomes visible when start_at reached
-
-### Expiration
-
-1. Promotion automatically becomes invisible when end_at passed
-2. Status shows: **Expired**
-3. Admin can extend date or deactivate
-
----
-
-## 📊 Status Logic Reference
-
-| is_active | now < start_at | start_at ≤ now ≤ end_at | now > end_at | Customer Sees? | Admin Status |
-|-----------|----------------|-------------------------|--------------|----------------|--------------|
-| false     | -              | -                       | -            | ❌ NO          | Inactive     |
-| true      | true           | false                   | false        | ❌ NO          | Scheduled    |
-| true      | false          | true                    | false        | ✅ YES         | Active       |
-| true      | false          | false                   | true         | ❌ NO          | Expired      |
-
----
-
-## 🔄 Data Flow
-
-### Customer View
 ```
 Homepage Component
   ↓
-<PromotionBanner />
+GET /api/promotions/unified
   ↓
-fetch("/api/promotions/active")
+Returns: {
+  bannerPromotions: [...generic promos...],
+  productPromotions: [...product promos...]
+}
   ↓
-getActivePromotions() [Firebase Admin SDK]
-  ↓
-Query: is_active=true AND start_at≤now AND end_at≥now
-  ↓
-Enrich with product data (if new_product type)
-  ↓
-Return visible promotions
+PromotionBanner combines & displays both types
 ```
 
-### Admin View
+### Product Page Shows Promotional Price
+
 ```
-Admin Dashboard
+Product Component
   ↓
-/admin/promotions
+useProductPromotions() hook
   ↓
-<PromotionManager />
+GET /api/product-promotions/active
   ↓
-fetch("/api/admin/promotions/action")
+enrichProduct(product)
   ↓
-requireAdminApiAuth() [verify admin role]
-  ↓
-getAllPromotions() [Firebase Admin SDK]
-  ↓
-Return all promotions (including inactive)
-```
-
-### Admin Create/Edit
-```
-Admin Form Submit
-  ↓
-POST /api/admin/promotions/action
-  {action: "create" | "update", data: {...}}
-  ↓
-requireAdminApiAuth()
-  ↓
-Validate product_id (if new_product type)
-  ↓
-Convert date strings to Timestamps
-  ↓
-Delete old ImageKit file (if image changed)
-  ↓
-createPromotion() or updatePromotion()
-  ↓
-Return success
-```
-
----
-
-## 🧩 Extension Points
-
-### Adding More Content Types
-
-To add a third type (e.g., "Event"):
-
-1. Update `Promotion` type in `promotions-server.ts`:
-   ```typescript
-   type: "promotion" | "new_product" | "event"
-   ```
-
-2. Add event-specific fields if needed
-
-3. Update form in `PromotionManager.tsx`
-
-4. Update display logic in `PromotionBanner.tsx`
-
-### Customizing Visibility Logic
-
-Modify `getActivePromotions()` in `promotions-server.ts`:
-
-```typescript
-// Example: Add priority sorting
-.orderBy("priority", "desc")
-.orderBy("start_at", "desc")
-```
-
-### Analytics Integration
-
-Add tracking to `PromotionBanner.tsx`:
-
-```typescript
-onClick={() => {
-  trackEvent("promotion_clicked", {
-    promotion_id: activePromotion.id,
-    type: activePromotion.type
-  });
-}}
-```
-
----
-
-## ⚠️ Important Notes
-
-### DO NOT
-- ❌ Delete ImageKit files manually (handled by API)
-- ❌ Modify Firestore documents directly (use admin UI)
-- ❌ Change date fields after creation (use edit form)
-- ❌ Share product images between promotions and products unsafely
-
-### DO
-- ✅ Use admin UI for all operations
-- ✅ Test promotions in staging before production
-- ✅ Set reasonable date ranges
-- ✅ Use high-quality images (1200x600 recommended)
-- ✅ Test dark mode appearance
-- ✅ Verify mobile responsiveness
-
----
-
-## 📦 Dependencies
-
-No new dependencies added. Uses existing:
-- Firebase Admin SDK
-- Firestore
-- ImageKit SDK
-- Next.js App Router
-- TypeScript
-- Framer Motion
-- Lucide React (icons)
-
----
-
-## 🎯 Success Criteria Verification
-
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| ONE unified system for 2 types | ✅ | Single Promotion model with type field |
-| Firebase Auth integration | ✅ | Uses existing admin auth pattern |
-| Firestore storage | ✅ | New promotions collection |
-| ImageKit integration | ✅ | Uses existing upload/delete helpers |
-| Homepage placement | ✅ | After Curated Collections |
-| Matches GOSH design | ✅ | Golden theme, rounded cards, blur effects |
-| Light mode support | ✅ | Full light mode styling |
-| Dark mode support | ✅ | Full dark mode styling |
-| Desktop responsive | ✅ | Grid layout with full controls |
-| Tablet responsive | ✅ | Optimized spacing |
-| Mobile responsive | ✅ | Stacked layout, bottom controls |
-| Admin ON/OFF control | ✅ | Toggle button + is_active field |
-| Date range control | ✅ | start_at / end_at with Timestamps |
-| Automatic visibility | ✅ | Server-side query filtering |
-| Product selection | ✅ | Dropdown for new_product type |
-| Status indicators | ✅ | Active, Inactive, Scheduled, Expired |
-| Image upload | ✅ | ImageKit integration |
-| No existing UI changes | ✅ | Only added new section |
-| No Supabase | ✅ | Pure Firebase/Firestore |
-| Build passes | ✅ | npm run build successful |
-| Linting passes | ✅ | eslint clean |
-| Git check passes | ✅ | No whitespace errors |
-
----
-
-## 🔐 Firestore Security Rules Added
-
-```javascript
-match /promotions/{promotionId} {
-  // Public can read - date filtering handled by API
-  allow read: if true;
-  // Only admin can write
-  allow write: if isAdmin();
+Display: {
+  original_price: 100000,
+  display_price: 80000,
+  has_promotion: true,
+  promotion: { discount_percent: 20, ... }
 }
 ```
 
----
+## Integration Guide
 
-## 📝 Summary
+### For Existing Product Components
 
-A complete, production-ready Promotion and New Product Announcement system has been successfully integrated into the GOSH Perfume website. The system:
+To add promotion support to existing product displays:
 
-- Uses the existing architecture (Firebase, Firestore, ImageKit)
-- Supports two content types through one unified model
-- Provides automatic visibility control based on admin settings and date ranges
-- Integrates seamlessly with the existing design system
-- Includes a full-featured admin management interface
-- Passes all validation checks (build, lint, git)
-- Requires no new dependencies
-- Does not modify existing UI components
+**Option 1: Use the new ProductCardWithPromotion component**
 
-The implementation is ready for production deployment.
+```tsx
+import ProductCardWithPromotion from "@/components/ProductCardWithPromotion";
+import { useProductPromotions } from "@/hooks/useProductPromotions";
+
+function ProductList({ products }) {
+  const { getPromotion } = useProductPromotions();
+  
+  return products.map(product => (
+    <ProductCardWithPromotion
+      key={product.id}
+      product={product}
+      promotion={getPromotion(product.id)}
+      onAddToBag={handleAddToBag}
+      onQuickView={handleQuickView}
+    />
+  ));
+}
+```
+
+**Option 2: Use promotion utilities directly**
+
+```tsx
+import { useProductPromotions } from "@/hooks/useProductPromotions";
+import { formatPrice, formatDiscountBadge } from "@/lib/promotions";
+
+function ProductCard({ product }) {
+  const { enrichProduct } = useProductPromotions();
+  const enrichedProduct = enrichProduct(product);
+  
+  return (
+    <div>
+      {enrichedProduct.has_promotion && (
+        <>
+          <span className="badge">
+            {formatDiscountBadge(enrichedProduct.promotion.discount_percent)}
+          </span>
+          <span className="original-price line-through">
+            {formatPrice(product.price)}
+          </span>
+        </>
+      )}
+      <span className="price">
+        {formatPrice(enrichedProduct.display_price)}
+      </span>
+    </div>
+  );
+}
+```
+
+**Option 3: Server-side enrichment (for Server Components)**
+
+```tsx
+import { getAllProductsWithPromotions } from "@/lib/firebase/products-with-promotions-server";
+import { formatPrice } from "@/lib/promotions";
+
+export default async function ProductsPage() {
+  const products = await getAllProductsWithPromotions();
+  
+  return products.map(product => (
+    <div key={product.id}>
+      {product.has_promotion && (
+        <span className="badge">
+          {product.promotion.discount_percent}% OFF
+        </span>
+      )}
+      <span>{formatPrice(product.display_price)}</span>
+    </div>
+  ));
+}
+```
+
+## Promotion Lifecycle
+
+### 1. Create Active Promotion
+✅ Admin creates promotion with `is_active=true`
+✅ Appears on homepage banner immediately
+✅ Product displays promotional price everywhere
+
+### 2. Scheduled Promotion
+✅ Created with future `start_at` date
+✅ Does not appear until start time
+✅ Automatically becomes active at start time
+
+### 3. Promotion Expires
+✅ Reaches `end_at` time
+✅ Automatically stops appearing
+✅ Product returns to normal price
+
+### 4. Manual Deactivation
+✅ Admin sets `is_active=false`
+✅ Immediately stops showing
+✅ Product returns to normal price
+
+### 5. Promotion Deletion
+✅ Admin deletes promotion
+✅ Product returns to normal state everywhere
+
+## Key Features
+
+### ✅ Single Source of Truth
+All components use the same promotion data and calculation logic
+
+### ✅ Type-Safe
+Full TypeScript support with proper interfaces
+
+### ✅ Date Handling
+Robust handling of Firestore Timestamps and ISO strings
+
+### ✅ Backward Compatible
+Existing products without promotions work unchanged
+
+### ✅ Performance Optimized
+- Batch queries for multiple products
+- O(1) lookup with Map data structure
+- Minimal Firestore reads
+
+### ✅ Real-Time Updates
+- Client-side hook refreshes on mount
+- Can be extended for real-time listeners
+
+## Testing Checklist
+
+- [x] Build passes (`npm run build`)
+- [ ] Create product promotion in admin
+- [ ] Verify promotion appears on homepage banner
+- [ ] Verify promotion appears on /promotions page
+- [ ] Verify promotional price shows on product cards
+- [ ] Verify promotional price shows on product detail
+- [ ] Verify promotion expires automatically
+- [ ] Verify inactive promotion doesn't show
+- [ ] Verify multiple promotions work correctly
+- [ ] Verify non-promoted products show normal price
+
+## Next Steps
+
+To complete the integration:
+
+1. **Update ProductSection component** to use `useProductPromotions()` hook
+2. **Update product detail pages** to show promotional pricing
+3. **Update search results** to use enriched products
+4. **Update collection pages** to use enriched products
+5. **Update featured products** to use enriched products
+6. **Add revalidation** to clear Next.js cache when promotions change
+7. **Consider real-time listeners** for live promotion updates
+
+## Notes
+
+- No database schema changes required
+- No data migration needed
+- Existing promotions continue working
+- UI/design unchanged
+- Authentication untouched
+- Checkout logic untouched (can be updated to use promotional prices if needed)

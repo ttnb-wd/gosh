@@ -2453,6 +2453,14 @@ function ProductManagerContent() {
                       )
                     }
                   />
+                  
+                  {formData.badge === "New" && (
+                    <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-900/20">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Note:</strong> The "New" badge is independent of promotions. Only use for genuinely new products. Creating a promotion for an existing product will NOT automatically add this badge.
+                      </p>
+                    </div>
+                  )}
 
                   {!isAccessoryForm && (
                     <PremiumSelect

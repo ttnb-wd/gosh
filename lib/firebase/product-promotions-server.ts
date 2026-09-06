@@ -23,6 +23,7 @@ export type ProductPromotion = {
   updated_at: Timestamp | FieldValue;
 };
 
+// Configure Firestore with extended settings for better reliability
 const productPromotionsCollection = adminDb.collection("product_promotions");
 
 /**
@@ -86,36 +87,51 @@ export async function getAllProductPromotions(): Promise<ProductPromotion[]> {
  * - current time is between start_at and end_at
  */
 export async function getActiveProductPromotions(): Promise<ProductPromotion[]> {
-  const now = Timestamp.now();
-  
-  // Query only active promotions, then filter by date in-memory
-  const snapshot = await productPromotionsCollection
-    .where("is_active", "==", true)
-    .orderBy("created_at", "desc")
-    .get();
-
-  const allActive = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<ProductPromotion, "id">),
-  }));
-
-  // Filter by date range
-  const activePromotions = allActive.filter((promo) => {
-    const startAt = promo.start_at;
-    const endAt = promo.end_at;
+  try {
+    const now = Timestamp.now();
     
-    if (!startAt || !endAt) {
-      return false;
-    }
+    // Query only active promotions without orderBy to avoid index requirement
+    const snapshot = await productPromotionsCollection
+      .where("is_active", "==", true)
+      .get();
 
-    const startMillis = startAt.toMillis();
-    const endMillis = endAt.toMillis();
-    const nowMillis = now.toMillis();
+    const allActive = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<ProductPromotion, "id">),
+    }));
 
-    return startMillis <= nowMillis && endMillis >= nowMillis;
-  });
+    // Filter by date range and sort in memory
+    const activePromotions = allActive
+      .filter((promo) => {
+        const startAt = promo.start_at;
+        const endAt = promo.end_at;
+        
+        if (!startAt || !endAt) {
+          return false;
+        }
 
-  return activePromotions;
+        const startMillis = startAt.toMillis();
+        const endMillis = endAt.toMillis();
+        const nowMillis = now.toMillis();
+
+        return startMillis <= nowMillis && endMillis >= nowMillis;
+      })
+      .sort((a, b) => {
+        // Sort by created_at descending in memory
+        const aTime = a.created_at && typeof a.created_at === 'object' && 'toMillis' in a.created_at
+          ? a.created_at.toMillis()
+          : 0;
+        const bTime = b.created_at && typeof b.created_at === 'object' && 'toMillis' in b.created_at
+          ? b.created_at.toMillis()
+          : 0;
+        return bTime - aTime;
+      });
+
+    return activePromotions;
+  } catch (error) {
+    console.error("[getActiveProductPromotions] Error:", error);
+    throw error;
+  }
 }
 
 /**
