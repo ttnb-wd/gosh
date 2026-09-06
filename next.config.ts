@@ -31,6 +31,54 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  /*
+   * Keep Firebase Admin (and its server-only transitive dependencies) out of
+   * the Turbopack server bundle.
+   *
+   * WHY:
+   * firebase-admin@14 -> jwks-rsa@4 (CommonJS) -> jose@6 (ESM-only).
+   *
+   * `jwks-rsa/src/utils.js` performs a CommonJS `require('jose')`, but every
+   * `jose@6.x` release is `"type": "module"` (ESM-only). When Turbopack tries
+   * to bundle that chain it emits a CJS `require()` of a bundled ESM module,
+   * which throws:
+   *
+   *   Error [ERR_REQUIRE_ESM]: require() of ES Module
+   *   node_modules/jose/dist/webapi/index.js ... not supported.
+   *
+   * IMPORTANT - the `jwks-rsa@4` + `jose@6` pairing is *not* incompatible: it
+   * is the exact combination published by the maintainers (firebase-admin@14
+   * declares jwks-rsa ^4.0.1, jwks-rsa@4 declares jose ^6.1.3).
+   * jwks-rsa@4.1.0's own `engines` field (node `^20.19.0 || ^22.12.0 || >=
+   * 23.0.0`) exists precisely because `jose@6` is ESM-only and must be
+   * resolved by Node's native `require(esm)` support (unflagged only in Node
+   * >= 20.19 / 22.12). firebase-admin@14 also requires node >= 22. Downgrading
+   * packages would NOT fix the error and would move off the supported
+   * combination, so we do not change versions.
+   *
+   * `serverExternalPackages` tells Turbopack to leave these untouched and
+   * resolve them with Node.js at runtime instead of bundling them. On a Node
+   * runtime >= 22.12 (which firebase-admin@14 and jwks-rsa@4 require anyway),
+   * the CommonJS `require('jose')` inside jwks-rsa loads the ESM-only bundle
+   * natively and correctly.
+   *
+   * These are all server-only Firebase Admin dependencies - none is reachable
+   * from a client component, and Firebase Admin remains server-only.
+   */
+  serverExternalPackages: [
+    "firebase-admin",
+    "google-auth-library",
+    "jsonwebtoken",
+    "jose",
+    "jwks-rsa",
+    "@fastify/busboy",
+    "@firebase/database",
+    "@firebase/database-compat",
+    "@firebase/app",
+    "@google-cloud/firestore",
+    "@google-cloud/storage",
+  ],
+
   async headers() {
     return [
       {
