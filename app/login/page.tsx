@@ -1,5 +1,4 @@
 "use client";
-import devLog from "@/lib/dev-log";
 
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -123,15 +122,12 @@ setTurnstileUnavailable(true);
 return;
 }
 
-
   setTurnstileUnavailable(false);
 }, []);
-
 
 useEffect(() => {
 const redirect =
 searchParams.get("redirect");
-
 
 if (
   redirect &&
@@ -150,7 +146,6 @@ if (
 if (accountCreated) {
   setMode("login");
 }
-
 
 }, [
 searchParams,
@@ -188,7 +183,6 @@ return (
   Object.keys(newErrors).length === 0
 );
 
-
 };
 
 const createServerSession = async (
@@ -198,9 +192,6 @@ forceRefresh?: boolean
 ) => Promise<string>;
 }
 ) => {
-devLog.log(
-"[AUTH] Creating Firebase server session..."
-);
 
 const idToken =
   await firebaseUser.getIdToken(true);
@@ -230,26 +221,14 @@ const sessionResult =
     error?: string;
   };
 
-devLog.log(
-  "[AUTH] Session HTTP status:",
-  sessionResponse.status
-);
-
 if (!sessionResponse.ok) {
-  devLog.error(
-    "[AUTH] Session creation failed:",
-    sessionResult
-  );
+  
 
   throw new Error(
     sessionResult.error ||
       "Could not create secure session."
   );
 }
-
-devLog.log(
-  "[AUTH] Server session created successfully."
-);
 
 };
 
@@ -271,9 +250,7 @@ try {
    * STEP 1
    * Validate form
    */
-  devLog.log(
-    "[AUTH] STEP 1: Validating form"
-  );
+  
 
   if (!validateForm()) {
     setLoading(false);
@@ -284,9 +261,7 @@ try {
    * STEP 2
    * Turnstile check
    */
-  devLog.log(
-    "[AUTH] STEP 2: Turnstile check"
-  );
+  
 
   if (
     !turnstileToken &&
@@ -305,9 +280,7 @@ try {
    * Verify Turnstile
    */
   if (turnstileToken) {
-    devLog.log(
-      "[AUTH] STEP 3: Verifying Turnstile"
-    );
+    
 
     const turnstileResponse =
       await fetch(
@@ -342,22 +315,16 @@ try {
       return;
     }
 
-    devLog.log(
-      "[AUTH] STEP 3 SUCCESS"
-    );
+    
   } else {
-    devLog.log(
-      "[AUTH] STEP 3 SKIPPED - Turnstile unavailable"
-    );
+    
   }
 
   /*
    * SIGNUP
    */
   if (mode === "signup") {
-    devLog.log(
-      "[AUTH] SIGNUP: Creating Firebase account"
-    );
+    
 
     const credential =
       await signUpWithEmail(
@@ -376,12 +343,9 @@ try {
 
     try {
       await signOutUser();
-    } catch (signOutError) {
-      devLog.error(
-        "[AUTH] Sign out error:",
-        signOutError
-      );
-    }
+    } catch {
+        // Best-effort sign-out after account creation.
+      }
 
     router.replace(
       "/login?created=1"
@@ -394,9 +358,7 @@ try {
    * STEP 4
    * Firebase Login
    */
-  devLog.log(
-    "[AUTH] STEP 4: Firebase login"
-  );
+  
 
   const credential =
     await signInWithEmail(
@@ -413,21 +375,13 @@ try {
     );
   }
 
-  devLog.log(
-    "[AUTH] STEP 4 SUCCESS",
-    {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-    }
-  );
+  
 
   /*
    * STEP 5
    * Load Firestore profile
    */
-  devLog.log(
-    "[AUTH] STEP 5: Loading profile"
-  );
+  
 
   let profile =
     await getUserProfile(
@@ -438,9 +392,7 @@ try {
    * Create profile if missing
    */
   if (!profile) {
-    devLog.log(
-      "[AUTH] Profile missing. Creating profile..."
-    );
+    
 
     profile =
       await ensureUserProfile(
@@ -458,27 +410,15 @@ try {
     );
   }
 
-  devLog.log(
-    "[AUTH] Profile loaded:",
-    {
-      role: profile.role,
-    }
-  );
+  
 
   /*
    * STEP 6
    * Check account role
    */
-  const isAdmin =
-    profile.role === "admin";
+  
 
-  devLog.log(
-    "[AUTH] STEP 6: Account role",
-    {
-      role: profile.role,
-      isAdmin,
-    }
-  );
+  
 
   /*
    * STEP 7
@@ -495,17 +435,13 @@ try {
    * Admin access is controlled later
    * by requireAdmin().
    */
-  devLog.log(
-    "[AUTH] STEP 7: Creating server session"
-  );
+  
 
   await createServerSession(
     firebaseUser
   );
 
-  devLog.log(
-    "[AUTH] STEP 7 SUCCESS"
-  );
+  
 
   /*
    * STEP 8
@@ -520,9 +456,7 @@ try {
    * be displayed by the website UI
    * based on profile.role.
    */
-  devLog.log(
-    "[AUTH] STEP 8: Redirecting to website"
-  );
+  
 
   const safeRedirect =
     redirectTo &&
@@ -552,29 +486,15 @@ try {
 
   router.refresh();
 
-  devLog.log(
-    "[AUTH] LOGIN COMPLETE",
-    {
-      role: profile.role,
-      isAdmin,
-    }
-  );
+  
 } catch (error) {
-  devLog.error(
-    "========================================"
-  );
+  
 
-  devLog.error(
-    "[AUTH] AUTHENTICATION FAILED"
-  );
+  
 
-  devLog.error(
-    error
-  );
+  
 
-  devLog.error(
-    "========================================"
-  );
+  
 
   setError(
     getFirebaseErrorMessage(
@@ -589,7 +509,6 @@ try {
 } finally {
   setLoading(false);
 }
-
 
 };
 

@@ -1,5 +1,4 @@
 "use client";
-import devLog from "@/lib/dev-log";
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -47,7 +46,7 @@ export default function AdminLoginPage() {
    * Reset Cloudflare Turnstile
    */
   const resetTurnstile = useCallback(() => {
-    devLog.log("[ADMIN LOGIN] Resetting Turnstile");
+    
 
     setTurnstileToken("");
     setTurnstileUnavailable(false);
@@ -60,10 +59,7 @@ export default function AdminLoginPage() {
    */
   const handleTurnstileError = useCallback(
     (errorCode?: string) => {
-      devLog.log(
-        "[ADMIN LOGIN] Turnstile error:",
-        errorCode
-      );
+      
 
       /*
        * 110200 = Turnstile unavailable
@@ -116,18 +112,12 @@ export default function AdminLoginPage() {
   ) => {
     e.preventDefault();
 
-    devLog.log(
-      "========================================"
-    );
-    devLog.log("[ADMIN LOGIN] LOGIN STARTED");
-    devLog.log(
-      "========================================"
-    );
+    
+    
+    
 
     if (loading) {
-      devLog.log(
-        "[ADMIN LOGIN] Already loading"
-      );
+      
       return;
     }
 
@@ -142,22 +132,16 @@ export default function AdminLoginPage() {
        * Validate form
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 1: Validating form"
-      );
+      
 
       if (!validateForm()) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 1 FAILED"
-        );
+        
 
         setLoading(false);
         return;
       }
 
-      devLog.log(
-        "[ADMIN LOGIN] STEP 1 SUCCESS"
-      );
+      
 
       /*
        * ========================================
@@ -165,21 +149,13 @@ export default function AdminLoginPage() {
        * Check Turnstile
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 2: Turnstile check",
-        {
-          hasToken: !!turnstileToken,
-          unavailable: turnstileUnavailable,
-        }
-      );
+      
 
       if (
         !turnstileToken &&
         !turnstileUnavailable
       ) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 2 FAILED: Turnstile required"
-        );
+        
 
         setError(
           "Please complete the security check."
@@ -196,9 +172,7 @@ export default function AdminLoginPage() {
        * ========================================
        */
       if (turnstileToken) {
-        devLog.log(
-          "[ADMIN LOGIN] STEP 3: Verifying Turnstile"
-        );
+        
 
         const turnstileResponse =
           await fetch(
@@ -215,25 +189,17 @@ export default function AdminLoginPage() {
             }
           );
 
-        devLog.log(
-          "[ADMIN LOGIN] Turnstile HTTP status:",
-          turnstileResponse.status
-        );
+        
 
         const turnstileResult =
           (await turnstileResponse.json()) as {
             error?: string;
           };
 
-        devLog.log(
-          "[ADMIN LOGIN] Turnstile result:",
-          turnstileResult
-        );
+        
 
         if (!turnstileResponse.ok) {
-          devLog.error(
-            "[ADMIN LOGIN] STEP 3 FAILED"
-          );
+          
 
           setError(
             turnstileResult.error ||
@@ -245,13 +211,9 @@ export default function AdminLoginPage() {
           return;
         }
 
-        devLog.log(
-          "[ADMIN LOGIN] STEP 3 SUCCESS"
-        );
+        
       } else {
-        devLog.log(
-          "[ADMIN LOGIN] STEP 3 SKIPPED: Turnstile unavailable"
-        );
+        
       }
 
       /*
@@ -260,9 +222,7 @@ export default function AdminLoginPage() {
        * Firebase Authentication
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 4: Firebase sign-in"
-      );
+      
 
       const credential =
         await signInWithEmailAndPassword(
@@ -273,13 +233,7 @@ export default function AdminLoginPage() {
 
       const firebaseUser = credential.user;
 
-      devLog.log(
-        "[ADMIN LOGIN] STEP 4 SUCCESS",
-        {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-        }
-      );
+      
 
       /*
        * ========================================
@@ -287,30 +241,20 @@ export default function AdminLoginPage() {
        * Load Firestore profile
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 5: Loading Firestore profile",
-        {
-          uid: firebaseUser.uid,
-        }
-      );
+      
 
       const profile =
         await getUserProfile(
           firebaseUser.uid
         );
 
-      devLog.log(
-        "[ADMIN LOGIN] STEP 5 RESULT:",
-        profile
-      );
+      
 
       /*
        * Profile does not exist
        */
       if (!profile) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 5 FAILED: Profile not found"
-        );
+        
 
         await signOut(auth);
 
@@ -325,20 +269,10 @@ export default function AdminLoginPage() {
        * Check admin role
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 6: Checking admin role",
-        {
-          role: profile.role,
-        }
-      );
+      
 
       if (profile.role !== "admin") {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 6 FAILED: Not admin",
-          {
-            role: profile.role,
-          }
-        );
+        
 
         await signOut(auth);
 
@@ -347,9 +281,7 @@ export default function AdminLoginPage() {
         );
       }
 
-      devLog.log(
-        "[ADMIN LOGIN] STEP 6 SUCCESS: ADMIN VERIFIED"
-      );
+      
 
       /*
        * ========================================
@@ -368,9 +300,7 @@ export default function AdminLoginPage() {
        *
        * HTTP-only cookie.
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 7: Creating Firebase server session"
-      );
+      
 
       /*
        * Get Firebase ID token
@@ -379,9 +309,7 @@ export default function AdminLoginPage() {
         await firebaseUser.getIdToken(true);
 
       if (!idToken) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 7 FAILED: No ID token"
-        );
+        
 
         await signOut(auth);
 
@@ -390,9 +318,7 @@ export default function AdminLoginPage() {
         );
       }
 
-      devLog.log(
-        "[ADMIN LOGIN] Firebase ID token received"
-      );
+      
 
       /*
        * Send ID token to Next.js API
@@ -410,10 +336,7 @@ export default function AdminLoginPage() {
           }
         );
 
-      devLog.log(
-        "[ADMIN LOGIN] Session HTTP status:",
-        sessionResponse.status
-      );
+      
 
       const sessionResult =
         (await sessionResponse.json()) as {
@@ -421,19 +344,13 @@ export default function AdminLoginPage() {
           error?: string;
         };
 
-      devLog.log(
-        "[ADMIN LOGIN] Session result:",
-        sessionResult
-      );
+      
 
       /*
        * Session creation failed
        */
       if (!sessionResponse.ok) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 7 FAILED: Session creation",
-          sessionResult
-        );
+        
 
         await signOut(auth);
 
@@ -447,9 +364,7 @@ export default function AdminLoginPage() {
        * Make sure API explicitly reported success
        */
       if (sessionResult.success !== true) {
-        devLog.error(
-          "[ADMIN LOGIN] STEP 7 FAILED: Session API did not confirm success"
-        );
+        
 
         await signOut(auth);
 
@@ -458,9 +373,7 @@ export default function AdminLoginPage() {
         );
       }
 
-      devLog.log(
-        "[ADMIN LOGIN] STEP 7 SUCCESS: Server session created"
-      );
+      
 
       /*
        * ========================================
@@ -468,9 +381,7 @@ export default function AdminLoginPage() {
        * Redirect to Admin Dashboard
        * ========================================
        */
-      devLog.log(
-        "[ADMIN LOGIN] STEP 8: Redirecting to /admin"
-      );
+      
 
       /*
        * router.replace() prevents returning to
@@ -484,26 +395,15 @@ export default function AdminLoginPage() {
        */
       router.refresh();
 
-      devLog.log(
-        "[ADMIN LOGIN] LOGIN FLOW COMPLETE"
-      );
+      
     } catch (err: unknown) {
-      devLog.error(
-        "========================================"
-      );
+      
 
-      devLog.error(
-        "[ADMIN LOGIN] LOGIN FAILED"
-      );
+      
 
-      devLog.error(
-        "Error:",
-        err
-      );
+      
 
-      devLog.error(
-        "========================================"
-      );
+      
 
       const firebaseError =
         err as {
@@ -566,9 +466,7 @@ export default function AdminLoginPage() {
 
       resetTurnstile();
     } finally {
-      devLog.log(
-        "[ADMIN LOGIN] Loading = false"
-      );
+      
 
       setLoading(false);
     }
