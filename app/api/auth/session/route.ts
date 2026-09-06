@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase/admin";
 
 const SESSION_COOKIE_NAME = "firebase-session";
 const SESSION_EXPIRES_IN = 1000 * 60 * 60 * 24 * 5; // 5 days
+
+/*
+ * Firebase Admin SDK requires Node.js APIs (gRPC). Pin the runtime explicitly
+ * for parity with app/api/auth/password-reset/route.ts.
+ */
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   console.log("[SESSION] POST request received");
@@ -31,6 +36,15 @@ export async function POST(request: Request) {
 
     console.log("[SESSION] Token received, length:", idToken.length);
     console.log("[SESSION] Verifying ID token...");
+
+    /*
+     * Import Firebase Admin lazily (inside the handler) so that a missing or
+     * malformed service-account configuration surfaces as a catchable JSON 500
+     * with a safe diagnostic message below, instead of an opaque 500 thrown
+     * while this route module is loaded. DELETE still works even if admin
+     * initialization is broken.
+     */
+    const { adminAuth } = await import("@/lib/firebase/admin");
 
     // Verify Firebase ID token first
     let decodedToken;
@@ -101,11 +115,12 @@ export async function POST(request: Request) {
       // Log any additional error properties
       const errorKeys = Object.keys(error);
       if (errorKeys.length > 0) {
-        console.error("[SESSION] Additional error properties:", 
+        const errorRecord = error as unknown as Record<string, unknown>;
+        console.error("[SESSION] Additional error properties:",
           errorKeys.reduce((acc, key) => {
-            acc[key] = (error as any)[key];
+            acc[key] = errorRecord[key];
             return acc;
-          }, {} as Record<string, any>)
+          }, {} as Record<string, unknown>)
         );
       }
     }

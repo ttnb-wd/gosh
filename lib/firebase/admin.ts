@@ -12,7 +12,7 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
 
-// Log presence of environment variables (NEVER log actual values)
+// Log presence of environment variables (NEVER log actual values or key parts)
 console.log("[Firebase Admin Init] Environment variables check:", {
   hasProjectId: !!projectId,
   hasClientEmail: !!clientEmail,
@@ -20,7 +20,9 @@ console.log("[Firebase Admin Init] Environment variables check:", {
   projectId: projectId, // Safe to log
   clientEmail: clientEmail, // Safe to log
   privateKeyLength: privateKeyRaw?.length,
-  privateKeyStartsWith: privateKeyRaw?.substring(0, 30), // First 30 chars are safe (header)
+  privateKeyContainsBegin: !!privateKeyRaw?.includes(
+    "-----BEGIN PRIVATE KEY-----"
+  ),
 });
 
 if (!projectId) {
@@ -42,23 +44,35 @@ if (!privateKeyRaw) {
 }
 
 // Handle multiple formats of private key encoding:
-// 1. Already has real newlines (local .env file with quotes)
-// 2. Has literal \n sequences (production env without quotes)
-// 3. Has escaped \\n sequences (some deployment platforms)
+// 1. Multi-line PEM with real newline characters.
+// 2. Single line with literal \n sequences (quoted .env value).
+// 3. Double/triple escaped \\n sequences (some deployment platforms).
+// 4. Surrounded by stray whitespace and/or a pair of quotes (very common
+//    when the value is copied out of a JSON service-account file).
+//
+// IMPORTANT: creating a session cookie requires signing an OAuth2 assertion
+// with this private key, so a malformed key makes verifyIdToken() succeed but
+// createSessionCookie() throw (HTTP 500). Stripping quotes / decoding escapes
+// fixes the most common real-world production failures.
 let privateKey = privateKeyRaw;
 
-// If the key doesn't contain actual newlines, try to add them
-if (!privateKey.includes('\n')) {
-  // Replace literal \n with actual newlines
-  privateKey = privateKey.replace(/\\n/g, '\n');
-  console.log("[Firebase Admin Init] Converted literal \\n sequences to newlines");
-} else {
-  // Also handle the case where it might have literal \\n that needs to become \n
-  if (privateKey.includes('\\n')) {
-    privateKey = privateKey.replace(/\\n/g, '\n');
-    console.log("[Firebase Admin Init] Processed escaped \\n sequences");
-  }
+// 1) Trim leading/trailing whitespace (incl. accidental newlines).
+privateKey = privateKey.trim();
+
+// 2) Strip a single pair of surrounding single or double quotes. A PEM key
+//    always begins with "-----BEGIN", so before that is never legitimate.
+if (
+  privateKey.length >= 2 &&
+  ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+    (privateKey.startsWith("'") && privateKey.endsWith("'")))
+) {
+  privateKey = privateKey.slice(1, -1).trim();
 }
+
+// 3) Convert escaped newline sequences (`\n`, `\\n`, `\\\n`, ...) into real
+//    newlines. Safe because PEM bodies are base64 and never contain a literal
+//    backslash immediately followed by the letter "n".
+privateKey = privateKey.replace(/\\+n/g, "\n");
 
 console.log("[Firebase Admin Init] Private key processed:", {
   originalLength: privateKeyRaw.length,
@@ -68,15 +82,20 @@ console.log("[Firebase Admin Init] Private key processed:", {
   newlineCount: (privateKey.match(/\n/g) || []).length,
 });
 
-// Validate the private key format
-if (!privateKey.includes("-----BEGIN PRIVATE KEY-----")) {
-  const error = new Error("FIREBASE_PRIVATE_KEY is missing BEGIN marker. Ensure the key is properly formatted.");
+// Validate the private key format. `startsWith` (not just `includes`) catches
+// stray leading characters such as quotes or whitespace.
+if (!privateKey.startsWith("-----BEGIN PRIVATE KEY-----")) {
+  const error = new Error(
+    "FIREBASE_PRIVATE_KEY does not start with '-----BEGIN PRIVATE KEY-----'. It may contain stray surrounding characters (quotes/whitespace) or be malformed."
+  );
   console.error("[Firebase Admin Init] FATAL:", error.message);
   throw error;
 }
 
 if (!privateKey.includes("-----END PRIVATE KEY-----")) {
-  const error = new Error("FIREBASE_PRIVATE_KEY is missing END marker. Ensure the key is properly formatted.");
+  const error = new Error(
+    "FIREBASE_PRIVATE_KEY is missing '-----END PRIVATE KEY-----' marker. Ensure the key is complete and properly formatted."
+  );
   console.error("[Firebase Admin Init] FATAL:", error.message);
   throw error;
 }
