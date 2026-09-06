@@ -32,45 +32,44 @@ const nextConfig: NextConfig = {
   },
 
   /*
-   * Keep Firebase Admin (and its server-only transitive dependencies) out of
-   * the Turbopack server bundle.
+   * Bundle Firebase Admin's JWT signing/verification chain *into* the Webpack
+   * server bundle instead of leaving it externalized at runtime.
    *
-   * WHY:
-   * firebase-admin@14 -> jwks-rsa@4 (CommonJS) -> jose@6 (ESM-only).
+   * WHY we must bundle `firebase-admin`, `jwks-rsa` and `jose`:
    *
-   * `jwks-rsa/src/utils.js` performs a CommonJS `require('jose')`, but every
-   * `jose@6.x` release is `"type": "module"` (ESM-only). When Turbopack tries
-   * to bundle that chain it emits a CJS `require()` of a bundled ESM module,
-   * which throws:
+   * firebase-admin@14 -> jwks-rsa@4 (CommonJS) -> jose@6 (ESM-only, `type:
+   * "module"`). `jwks-rsa/src/utils.js` performs a CommonJS `require('jose')`,
+   * but every `jose@6.x` release is ESM-only.
+   *
+   * Previously these three were listed in `serverExternalPackages`. In a
+   * `next build --webpack` server build that list feeds `optOutBundlingPackageRegex`
+   * in `webpack-config.js`, so matching `node_modules/*` entries are treated as
+   * Webpack `externals` (left as a runtime `require()` boundary instead of being
+   * inlined). On Vercel that keeps a live CJS boundary where an external
+   * `jwks-rsa/src/utils.js` calls `require('jose')`. Regardless of Node's
+   * unflagged `require(esm)` support (>= 20.19 / 22.12), the package-managed ESM
+   * entry is what Vercel resolves, throwing:
    *
    *   Error [ERR_REQUIRE_ESM]: require() of ES Module
-   *   node_modules/jose/dist/webapi/index.js ... not supported.
+   *   /var/task/node_modules/jose/dist/webapi/index.js ... not supported.
    *
-   * IMPORTANT - the `jwks-rsa@4` + `jose@6` pairing is *not* incompatible: it
-   * is the exact combination published by the maintainers (firebase-admin@14
-   * declares jwks-rsa ^4.0.1, jwks-rsa@4 declares jose ^6.1.3).
-   * jwks-rsa@4.1.0's own `engines` field (node `^20.19.0 || ^22.12.0 || >=
-   * 23.0.0`) exists precisely because `jose@6` is ESM-only and must be
-   * resolved by Node's native `require(esm)` support (unflagged only in Node
-   * >= 20.19 / 22.12). firebase-admin@14 also requires node >= 22. Downgrading
-   * packages would NOT fix the error and would move off the supported
-   * combination, so we do not change versions.
+   * Bundling the whole `firebase-admin -> jwks-rsa -> jose` chain with Webpack
+   * inlines `jose` into the server chunk (Webpack 5 handles ESM natively), so
+   * there is no runtime CJS `require('jose')` boundary anymore.
    *
-   * `serverExternalPackages` tells Turbopack to leave these untouched and
-   * resolve them with Node.js at runtime instead of bundling them. On a Node
-   * runtime >= 22.12 (which firebase-admin@14 and jwks-rsa@4 require anyway),
-   * the CommonJS `require('jose')` inside jwks-rsa loads the ESM-only bundle
-   * natively and correctly.
+   * The remaining entries in `serverExternalPackages` (`google-auth-library`,
+   * `jsonwebtoken`, `@firebase/*`, `@google-cloud/*`, `@fastify/busboy`) are
+   * kept external because none of them (transitively) `require('jose')` —
+   * `google-auth-library` and `jsonwebtoken` both go through `jws` -> `jwa`,
+   * which are CommonJS and never reach the ESM-only `jose`. Only the three
+   * packages that form the ESM boundary are removed from externalization.
    *
-   * These are all server-only Firebase Admin dependencies - none is reachable
-   * from a client component, and Firebase Admin remains server-only.
+   * Firebase Admin (and the inlined `jose`) remains server-only - none of it is
+   * reachable from a client component.
    */
   serverExternalPackages: [
-    "firebase-admin",
     "google-auth-library",
     "jsonwebtoken",
-    "jose",
-    "jwks-rsa",
     "@fastify/busboy",
     "@firebase/database",
     "@firebase/database-compat",
@@ -78,6 +77,56 @@ const nextConfig: NextConfig = {
     "@google-cloud/firestore",
     "@google-cloud/storage",
   ],
+
+  /*
+   * `firebase-admin` is STILL external even after removing it from
+   * `serverExternalPackages`, because it is also in Next's BUILT-IN default
+   * external list (next/dist/lib/server-external-packages.jsonc). That default
+   * list is merged into `optOutBundlingPackages` -> `optOutBundlingPackageRegex`
+   * in Next's webpack-config.js, so Next keeps emitting external `import()`
+   * shims for `firebase-admin/app|auth|firestore` and the runtime CJS boundary
+   * `firebase-admin -> jwks-rsa -> require("jose")` (jose is ESM-only) remains,
+   * causing ERR_REQUIRE_ESM on Vercel.
+   *
+   * This `webpack` hook force-bundles `firebase-admin` (and therefore the
+   * ESM-only `jose` chain) into the Node.js server bundle. Next's Node server
+   * externals array is `[...builtinModules, ...bunExternals, handleExternals]`.
+   * We drop the trailing `handleExternals` function and re-append a wrapper that
+   * returns "not external" for any `firebase-admin(*)` request (so Webpack
+   * resolves & inlines it) while delegating every other request to the original
+   * handler. Node builtins and the other opt-out packages stay external exactly
+   * as before.
+   */
+  webpack(config, { isServer, nextRuntime }) {
+    if (isServer && nextRuntime !== "edge") {
+      // Cast to `any` to safely poke webpack.Configuration.externals without
+      // fighting the Externals union type (the override below is structurally
+      // compatible with webpack's array/function external form).
+      const wc = config as any;
+      if (Array.isArray(wc.externals)) {
+        const externals = wc.externals;
+        const last = externals[externals.length - 1];
+        if (typeof last === "function") {
+          wc.externals = [
+            ...externals.slice(0, -1),
+            (data: any, cb: any) => {
+              if (
+                data &&
+                typeof data.request === "string" &&
+                /^firebase-admin(\/|$)/.test(data.request)
+              ) {
+                // "Not external" -> Webpack resolves & bundles firebase-admin,
+                // inlining the ESM-only `jose`/`jwks-rsa` chain.
+                return cb();
+              }
+              return last(data, cb);
+            },
+          ];
+        }
+      }
+    }
+    return config as typeof config;
+  },
 
   async headers() {
     return [
