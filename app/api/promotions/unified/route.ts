@@ -13,13 +13,36 @@ import { getProduct } from "@/lib/firebase/products-server";
  * This ensures consistent promotion data across the entire app.
  */
 export async function GET() {
+  console.log("[unified] GET request received");
+  console.log("[unified] Environment:", process.env.NODE_ENV);
+  
   try {
+    console.log("[unified] Fetching promotions in parallel...");
+    
     // Fetch both types in parallel
-    const [genericPromotions, productPromotions] = await Promise.all([
-      getActivePromotions(),
-      getActiveProductPromotions(),
-    ]);
+    let genericPromotions, productPromotions;
+    
+    try {
+      [genericPromotions, productPromotions] = await Promise.all([
+        getActivePromotions(),
+        getActiveProductPromotions(),
+      ]);
+      console.log("[unified] Fetch complete:", {
+        genericCount: genericPromotions.length,
+        productCount: productPromotions.length,
+      });
+    } catch (fetchError) {
+      console.error("[unified] Parallel fetch failed:", fetchError);
+      if (fetchError instanceof Error) {
+        console.error("[unified] Fetch error name:", fetchError.name);
+        console.error("[unified] Fetch error message:", fetchError.message);
+        console.error("[unified] Fetch error stack:", fetchError.stack);
+      }
+      throw fetchError;
+    }
 
+    console.log("[unified] Enriching generic promotions...");
+    
     // Enrich generic promotions with product data
     const enrichedGenericPromotions = await Promise.all(
       genericPromotions.map(async (promo) => {
@@ -50,6 +73,8 @@ export async function GET() {
         return serializedPromo;
       })
     );
+
+    console.log("[unified] Enriching product promotions...");
 
     // Enrich product promotions with product data
     const enrichedProductPromotions = await Promise.all(
@@ -92,6 +117,12 @@ export async function GET() {
       (promo) => promo.product && promo.product.is_active !== false
     );
 
+    console.log("[unified] Returning response:", {
+      bannerPromotions: enrichedGenericPromotions.length,
+      productPromotions: validProductPromotions.length,
+      totalActive: enrichedGenericPromotions.length + validProductPromotions.length,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -104,18 +135,36 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("[unified] GET error:", error);
+    console.error("[unified] ============================================");
+    console.error("[unified] FATAL ERROR - Promotions fetch failed");
+    console.error("[unified] ============================================");
+    console.error("[unified] Error object:", error);
     
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("[unified] Error name:", error.name);
+      console.error("[unified] Error message:", error.message);
+      console.error("[unified] Error stack:", error.stack);
+      
+      // Log any additional error properties
+      const errorKeys = Object.keys(error);
+      if (errorKeys.length > 0) {
+        console.error("[unified] Additional error properties:", 
+          errorKeys.reduce((acc, key) => {
+            acc[key] = (error as any)[key];
+            return acc;
+          }, {} as Record<string, any>)
+        );
+      }
     }
+    
+    console.error("[unified] ============================================");
 
     return NextResponse.json(
       {
         success: false,
         error: "Failed to fetch promotions",
         details: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : typeof error,
       },
       { status: 500 }
     );
