@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, Power, PowerOff, Sparkles, Image as ImageIcon, ExternalLink, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DateTimePicker from "@/components/admin/DateTimePicker";
-import type { Promotion } from "@/lib/firebase/promotions-server";
+import type { Promotion } from "@/lib/types/promotions";
 import { Timestamp } from "firebase/firestore";
 import { useCountdown, formatCountdown } from "@/hooks/useCountdown";
 

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Sparkles, Tag, ArrowRight, Clock } from "lucide-react";
-import type { Promotion } from "@/lib/firebase/promotions-server";
-import type { Product } from "@/lib/firebase/products-server";
+import type { Promotion } from "@/lib/types/promotions";
+import type { Product } from "@/lib/types/products";
 import { Timestamp } from "firebase/firestore";
 import { useCountdown, formatCountdown } from "@/hooks/useCountdown";
 
@@ -184,8 +184,8 @@ export default function PromotionBanner() {
   };
 
   // Use product image for new_product type if available
-  const displayImage = activePromotion.type === "new_product" && activePromotion.product?.image 
-    ? activePromotion.product.image 
+  const displayImage = activePromotion.type === "new_product" && activePromotion.product?.images && activePromotion.product.images.length > 0
+    ? activePromotion.product.images[0]
     : activePromotion.image;
 
   const PromotionIcon = activePromotion.type === "new_product" ? Sparkles : Tag;

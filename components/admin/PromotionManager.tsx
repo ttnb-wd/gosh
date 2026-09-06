@@ -4,8 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { Plus, Edit2, Trash2, Power, PowerOff, Tag, Sparkles, Image as ImageIcon, ExternalLink, Clock, ChevronDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DateTimePicker from "@/components/admin/DateTimePicker";
-import type { Promotion } from "@/lib/firebase/promotions-server";
-import type { Product } from "@/lib/firebase/products-server";
+import type { Promotion } from "@/lib/types/promotions";
+import type { Product } from "@/lib/types/products";
 import { Timestamp } from "firebase/firestore";
 import { useCountdown, formatCountdown } from "@/hooks/useCountdown";
 
@@ -308,18 +308,21 @@ export default function PromotionManager() {
           id: doc.id,
           name: data.name || "",
           brand: typeof data.brand === "string" ? data.brand : "",
-          brand_id: data.brand_id || null,
           price: Number(data.price || 0),
           description: data.description || "",
-          image: data.image || data.image_url || "",
-          imageFileId: data.imageFileId || data.image_file_id || null,
-          badge: data.badge || null,
-          scent_collection: data.scent_collection || null,
+          images: data.images || (data.image ? [data.image] : []),
+          imageFileIds: data.imageFileIds || (data.imageFileId ? [data.imageFileId] : []),
           stock: Number(data.stock || 0),
           category: typeof data.category === "string" ? data.category.trim().toLowerCase() : "",
           is_active: data.is_active !== false,
-          decants: Array.isArray(data.decants) ? data.decants : [],
+          is_featured: data.is_featured || false,
+          decant_sizes: Array.isArray(data.decant_sizes) ? data.decant_sizes : (Array.isArray(data.decants) ? data.decants : []),
           notes: data.notes && typeof data.notes === "object" ? data.notes : null,
+          volume: data.volume || null,
+          concentration: data.concentration || null,
+          discount: data.discount || null,
+          created_at: data.created_at || "",
+          updated_at: data.updated_at || "",
         } as Product;
       });
 
@@ -855,10 +858,10 @@ export default function PromotionManager() {
                 <div className="flex items-start gap-4">
                   {/* Image */}
                   <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                    {(promotion.image || (promotion.type === "new_product" && promotion.product?.image)) ? (
+                    {(promotion.image || (promotion.type === "new_product" && promotion.product?.images && promotion.product.images.length > 0)) ? (
                       <img
-                        src={promotion.type === "new_product" && promotion.product?.image 
-                          ? promotion.product.image 
+                        src={promotion.type === "new_product" && promotion.product?.images && promotion.product.images.length > 0
+                          ? promotion.product.images[0]
                           : promotion.image || ""}
                         alt={promotion.title}
                         className="h-full w-full object-cover"

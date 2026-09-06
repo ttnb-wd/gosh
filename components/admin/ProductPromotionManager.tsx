@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Plus, Edit2, Trash2, Power, PowerOff, Tag, Package, Percent, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DateTimePicker from "@/components/admin/DateTimePicker";
-import type { Product } from "@/lib/firebase/products-server";
+import type { Product } from "@/lib/types/products";
 import { Timestamp } from "firebase/firestore";
 
 interface ProductPromotion {
@@ -31,8 +31,10 @@ interface PromotionFormData {
   end_at: string;
 }
 
-const getSafeProductImage = (image?: string | null) => {
-  const value = image?.trim();
+const getSafeProductImage = (images?: string[] | string | null) => {
+  // Handle both old single image and new images array
+  const imageUrl = Array.isArray(images) ? images[0] : images;
+  const value = imageUrl?.trim();
   if (!value) return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
   if (value.startsWith("/") || value.startsWith("blob:")) return value;
   try {
@@ -116,18 +118,21 @@ export default function ProductPromotionManager() {
           id: doc.id,
           name: data.name || "",
           brand: typeof data.brand === "string" ? data.brand : "",
-          brand_id: data.brand_id || null,
           price: Number(data.price || 0),
           description: data.description || "",
-          image: data.image || data.image_url || "",
-          imageFileId: data.imageFileId || data.image_file_id || null,
-          badge: data.badge || null,
-          scent_collection: data.scent_collection || null,
+          images: data.images || (data.image ? [data.image] : []),
+          imageFileIds: data.imageFileIds || (data.imageFileId ? [data.imageFileId] : []),
           stock: Number(data.stock || 0),
           category: typeof data.category === "string" ? data.category.trim().toLowerCase() : "",
           is_active: data.is_active !== false,
-          decants: Array.isArray(data.decants) ? data.decants : [],
+          is_featured: data.is_featured || false,
+          decant_sizes: Array.isArray(data.decant_sizes) ? data.decant_sizes : (Array.isArray(data.decants) ? data.decants : []),
           notes: data.notes && typeof data.notes === "object" ? data.notes : null,
+          volume: data.volume || null,
+          concentration: data.concentration || null,
+          discount: data.discount || null,
+          created_at: data.created_at || "",
+          updated_at: data.updated_at || "",
         } as Product;
       });
 
@@ -488,7 +493,7 @@ export default function ProductPromotionManager() {
                   <div className="rounded-xl border-2 border-[#d4af37]/40 bg-gradient-to-br from-yellow-50/50 to-white p-4 dark:from-[#d4af37]/5 dark:to-[#2a2419]">
                     <div className="flex items-center gap-4">
                       <img 
-                        src={getSafeProductImage(selectedProduct.image)} 
+                        src={getSafeProductImage(selectedProduct.images)} 
                         alt={selectedProduct.name}
                         className="h-16 w-16 rounded-lg object-cover"
                       />
@@ -572,15 +577,10 @@ export default function ProductPromotionManager() {
                           {/* Product Image */}
                           <div className="relative h-[140px] w-full overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] dark:from-[#d4af37]/5 dark:via-[#2a2419] dark:to-[#1f1a14]">
                             <img 
-                              src={getSafeProductImage(product.image)} 
+                              src={getSafeProductImage(product.images)} 
                               alt={product.name}
                               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
-                            {product.badge && (
-                              <div className="absolute left-2 top-2 rounded-full bg-[#d4af37] px-2 py-1 text-[10px] font-bold uppercase text-[#1f1a14]">
-                                {product.badge}
-                              </div>
-                            )}
                           </div>
 
                           {/* Product Info */}
@@ -761,10 +761,10 @@ export default function ProductPromotionManager() {
               >
                 <div className="flex items-start gap-4">
                   {/* Product Image */}
-                  {product?.image && (
+                  {product?.images && product.images.length > 0 && (
                     <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                       <img
-                        src={getSafeProductImage(product.image)}
+                        src={getSafeProductImage(product.images)}
                         alt={product.name}
                         className="h-full w-full object-cover"
                       />
