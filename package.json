@@ -10,6 +10,9 @@
     "test:security": "node scripts/test-security-headers.js",
     "test:a11y": "node scripts/test-accessibility.js"
   },
+  "engines": {
+    "node": "^22.12.0 || >=23.0.0"
+  },
   "dependencies": {
     "@imagekit/nodejs": "^7.11.0",
     "@sentry/nextjs": "^10.51.0",

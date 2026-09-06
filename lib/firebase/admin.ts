@@ -7,6 +7,8 @@ import { getFirestore } from "firebase-admin/firestore";
 // ENHANCED DIAGNOSTIC LOGGING FOR PRODUCTION DEBUGGING
 console.log("[Firebase Admin Init] Starting initialization...");
 console.log("[Firebase Admin Init] NODE_ENV:", process.env.NODE_ENV);
+// Safe runtime metadata only. NEVER log keys, tokens, or credentials.
+console.log("[Firebase Admin Init] Node runtime:", process.version);
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;

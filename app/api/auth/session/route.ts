@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   console.log("[SESSION] POST request received");
   console.log("[SESSION] Environment:", process.env.NODE_ENV);
+  console.log("[SESSION] Node runtime:", process.version);
   
   try {
     const authorization = request.headers.get("authorization");

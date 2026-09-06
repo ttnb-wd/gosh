@@ -15,6 +15,7 @@ import { getProduct } from "@/lib/firebase/products-server";
 export async function GET() {
   console.log("[unified] GET request received");
   console.log("[unified] Environment:", process.env.NODE_ENV);
+  console.log("[unified] Node runtime:", process.version);
   
   try {
     console.log("[unified] Fetching promotions in parallel...");
