@@ -178,66 +178,83 @@ export default function FeaturedProducts() {
           </Link>
         </motion.div>
 
-        {/* Image-only gallery - pure visual showcase */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-          {products.map((product, index) => {
-            const primaryBadge = getPrimaryBadge(product.badge);
-            const productImageUrl = normalizeImageUrl(product.image);
+        {/* Image-only gallery - seamless infinite auto-slider */}
+        <div className="fragrance-slider overflow-hidden">
+          <div className="fragrance-slider-track flex w-max gap-3 sm:gap-4 lg:gap-5">
+            {[...products, ...products].map((product, index) => {
+              const primaryBadge = getPrimaryBadge(product.badge);
+              const productImageUrl = normalizeImageUrl(product.image);
 
-            return (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
-              >
-                <div className="group relative block overflow-hidden rounded-2xl bg-[#f7f3ea] dark:bg-[#1a1410]">
-                  <Link
-                    href={`/products?search=${encodeURIComponent(product.name)}`}
-                    className="relative block"
-                    aria-label={product.name}
-                  >
-                    <div className="relative" style={{ aspectRatio: '3/4' }}>
-                      <Image
-                        src={productImageUrl}
-                        alt={product.name}
-                        fill
-                        sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-                        unoptimized={productImageUrl.includes("ik.imagekit.io")}
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                    
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1f1a14]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    
-                    {/* Only show badge if product does NOT have active promotion */}
-                    {!hasPromotion(product.id) && primaryBadge && (
-                      <span className="absolute right-2.5 top-2.5 rounded-full bg-[#d4af37]/95 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#1f1a14] backdrop-blur-sm sm:right-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
-                        {primaryBadge}
-                      </span>
-                    )}
-                  </Link>
+              return (
+                <div
+                  key={`${product.id}-${index}`}
+                  className="w-[68vw] shrink-0 sm:w-[42vw] md:w-[30vw] lg:w-[24vw]"
+                >
+                  <div className="group relative block overflow-hidden rounded-2xl bg-[#f7f3ea] dark:bg-[#1a1410]">
+                    <Link
+                      href={`/products?search=${encodeURIComponent(product.name)}`}
+                      className="relative block"
+                      aria-label={product.name}
+                    >
+                      <div className="relative" style={{ aspectRatio: '3/4' }}>
+                        <Image
+                          src={productImageUrl}
+                          alt={product.name}
+                          fill
+                          sizes="(min-width: 1024px) 24vw, (min-width: 768px) 30vw, (min-width: 640px) 42vw, 68vw"
+                          unoptimized={productImageUrl.includes("ik.imagekit.io")}
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
 
-                  {/* Eye Icon - Quick View Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleQuickView(product);
-                    }}
-                    className="absolute bottom-2.5 right-2.5 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] opacity-0 transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2 group-hover:opacity-100 sm:bottom-3 sm:right-3"
-                    aria-label={`Quick view ${product.name}`}
-                    title="View Details"
-                  >
-                    <Eye className="h-4 w-4" aria-hidden="true" />
-                  </button>
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1f1a14]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                      {/* Only show badge if product does NOT have active promotion */}
+                      {!hasPromotion(product.id) && primaryBadge && (
+                        <span className="absolute right-2.5 top-2.5 rounded-full bg-[#d4af37]/95 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#1f1a14] backdrop-blur-sm sm:right-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
+                          {primaryBadge}
+                        </span>
+                      )}
+                    </Link>
+
+                    {/* Eye Icon - Quick View Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleQuickView(product);
+                      }}
+                      className="absolute bottom-2.5 right-2.5 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] opacity-0 transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2 group-hover:opacity-100 sm:bottom-3 sm:right-3"
+                      aria-label={`Quick view ${product.name}`}
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+
+        <style jsx>{`
+          @keyframes fragrance-slide {
+            from {
+              transform: translateX(0);
+            }
+            to {
+              transform: translateX(-50%);
+            }
+          }
+          .fragrance-slider-track {
+            animation: fragrance-slide 32s linear infinite;
+            will-change: transform;
+          }
+          .fragrance-slider:hover .fragrance-slider-track {
+            animation-play-state: paused;
+          }
+        `}</style>
 
         {/* Mobile "View All" link */}
         <motion.div

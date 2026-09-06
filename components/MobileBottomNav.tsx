@@ -48,14 +48,14 @@ export default function MobileBottomNav() {
     >
       <div className="mx-auto max-w-md px-4 pb-4">
         <div className="overflow-hidden rounded-3xl border border-[#d4af37]/30 bg-[#fffef9]/95 shadow-[0_-8px_32px_rgba(212,175,55,0.15)] backdrop-blur-xl">
-          <div className="flex items-center justify-around px-2 py-3">
+          <div className="flex items-center justify-around px-1 py-3">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`group flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl px-3 py-2 transition-all duration-300 ${
+                  className={`group flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-300 ${
                     item.isActive
                       ? "bg-[#d4af37]/10"
                       : "hover:bg-[#d4af37]/5"
@@ -70,7 +70,7 @@ export default function MobileBottomNav() {
                     strokeWidth={item.isActive ? 2.5 : 2}
                   />
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
+                    className={`whitespace-nowrap text-[10px] font-bold uppercase tracking-normal transition-all duration-300 ${
                       item.isActive
                         ? "text-[#b88700]"
                         : "text-[#7a6a55] group-hover:text-[#b88700]"
