@@ -23,7 +23,21 @@ const app = getApps().length > 0
 export const auth = getAuth(app);
 
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  /*
+   * Do NOT set experimentalForceLongPolling here.
+   *
+   * The Firebase JS SDK's default browser transport for Firestore is the
+   * WebChannel (gRPC-Web) streaming transport to https://firestore.googleapis.com.
+   * Forcing long-polling overrides that default and opens long-lived HTTP
+   * long-poll connections that can stall in a normal browser, causing every
+   * getDoc() to hang until the app-level Promise.race timeout fires. The server
+   * Admin SDK uses a different transport (@google-cloud/firestore over gRPC),
+   * which is why server-side reads succeed while the client getDoc() times out.
+   *
+   * Keep the normal Firestore browser transport. persistentLocalCache below is
+   * a local IndexedDB cache layer, NOT a network transport; it does not cause
+   * the hang and is intentionally retained.
+   */
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
