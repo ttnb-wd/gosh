@@ -1,4 +1,5 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutUser } from "@/lib/firebase/auth";
@@ -15,6 +16,6 @@ export default function LogoutButton() {
       catch { setError("Could not finish signing out. Please try again."); }
       finally { setBusy(false); }
     }}>{busy ? "Signing out..." : "Sign Out"}</button>
-    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+    {error && <p role="alert" className="text-sm text-destructive"><StudioErrorText message={error} /></p>}
   </>;
 }

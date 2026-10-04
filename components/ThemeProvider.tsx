@@ -18,22 +18,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    // Always start in Light Mode on first load.
-    // Dark Mode only activates when the user manually clicks the toggle.
-    // The persisted theme (if any) is intentionally ignored.
-    setTheme("light");
-    document.documentElement.classList.remove("dark");
+    // The pre-paint script restores the saved choice before hydration.
+    const root = document.documentElement;
+    setTheme(root.classList.contains("dark") ? "dark" : "light");
+    root.setAttribute("data-theme-ready", "true");
   }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    // Storage may be unavailable in privacy mode; the visual toggle still works.
+    try { localStorage.setItem("theme", nextTheme); } catch {}
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    document.documentElement.style.colorScheme = nextTheme;
   };
 
   return (

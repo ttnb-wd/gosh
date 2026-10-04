@@ -1,0 +1,125 @@
+/* One viewport-sized decorative layer. No scroll coupling or animated filters. */
+.site-ambient {
+  --ambient-strength: .72;
+  --ambient-travel: 1;
+  --ambient-duration: 32s;
+  --ambient-angle: 0deg;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+  background: var(--site-bg);
+}
+.site-ambient *, .site-ambient::before, .site-ambient::after { pointer-events: none; }
+.site-ambient[data-variant="blush"] {
+  --ambient-angle: -8deg;
+  --ambient-duration: 39s;
+}
+.site-ambient[data-variant="pearl"] {
+  --ambient-strength: .5;
+  --ambient-angle: 6deg;
+  --ambient-duration: 43s;
+}
+.site-ambient[data-variant="admin"] {
+  --ambient-strength: .18;
+  --ambient-travel: .3;
+  --ambient-duration: 64s;
+}
+.site-ambient-wash, .site-ambient-light { position: absolute; inset: -4%; }
+.site-ambient-wash {
+  opacity: var(--ambient-strength);
+  background:
+    radial-gradient(ellipse at 92% 22%, color-mix(in srgb, var(--ambient-plum) 24%, transparent), transparent 44%),
+    radial-gradient(ellipse at 74% 85%, color-mix(in srgb, var(--ambient-gold) 32%, transparent), transparent 50%),
+    radial-gradient(ellipse at 4% 65%, color-mix(in srgb, var(--ambient-rose) 18%, transparent), transparent 38%);
+  animation: ambient-wash var(--ambient-duration) -11s ease-in-out infinite;
+}
+.site-ambient-light {
+  opacity: calc(var(--ambient-strength) * .7);
+  background: radial-gradient(ellipse at 68% 40%, color-mix(in srgb, var(--ambient-light) 35%, transparent), transparent 40%), radial-gradient(ellipse at 20% 88%, color-mix(in srgb, var(--ambient-gold) 18%, transparent), transparent 35%);
+  animation: ambient-light 37s -19s ease-in-out infinite;
+}
+.site-ambient-flow { position: absolute; inset: -3%; width: 106%; height: 106%; opacity: var(--ambient-strength); transform: rotate(var(--ambient-angle)); }
+.site-ambient-stop-gold { stop-color: var(--ambient-gold); }
+.site-ambient-stop-rose { stop-color: var(--ambient-rose); }
+.site-ambient-stop-plum { stop-color: var(--ambient-plum); }
+.site-ambient-stop-light { stop-color: var(--ambient-light); }
+.site-ambient-ribbons { transform-origin: center; animation: ambient-ribbon var(--ambient-duration) -7s ease-in-out infinite; }
+.site-ambient-lines { animation: ambient-lines 47s -23s ease-in-out infinite; }
+.site-ambient-glass {
+  position: absolute;
+  width: 65%;
+  height: 58px;
+  border-top: 1px solid color-mix(in srgb, var(--ambient-light) 24%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ambient-bronze) 10%, transparent);
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--ambient-light) 14%, transparent) 36%, color-mix(in srgb, var(--ambient-rose) 11%, transparent) 72%, transparent);
+  opacity: calc(var(--ambient-strength) * .65);
+  animation: ambient-glass 41s -13s ease-in-out infinite;
+}
+.site-ambient-glass-one { left: 38%; top: 28%; }
+.site-ambient-glass-two { width: 48%; height: 28px; left: -8%; top: 83%; animation-duration: 53s; animation-delay: -31s; animation-direction: reverse; }
+.site-ambient-accent {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--ambient-gold);
+  border-radius: 50%;
+  opacity: var(--ambient-strength);
+  animation: ambient-accent 29s -17s ease-in-out infinite;
+}
+.site-ambient-accent-one { left: 91%; top: 59%; }
+.site-ambient-accent-two { left: 6%; top: 32%; border-color: var(--ambient-plum); animation-duration: 46s; animation-delay: -9s; }
+.site-ambient[data-variant="admin"] :is(.site-ambient-ribbon-secondary, .site-ambient-glass-two, .site-ambient-accent) { display: none; }
+.site-ambient[data-variant="admin"] .site-ambient-light { animation-duration: 71s; }
+.site-ambient[data-variant="admin"] .site-ambient-lines { animation-duration: 83s; }
+.site-ambient[data-variant="admin"] .site-ambient-glass { animation-duration: 89s; }
+
+/* Open only canvas layers; controls, cards, images and overlays keep their surfaces.
+   Do not add a stacking context to the content wrapper: existing overlay z-indices
+   must continue to work across the app. The isolated body contains z-index: -1. */
+.site-page-wrapper { background: transparent; }
+.site-page-wrapper :is(.studio-page, .studio-auth, .studio-admin-login, [data-admin-theme], .min-h-screen.bg-canvas:not(.fixed)) { background: transparent !important; }
+.site-page-wrapper .studio-page > section[class*="bg-[var(--site-bg)]"],
+.site-page-wrapper .studio-contact-section { background-color: transparent; }
+.site-page-wrapper :is(.studio-policy > section, .studio-contact-section) > .absolute.inset-0.bg-surface-muted { background: color-mix(in srgb, var(--surface-muted) 25%, transparent); }
+.site-page-wrapper .studio-auth-art { background: radial-gradient(ellipse at 90% 10%, color-mix(in srgb, var(--champagne) 25%, transparent), transparent 60%); }
+/* The campaign has its own theme-aware light field over the shared atmosphere. */
+.site-page-wrapper .homepage-luxury .home-hero { background-color: var(--hero-base); }
+
+@keyframes ambient-wash {
+  0%, 100% { transform: translate3d(calc(-12px * var(--ambient-travel)), 0, 0); }
+  50% { transform: translate3d(calc(16px * var(--ambient-travel)), calc(-10px * var(--ambient-travel)), 0); }
+}
+@keyframes ambient-light {
+  0%, 100% { transform: translate3d(0, calc(8px * var(--ambient-travel)), 0); opacity: calc(var(--ambient-strength) * .45); }
+  50% { transform: translate3d(calc(-18px * var(--ambient-travel)), calc(-12px * var(--ambient-travel)), 0); opacity: calc(var(--ambient-strength) * .7); }
+}
+@keyframes ambient-ribbon {
+  0%, 100% { transform: translate(calc(-12px * var(--ambient-travel)), calc(9px * var(--ambient-travel))) rotate(calc(-1deg * var(--ambient-travel))); }
+  50% { transform: translate(calc(16px * var(--ambient-travel)), calc(-12px * var(--ambient-travel))) rotate(calc(1deg * var(--ambient-travel))); }
+}
+@keyframes ambient-lines {
+  0%, 100% { transform: translate(calc(-8px * var(--ambient-travel)), 0); opacity: .6; }
+  50% { transform: translate(calc(12px * var(--ambient-travel)), calc(-8px * var(--ambient-travel))); opacity: 1; }
+}
+@keyframes ambient-glass {
+  0%, 100% { transform: translate3d(0, calc(9px * var(--ambient-travel)), 0) rotate(-21deg); }
+  50% { transform: translate3d(calc(12px * var(--ambient-travel)), calc(-9px * var(--ambient-travel)), 0) rotate(-20deg); }
+}
+@keyframes ambient-accent {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: calc(var(--ambient-strength) * .45); }
+  50% { transform: translate3d(calc(10px * var(--ambient-travel)), calc(-16px * var(--ambient-travel)), 0); opacity: var(--ambient-strength); }
+}
+@media (max-width: 767px) {
+  .site-ambient { --ambient-travel: .4; --ambient-strength: .52; }
+  .site-ambient[data-variant="pearl"] { --ambient-strength: .38; }
+  .site-ambient[data-variant="admin"] { --ambient-strength: .13; --ambient-travel: .15; }
+  .site-ambient :is(.site-ambient-ribbon-secondary, .site-ambient-glass-two, .site-ambient-accent-two) { display: none; }
+  .site-ambient-glass-one { width: 88%; left: 20%; height: 36px; }
+}
+.site-ambient[data-paused="true"] * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .site-ambient * { animation: none !important; }
+}

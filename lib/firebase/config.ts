@@ -22,7 +22,14 @@ const app = getApps().length > 0
 
 export const auth = getAuth(app);
 
-export const db = initializeFirestore(app, {
+// Firebase retains its app through Fast Refresh, but this module is re-evaluated.
+// Keep the configured instance for that app instead of rebuilding cache options.
+const firestoreRuntime = globalThis as typeof globalThis & {
+  __goshFirestoreByApp?: WeakMap<typeof app, ReturnType<typeof initializeFirestore>>;
+};
+const firestoreByApp = firestoreRuntime.__goshFirestoreByApp ??= new WeakMap();
+
+export const db = firestoreByApp.get(app) ?? initializeFirestore(app, {
   /*
    * Do NOT set experimentalForceLongPolling here.
    *
@@ -42,5 +49,6 @@ export const db = initializeFirestore(app, {
     tabManager: persistentMultipleTabManager(),
   }),
 });
+firestoreByApp.set(app, db);
 
 export default app;

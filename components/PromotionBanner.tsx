@@ -64,8 +64,8 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
 
   if (state === "expired") {
     return (
-      <div className="rounded-lg bg-[#7a6a55]/10 px-3 py-2 dark:bg-[#b8a892]/10">
-        <p className="text-xs font-bold text-[#7a6a55] dark:text-[#b8a892]">
+      <div className="rounded-lg bg-surface-muted/10 px-3 py-2 ">
+        <p className="text-xs font-bold text-muted ">
           Promotion ended
         </p>
       </div>
@@ -77,25 +77,25 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
       {/* Date Range */}
       <div className="flex flex-col gap-1 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="font-bold text-[#7a6a55] dark:text-[#b8a892]">Starts:</span>
-          <span className="text-[#7a6a55] dark:text-[#b8a892]">{formatDateTime(startDate)}</span>
+          <span className="font-bold text-muted ">Starts:</span>
+          <span className="text-muted ">{formatDateTime(startDate)}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-bold text-[#7a6a55] dark:text-[#b8a892]">Ends:</span>
-          <span className="text-[#7a6a55] dark:text-[#b8a892]">{formatDateTime(endDate)}</span>
+          <span className="font-bold text-muted ">Ends:</span>
+          <span className="text-muted ">{formatDateTime(endDate)}</span>
         </div>
       </div>
 
       {/* Countdown */}
       {timeRemaining.total > 0 && (
-        <div className="w-fit rounded-lg bg-[#d4af37]/10 px-3 py-2 dark:bg-[#d4af37]/20">
+        <div className="w-fit rounded-lg bg-brand-soft px-3 py-2 ">
           <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-[#b88700] dark:text-[#d4af37]" />
-            <span className="text-xs font-bold text-[#7a6a55] dark:text-[#b8a892]">
+            <Clock className="h-3.5 w-3.5 text-accent " />
+            <span className="text-xs font-bold text-muted ">
               {state === "upcoming" ? "Starts in" : "Ends in"}
             </span>
           </div>
-          <p className="mt-1 font-mono text-sm font-black tracking-tight text-[#b88700] dark:text-[#d4af37]">
+          <p className="mt-1 font-mono text-sm font-semibold tracking-tight text-accent ">
             {formatCountdown(timeRemaining)}
           </p>
         </div>
@@ -129,7 +129,11 @@ export default function PromotionBanner() {
           const allPromotions: EnrichedPromotion[] = [
             ...result.data.bannerPromotions,
             // Convert product promotions to banner format
-            ...result.data.productPromotions.map((promo: any) => ({
+            ...result.data.productPromotions.map((promo: {
+              id: string; product_id: string; promotion_price: number; is_active: boolean;
+              start_at: Timestamp; end_at: Timestamp; created_at: Timestamp; updated_at: Timestamp;
+              product: Product & { image?: string };
+            }) => ({
               id: promo.id,
               type: 'new_product' as const,
               title: promo.product?.name || 'Special Offer',
@@ -167,6 +171,7 @@ export default function PromotionBanner() {
     if (promotions.length <= 1) return;
 
     const interval = setInterval(() => {
+      if (document.hidden) return;
       setActiveIndex((prev) => (prev === promotions.length - 1 ? 0 : prev + 1));
     }, 10000);
 
@@ -191,7 +196,7 @@ export default function PromotionBanner() {
   const PromotionIcon = activePromotion.type === "new_product" ? Sparkles : Tag;
 
   return (
-    <section className="relative overflow-hidden bg-[var(--site-bg)] px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
+    <section className="studio-promotion relative overflow-hidden bg-[var(--site-bg)] px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
       <div className="mx-auto max-w-[1400px]">
         <AnimatePresence mode="wait">
           <motion.div
@@ -212,7 +217,7 @@ export default function PromotionBanner() {
               {/* Subtle ambient glow — blends seamlessly into page background */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_10%,rgba(247,231,179,0.24),transparent)] dark:bg-[radial-gradient(ellipse_70%_45%_at_50%_10%,rgba(212,175,55,0.08),transparent)]"
+                className="pointer-events-none absolute inset-0 bg-surface-muted "
               />
 
               {/* Image zone — product emerges from top naturally */}
@@ -222,7 +227,7 @@ export default function PromotionBanner() {
                     <img
                       src={displayImage}
                       alt={activePromotion.title}
-                      className="h-[90%] w-auto object-contain drop-shadow-[0_12px_20px_rgba(31,26,20,0.16)]"
+                      className="h-[90%] w-auto object-contain"
                       style={{
                         WebkitMaskImage: "linear-gradient(to bottom, #000 30%, transparent 96%)",
                         maskImage: "linear-gradient(to bottom, #000 30%, transparent 96%)",
@@ -236,20 +241,20 @@ export default function PromotionBanner() {
               <div className="relative z-[2] flex flex-1 flex-col px-5 py-4 sm:px-6">
                 {/* Gold accent line — visual separator */}
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="h-[1.5px] w-7 bg-[#d4af37]" aria-hidden="true" />
-                  <PromotionIcon className="h-3.5 w-3.5 text-[#d4af37]" aria-hidden="true" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b88700] dark:text-[#d4af37]">
+                  <span className="h-[1.5px] w-7 bg-brand" aria-hidden="true" />
+                  <PromotionIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent ">
                     {getPromotionLabel(activePromotion.type)}
                   </span>
                 </div>
 
                 {/* Title */}
-                <h2 className="mb-2 text-[24px] font-black leading-[1.08] tracking-tight text-[#1f1a14] dark:text-[#fff8e7]">
+                <h2 className="studio-display studio-gradient mb-2 text-[24px] font-semibold leading-[1.08] tracking-tight text-ink ">
                   {activePromotion.title}
                 </h2>
 
                 {/* Description */}
-                <p className="mb-3 line-clamp-2 max-w-sm text-[13px] leading-[1.5] text-[#7a6a55] dark:text-[#b8a892]">
+                <p className="mb-3 line-clamp-2 max-w-sm text-[13px] leading-[1.5] text-muted ">
                   {activePromotion.description}
                 </p>
 
@@ -262,12 +267,12 @@ export default function PromotionBanner() {
                 {activePromotion.type === "new_product" && activePromotion.product && (
                   <div className="mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                     {activePromotion.product.brand && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#b88700] dark:text-[#d4af37]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent ">
                         {activePromotion.product.brand}
                       </span>
                     )}
                     {activePromotion.product.price && (
-                      <span className="text-base font-black text-[#d4af37]">
+                      <span className="text-base font-semibold text-accent">
                         {activePromotion.product.price.toLocaleString()} Ks
                       </span>
                     )}
@@ -278,7 +283,7 @@ export default function PromotionBanner() {
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={activePromotion.cta_url}
-                    className="group/btn inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#d4af37,#f0c847)] px-5 py-2 text-xs font-bold uppercase tracking-wide text-[#1f1a14] shadow-[0_6px_18px_-6px_rgba(212,175,55,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-6px_rgba(212,175,55,0.5)]"
+                    className="group/btn inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2 text-xs font-bold uppercase tracking-wide text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-panel"
                   >
                     {activePromotion.cta_text}
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
@@ -295,8 +300,8 @@ export default function PromotionBanner() {
                           aria-label={`Go to promotion ${index + 1}`}
                           className={`h-1 rounded-full transition-all duration-300 ${
                             index === activeIndex
-                              ? "w-5 bg-[#d4af37]"
-                              : "w-1 bg-[#d4af37]/25 hover:bg-[#d4af37]/45"
+                              ? "w-5 bg-brand"
+                              : "w-1 bg-brand-soft hover:bg-brand/45"
                           }`}
                         />
                       ))}
@@ -311,7 +316,7 @@ export default function PromotionBanner() {
               {/* Subtle ambient glow from right side — no box, just atmosphere */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_48%_52%_at_72%_48%,rgba(247,231,179,0.28),transparent)] dark:bg-[radial-gradient(circle_48%_52%_at_72%_48%,rgba(212,175,55,0.09),transparent)]"
+                className="pointer-events-none absolute inset-0 bg-surface-muted "
               />
 
               {/* Image — emerges naturally from right edge, no centering */}
@@ -320,7 +325,7 @@ export default function PromotionBanner() {
                   <img
                     src={displayImage}
                     alt={activePromotion.title}
-                    className="h-[78%] w-auto object-contain drop-shadow-[0_20px_28px_rgba(31,26,20,0.2)] lg:h-[82%]"
+                    className="h-[78%] w-auto object-contain lg:h-[82%]"
                     style={{
                       WebkitMaskImage: "linear-gradient(to right, transparent, #000 22%)",
                       maskImage: "linear-gradient(to right, transparent, #000 22%)",
@@ -333,20 +338,20 @@ export default function PromotionBanner() {
               <div className="relative z-[2] flex h-full max-w-[52%] flex-col justify-center pl-6 pr-3 lg:max-w-[50%] lg:pl-8">
                 {/* Gold accent line — simple separator */}
                 <div className="mb-4 flex items-center gap-2.5 lg:mb-4">
-                  <span className="h-[2px] w-9 bg-[#d4af37]" aria-hidden="true" />
-                  <PromotionIcon className="h-4 w-4 text-[#d4af37]" aria-hidden="true" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b88700] dark:text-[#d4af37] lg:text-[11px]">
+                  <span className="h-[2px] w-9 bg-brand" aria-hidden="true" />
+                  <PromotionIcon className="h-4 w-4 text-accent" aria-hidden="true" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent  lg:text-[11px]">
                     {getPromotionLabel(activePromotion.type)}
                   </span>
                 </div>
 
                 {/* Title */}
-                <h2 className="mb-3 text-[30px] font-black leading-[1.06] tracking-tight text-[#1f1a14] dark:text-[#fff8e7] lg:mb-3.5 lg:text-[34px]">
+                <h2 className="studio-display studio-gradient mb-3 text-[30px] font-semibold leading-[1.06] tracking-tight text-ink  lg:mb-3.5 lg:text-[34px]">
                   {activePromotion.title}
                 </h2>
 
                 {/* Description */}
-                <p className="mb-4 max-w-md text-[13.5px] leading-[1.55] text-[#7a6a55] dark:text-[#b8a892] lg:mb-4 lg:text-sm">
+                <p className="mb-4 max-w-md text-[13.5px] leading-[1.55] text-muted  lg:mb-4 lg:text-sm">
                   {activePromotion.description}
                 </p>
 
@@ -359,12 +364,12 @@ export default function PromotionBanner() {
                 {activePromotion.type === "new_product" && activePromotion.product && (
                   <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 lg:mb-4">
                     {activePromotion.product.brand && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#b88700] dark:text-[#d4af37] lg:text-[11px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent  lg:text-[11px]">
                         {activePromotion.product.brand}
                       </span>
                     )}
                     {activePromotion.product.price && (
-                      <span className="text-lg font-black text-[#d4af37] lg:text-xl">
+                      <span className="text-lg font-semibold text-accent lg:text-xl">
                         {activePromotion.product.price.toLocaleString()} Ks
                       </span>
                     )}
@@ -375,7 +380,7 @@ export default function PromotionBanner() {
                 <div className="flex flex-wrap items-center gap-3.5">
                   <Link
                     href={activePromotion.cta_url}
-                    className="group/btn inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d4af37,#f0c847)] px-6 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1f1a14] shadow-[0_6px_18px_-6px_rgba(212,175,55,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-6px_rgba(212,175,55,0.5)] lg:px-7 lg:py-3"
+                    className="group/btn inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-xs font-bold uppercase tracking-wide text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-panel lg:px-7 lg:py-3"
                   >
                     {activePromotion.cta_text}
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5 lg:h-4 lg:w-4" />
@@ -392,8 +397,8 @@ export default function PromotionBanner() {
                           aria-label={`Go to promotion ${index + 1}`}
                           className={`h-1 rounded-full transition-all duration-300 ${
                             index === activeIndex
-                              ? "w-5 bg-[#d4af37]"
-                              : "w-1 bg-[#d4af37]/25 hover:bg-[#d4af37]/45"
+                              ? "w-5 bg-brand"
+                              : "w-1 bg-brand-soft hover:bg-brand/45"
                           }`}
                         />
                       ))}

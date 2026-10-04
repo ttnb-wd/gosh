@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -61,9 +62,9 @@ function ResetPasswordForm() {
         <input id="confirm-password" type="password" autoComplete="new-password" required className={authInputClass} value={confirm} onChange={(event) => setConfirm(event.target.value)} />
         <button disabled={busy} className={authButtonClass}>{busy ? "Updating..." : "Reset password"}</button>
       </form> : null}
-    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-    {!valid && !checking && <Link href="/forgot-password" className="block text-sm text-yellow-700">Request a new reset link</Link>}
-    <Link href="/login" className="block text-sm text-yellow-700">Back to login</Link>
+    {error && <p role="alert" className="text-sm text-destructive"><StudioErrorText message={error} /></p>}
+    {!valid && !checking && <Link href="/forgot-password" className="block text-sm text-accent">Request a new reset link</Link>}
+    <Link href="/login" className="block text-sm text-accent">Back to login</Link>
   </AuthShell>;
 }
 export default function ResetPasswordPage() {

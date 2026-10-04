@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { Reveal } from "./ui/StudioMotion";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 export default function Footer() {
@@ -7,7 +10,7 @@ export default function Footer() {
   const websiteName = settings.website_name || "GOSH PERFUME";
   const footerText =
     settings.footer_text ||
-    "Luxury perfume experience built with Next.js and modern animation.";
+    "A considered collection of fragrances. A lasting expression of you.";
   const contactItems = [settings.address, settings.phone, settings.email].filter(
     Boolean
   );
@@ -17,39 +20,14 @@ export default function Footer() {
     { label: "TikTok", href: settings.tiktok_url },
   ].filter((link) => Boolean(link.href));
 
-  return (
-    <footer
-      role="contentinfo"
-      id="contact"
-      className="border-t border-[#d4af37]/20 bg-white dark:border-[#d4af37]/25 dark:bg-[#0f0b07]"
-    >
-      <div className="mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 lg:px-8">
-        <h4 className="text-2xl font-bold text-[#1f1a14] dark:text-[#fff7e6]">{websiteName}</h4>
-        <p className="mt-3 text-[#7a6a55] dark:text-[#fff7e6]/65">{footerText}</p>
-        {contactItems.length > 0 && (
-          <p className="mx-auto mt-4 max-w-3xl text-sm font-medium text-[#7a6a55]/90 dark:text-[#fff7e6]/60">
-            {contactItems.join(" • ")}
-          </p>
-        )}
-        {socialLinks.length > 0 && (
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {socialLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-[#d4af37]/30 bg-[#fffaf0] px-4 py-2 text-xs font-bold text-[#b88705] transition hover:border-[#d4af37]/60 hover:bg-[#fff7e6] dark:bg-[#15100b] dark:text-[#d4af37] dark:hover:bg-[#1c160f]"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-        )}
-        <p className="mt-6 text-sm text-[#7a6a55]/80 dark:text-[#fff7e6]/50">
-          © 2026 {websiteName}. All rights reserved.
-        </p>
+  return <footer role="contentinfo" id="contact" className="studio-footer">
+    <div className="studio-container"><Reveal>
+      <div className="studio-footer-grid"><div><h4>{websiteName}</h4><p>{footerText}</p>{contactItems.length > 0 && <div className="studio-footer-contact">{contactItems.map(item => <p key={item}>{item}</p>)}</div>}</div>
+        <div><h4>DISCOVER</h4><Link href="/products">All fragrances</Link><Link href="/promotions">Promotions</Link><Link href="/about">Our story</Link></div>
+        <div><h4>CLIENT CARE</h4><Link href="/contact">Contact us</Link><Link href="/account">Your account</Link><Link href="/orders">Your orders</Link><Link href="/delivery-policy">Delivery</Link><Link href="/refund-policy">Returns & refunds</Link></div>
+        <div><h4>FOLLOW THE FEELING</h4>{socialLinks.map(link => <a key={link.label} href={link.href || "#"} target="_blank" rel="noopener noreferrer">{link.label}<ArrowUpRight size={13} /></a>)}<p className="studio-footer-signature">Fragrance, beautifully personal.</p></div>
       </div>
-    </footer>
-  );
+      <div className="studio-footer-bottom"><p>© 2026 {websiteName}. All rights reserved.</p><div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div><span>GOSH / PERFUME STUDIO</span></div>
+    </Reveal></div>
+  </footer>;
 }

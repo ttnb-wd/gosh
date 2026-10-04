@@ -1,4 +1,5 @@
 "use client";
+import StudioModal from "@/components/ui/StudioModal";
 import devLog from "@/lib/dev-log";
 
 import { useCallback, useEffect, useState } from "react";
@@ -398,9 +399,9 @@ function OrdersTableContent() {
 
   const getPaymentMethodBadgeColor = (method: string) => {
     if (method === "cod") {
-      return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-[#231b12] dark:!text-[#fff7e6]/75 dark:border-[#d4af37]/25";
+      return "bg-surface-muted text-secondary border-line   ";
     }
-    return "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-[#f7e7b3] dark:!text-[#8d5f00] dark:border-[#d4af37]/45";
+    return "bg-accent-soft text-accent border-line   ";
   };
 
   const getStatusIcon = (status: string) => {
@@ -423,25 +424,25 @@ function OrdersTableContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-[#f7e7b3] dark:!text-[#8d5f00] dark:border-[#d4af37]/45";
+        return "bg-accent-soft text-accent border-line   ";
       case "Confirmed":
-        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:!text-blue-200 dark:border-blue-400/30";
+        return "bg-info-soft text-info border-info   ";
       case "Processing":
-        return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:!text-purple-200 dark:border-purple-400/30";
+        return "bg-info-soft text-info border-info   ";
       case "Delivered":
-        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:!text-green-200 dark:border-green-400/30";
+        return "bg-success-soft text-success border-success   ";
       case "Cancelled":
-        return "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:!text-red-200 dark:border-red-400/30";
+        return "bg-destructive-soft text-destructive border-destructive   ";
       default:
-        return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-[#231b12] dark:!text-[#fff7e6]/75 dark:border-[#d4af37]/25";
+        return "bg-surface-muted text-secondary border-line   ";
     }
   };
 
   if (loading && orders.length === 0 && totalOrders === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
-        <p className="mt-4 text-sm text-zinc-600">Loading orders...</p>
+      <div className="rounded-xl border border-line bg-surface p-12 text-center">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-line border-t-transparent" />
+        <p className="mt-4 text-sm text-secondary">Loading orders...</p>
       </div>
     );
   }
@@ -451,17 +452,17 @@ function OrdersTableContent() {
       {actionMessage && (
         <div
           role="alert"
-          className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
+          className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${
             actionMessage.type === "success"
-              ? "border-green-200 bg-green-50 text-green-700"
-              : "border-red-200 bg-red-50 text-red-700"
+              ? "border-success bg-success-soft text-success"
+              : "border-destructive bg-destructive-soft text-destructive"
           }`}
         >
           <span>{actionMessage.text}</span>
           <button
             type="button"
             onClick={() => setActionMessage(null)}
-            className="rounded-full px-2 py-1 text-xs font-black opacity-70 transition hover:bg-white/70 hover:opacity-100"
+            className="rounded-full px-2 py-1 text-xs font-semibold opacity-70 transition hover:bg-surface/70 hover:opacity-100"
           >
             Close
           </button>
@@ -471,7 +472,7 @@ function OrdersTableContent() {
       {/* Filter Tabs */}
       <div className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
           <input
             id="admin-order-search"
             name="admin_order_search"
@@ -479,7 +480,7 @@ function OrdersTableContent() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search order number, customer, email, or phone..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+            className="w-full rounded-xl border border-line bg-surface py-3 pl-12 pr-4 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-focus focus:ring-4 focus:ring-focus/15"
           />
         </div>
 
@@ -490,8 +491,8 @@ function OrdersTableContent() {
               onClick={() => setFilter(status)}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 filter === status
-                  ? "bg-yellow-400 text-black shadow-md"
-                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+                  ? "bg-brand text-on-brand shadow-soft"
+                  : "border border-line bg-surface text-secondary hover:border-line hover:bg-accent-soft"
               }`}
             >
               {status}
@@ -506,8 +507,8 @@ function OrdersTableContent() {
               onClick={() => setPaymentFilter(status)}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 paymentFilter === status
-                  ? "bg-black text-white shadow-md"
-                  : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50"
+                  ? "bg-brand text-on-brand shadow-soft"
+                  : "border border-line bg-surface text-secondary hover:border-line hover:bg-accent-soft"
               }`}
             >
               {status === "All" ? "All Payments" : status}
@@ -516,51 +517,51 @@ function OrdersTableContent() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-[24px] border border-yellow-200 bg-[#fffdf6] p-4 dark:border-[#d4af37]/25 dark:bg-[#15100b] sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 rounded-xl border border-line bg-surface p-4   sm:grid-cols-2 lg:grid-cols-5">
         {Object.entries(paymentStatusGuidance).map(([status, description]) => (
-          <div key={status} className="rounded-2xl border border-yellow-100 bg-white p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
-            <p className="text-sm font-black text-neutral-950 dark:!text-[#fff7e6]">{status}</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-600 dark:!text-[#fff7e6]/65">{description}</p>
+          <div key={status} className="rounded-xl border border-line bg-surface p-3  ">
+            <p className="text-sm font-semibold text-ink ">{status}</p>
+            <p className="mt-1 text-xs leading-5 text-secondary ">{description}</p>
           </div>
         ))}
       </div>
 
       {/* Notification Order Not Found Message */}
       {notificationOrderNotFound && (
-        <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-          <p className="text-sm font-bold text-yellow-800">
+        <div className="rounded-xl border border-line bg-accent-soft p-4">
+          <p className="text-sm font-bold text-accent">
             Related order could not be found.
           </p>
-          <p className="mt-1 text-xs text-yellow-700">
+          <p className="mt-1 text-xs text-accent">
             The order may have been deleted or the notification link is invalid.
           </p>
         </div>
       )}
 
       {!loading && (
-        <div className="flex flex-col items-start justify-between gap-3 text-sm text-zinc-600 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start justify-between gap-3 text-sm text-secondary sm:flex-row sm:items-center">
           <p>
-            Showing <span className="font-bold text-black">{pageStart}</span>-<span className="font-bold text-black">{pageEnd}</span> of{" "}
-            <span className="font-bold text-black">{totalOrders}</span> orders
+            Showing <span className="font-bold text-ink">{pageStart}</span>-<span className="font-bold text-ink">{pageEnd}</span> of{" "}
+            <span className="font-bold text-ink">{totalOrders}</span> orders
           </p>
           <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-yellow-200 bg-white px-3 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-sm font-bold text-ink transition hover:border-line hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
             >
               <ChevronLeft className="h-4 w-4" />
               Prev
             </button>
-            <span className="rounded-full bg-yellow-50 px-3 py-2 text-center text-sm font-black text-yellow-700 sm:px-4">
+            <span className="rounded-full bg-accent-soft px-3 py-2 text-center text-sm font-semibold text-accent sm:px-4">
               {currentPage} / {totalPages}
             </span>
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-yellow-200 bg-white px-3 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-sm font-bold text-ink transition hover:border-line hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4"
             >
               Next
               <ChevronRight className="h-4 w-4" />
@@ -571,15 +572,15 @@ function OrdersTableContent() {
 
       {/* Orders List */}
       {loading ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
-          <p className="mt-4 text-sm text-zinc-600">Loading orders...</p>
+        <div className="rounded-xl border border-line bg-surface p-12 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-line border-t-transparent" />
+          <p className="mt-4 text-sm text-secondary">Loading orders...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
-          <Package className="mx-auto h-12 w-12 text-zinc-300" />
-          <h3 className="mt-4 text-lg font-bold text-black">No orders found</h3>
-          <p className="mt-2 text-sm text-zinc-600">Orders will appear here once customers place them.</p>
+        <div className="rounded-xl border border-line bg-surface p-12 text-center">
+          <Package className="mx-auto h-12 w-12 text-faint" />
+          <h3 className="mt-4 text-lg font-bold text-ink">No orders found</h3>
+          <p className="mt-2 text-sm text-secondary">Orders will appear here once customers place them.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -590,18 +591,18 @@ function OrdersTableContent() {
               <div
                 key={order.id}
                 id={`order-${order.id}`}
-                className={`rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:bg-[#15100b] dark:text-[#fff7e6] ${
+                className={`rounded-xl border bg-surface shadow-soft transition-all duration-300 hover:shadow-soft   ${
                   isHighlighted
-                    ? "ring-2 ring-yellow-300 border-yellow-300 bg-yellow-50/50 dark:border-[#d4af37]/45 dark:bg-[#1c160f]"
-                    : "border-zinc-200 hover:border-yellow-400/50 dark:border-[#d4af37]/25 dark:hover:border-[#d4af37]/50"
+                    ? "ring-2 ring-line border-line bg-accent-soft/50  "
+                    : "border-line hover:border-line  "
                 }`}
               >
               <div className="p-4 sm:p-6">
                 {/* Order Header */}
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-bold text-black dark:!text-[#fff7e6]">{order.order_number}</h3>
-                    <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
+                    <h3 className="text-lg font-bold text-ink ">{order.order_number}</h3>
+                    <p className="text-sm text-secondary ">
                       {new Date(order.created_at).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
@@ -612,33 +613,33 @@ function OrdersTableContent() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xl font-black text-yellow-600">${order.total.toFixed(2)}</span>
+                    <span className="text-xl font-semibold text-accent">${order.total.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* Customer Info */}
                 <div className="mb-4 grid gap-4 sm:grid-cols-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Customer</p>
-                    <p className="mt-1 font-semibold text-black dark:!text-[#fff7e6]">{order.customer_name}</p>
-                    <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.phone}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted ">Customer</p>
+                    <p className="mt-1 font-semibold text-ink ">{order.customer_name}</p>
+                    <p className="text-sm text-secondary ">{order.phone}</p>
                     {order.customer_email && (
-                      <p className="break-all text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.customer_email}</p>
+                      <p className="break-all text-sm text-secondary ">{order.customer_email}</p>
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Address</p>
-                    <p className="mt-1 text-sm text-zinc-700 dark:!text-[#fff7e6]/75">{order.address}</p>
-                    {order.city && <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">{order.city}</p>}
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted ">Address</p>
+                    <p className="mt-1 text-sm text-secondary ">{order.address}</p>
+                    {order.city && <p className="text-sm text-secondary ">{order.city}</p>}
                   </div>
                 </div>
 
                 {/* Payment Info */}
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Payment Information</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted ">Payment Information</p>
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-700 dark:!text-[#fff7e6]/75">Method:</span>
+                      <span className="text-sm font-semibold text-secondary ">Method:</span>
                       <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPaymentMethodBadgeColor(order.payment_method)}`}>
                         {getPaymentMethodLabel(order.payment_method)}
                       </span>
@@ -646,17 +647,17 @@ function OrdersTableContent() {
                     
                     {/* Payment Account Details */}
                     {order.payment_account_name && (
-                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
+                      <p className="text-sm text-secondary ">
                         <span className="font-semibold">Account:</span> {order.payment_account_name}
                       </p>
                     )}
                     {order.payment_phone && (
-                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
+                      <p className="text-sm text-secondary ">
                         <span className="font-semibold">Phone:</span> {order.payment_phone}
                       </p>
                     )}
                     {order.payment_account_number && (
-                      <p className="text-sm text-zinc-600 dark:!text-[#fff7e6]/70">
+                      <p className="text-sm text-secondary ">
                         <span className="font-semibold">Account Number:</span> {order.payment_account_number}
                       </p>
                     )}
@@ -675,31 +676,31 @@ function OrdersTableContent() {
                           }
                           setPaymentScreenshotUrl(url);
                         }}
-                        className="inline-flex items-center gap-2 rounded-full border border-yellow-300 bg-white px-4 py-2 text-sm font-black text-yellow-700 shadow-sm transition hover:bg-yellow-50 dark:border-[#d4af37]/35 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
+                        className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-accent shadow-soft transition hover:bg-accent-soft    "
                       >
                         <ExternalLink className="h-4 w-4" />
                         View Payment Screenshot
                       </button>
                     ) : (
-                      <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
+                      <span className="inline-flex rounded-full bg-surface-muted px-3 py-1 text-xs font-bold text-muted">
                         No Screenshot
                       </span>
                     )}
 
                     {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_file_id && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
-                      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-400/30 dark:bg-red-950/30 dark:!text-red-200">
+                      <div role="alert" className="rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive   ">
                         Prepaid order has no payment proof. Keep as Verifying/Failed until proof is confirmed.
                       </div>
                     )}
 
-                    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6]/80">
-                      <span className="font-black">{order.payment_status || "Unpaid"}:</span>{" "}
+                    <div className="rounded-xl border border-line bg-accent-soft px-4 py-3 text-sm text-accent   ">
+                      <span className="font-semibold">{order.payment_status || "Unpaid"}:</span>{" "}
                       {paymentStatusGuidance[order.payment_status || "Unpaid"] || "Review this payment before fulfillment."}
                     </div>
                     
                     {/* Payment Status Dropdown */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-700 dark:!text-[#fff7e6]/75">Status:</span>
+                      <span className="text-sm font-semibold text-secondary ">Status:</span>
                       <PremiumStatusSelect
                         type="payment"
                         value={order.payment_status || "Unpaid"}
@@ -715,7 +716,7 @@ function OrdersTableContent() {
                           type="button"
                           onClick={() => updatePaymentStatus(order.id, "Paid")}
                           disabled={updatingOrders.has(order.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-700 shadow-sm transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-full border border-success bg-success-soft px-4 py-2 text-sm font-bold text-success shadow-soft transition hover:bg-success-soft disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <CheckCircle className="h-4 w-4" />
                           Mark as Paid
@@ -724,7 +725,7 @@ function OrdersTableContent() {
                           type="button"
                           onClick={() => updatePaymentStatus(order.id, "Failed")}
                           disabled={updatingOrders.has(order.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-full border border-destructive bg-destructive-soft px-4 py-2 text-sm font-bold text-destructive shadow-soft transition hover:bg-destructive-soft disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject Payment
@@ -733,7 +734,7 @@ function OrdersTableContent() {
                           type="button"
                           onClick={() => updatePaymentStatus(order.id, "Unpaid")}
                           disabled={updatingOrders.has(order.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#d4af37]/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
+                          className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-secondary shadow-soft transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50    "
                         >
                           <Clock className="h-4 w-4" />
                           Mark as Unpaid
@@ -745,62 +746,62 @@ function OrdersTableContent() {
 
                 {/* Order Items */}
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:!text-[#fff7e6]/60">Items</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted ">Items</p>
                   <div className="space-y-2">
                     {order.order_items && order.order_items.length > 0 ? (
                       order.order_items.map((item, index) => (
-                        <div key={index} className="flex flex-col gap-3 rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f] sm:flex-row sm:items-center sm:justify-between">
+                        <div key={index} className="flex flex-col gap-3 rounded-xl border border-transparent bg-surface-muted p-3   sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
-                            <p className="font-semibold text-black dark:!text-[#fff7e6]">{item.product_name}</p>
-                            <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
+                            <p className="font-semibold text-ink ">{item.product_name}</p>
+                            <p className="text-xs text-secondary ">
                               {item.product_brand && `${item.product_brand} • `}
                               {item.selected_size && `${item.selected_size} • `}
                               Qty: {item.quantity}
                             </p>
                           </div>
                           <div className="text-left sm:text-right">
-                            <p className="font-semibold text-black dark:!text-[#fff7e6]">${item.price.toFixed(2)}</p>
-                            <p className="text-xs text-zinc-600 dark:!text-[#fff7e6]/60">
+                            <p className="font-semibold text-ink ">${item.price.toFixed(2)}</p>
+                            <p className="text-xs text-secondary ">
                               Total: ${(item.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-zinc-500 dark:!text-[#fff7e6]/60">No items found</p>
+                      <p className="text-sm text-muted ">No items found</p>
                     )}
                   </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="mb-4 rounded-xl border border-transparent bg-zinc-50 p-3 dark:border-[#d4af37]/20 dark:bg-[#1c160f]">
+                <div className="mb-4 rounded-xl border border-transparent bg-surface-muted p-3  ">
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-zinc-600 dark:!text-[#fff7e6]/65">Subtotal:</span>
-                      <span className="font-semibold text-black dark:!text-[#fff7e6]">${order.subtotal.toFixed(2)}</span>
+                      <span className="text-secondary ">Subtotal:</span>
+                      <span className="font-semibold text-ink ">${order.subtotal.toFixed(2)}</span>
                     </div>
                     {order.delivery_fee > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-zinc-600 dark:!text-[#fff7e6]/65">Delivery Fee:</span>
-                        <span className="font-semibold text-black dark:!text-[#fff7e6]">${order.delivery_fee.toFixed(2)}</span>
+                        <span className="text-secondary ">Delivery Fee:</span>
+                        <span className="font-semibold text-ink ">${order.delivery_fee.toFixed(2)}</span>
                       </div>
                     )}
                     {order.discount > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-zinc-600">Discount:</span>
-                        <span className="font-semibold text-green-600">-${order.discount.toFixed(2)}</span>
+                        <span className="text-secondary">Discount:</span>
+                        <span className="font-semibold text-success">-${order.discount.toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between border-t border-zinc-200 pt-1 dark:border-[#d4af37]/20">
-                      <span className="font-bold text-black dark:!text-[#fff7e6]">Total:</span>
-                      <span className="font-bold text-yellow-600">${order.total.toFixed(2)}</span>
+                    <div className="flex justify-between border-t border-line pt-1 ">
+                      <span className="font-bold text-ink ">Total:</span>
+                      <span className="font-bold text-accent">${order.total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Order Status Dropdown */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Order Status:</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted">Order Status:</p>
                   <PremiumStatusSelect
                     type="order"
                     value={order.status || "Pending"}
@@ -822,21 +823,21 @@ function OrdersTableContent() {
       {/* Payment Screenshot Modal */}
       {paymentScreenshotUrl && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-6"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-overlay p-3  sm:p-6"
           onClick={() => {
             setPaymentScreenshotUrl(null);
             setPaymentScreenshotError(false);
           }}
         >
-          <div
-            className="relative inline-flex max-h-[92vh] w-auto max-w-[94vw] flex-col overflow-hidden rounded-[28px] border border-yellow-200 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.40)] dark:border-[#d4af37]/30 dark:bg-[#15100b]"
+          <StudioModal label="Payment proof" onDismiss={() => { setPaymentScreenshotUrl(null); setPaymentScreenshotError(false); }} lockScroll={true}
+            className="relative inline-flex max-h-[92vh] w-auto max-w-[94vw] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-panel  "
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-yellow-200 bg-white px-4 py-3 dark:border-[#d4af37]/25 dark:bg-[#1c160f] sm:px-5 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 py-3   sm:px-5 sm:py-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-600 sm:text-xs">Payment Proof</p>
-                <h3 className="truncate text-base font-black text-neutral-950 dark:!text-[#fff7e6] sm:text-lg">Payment Screenshot</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent sm:text-xs">Payment Proof</p>
+                <h3 className="truncate text-base font-semibold text-ink  sm:text-lg">Payment Screenshot</h3>
               </div>
               <button
                 type="button"
@@ -844,31 +845,31 @@ function OrdersTableContent() {
                   setPaymentScreenshotUrl(null);
                   setPaymentScreenshotError(false);
                 }}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_10px_25px_rgba(234,179,8,0.30)] transition hover:bg-yellow-300 sm:h-10 sm:w-10"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-on-brand shadow-panel transition hover:bg-brand sm:h-10 sm:w-10"
                 aria-label="Close payment screenshot"
               >
                 ×
               </button>
             </div>
             {/* Screenshot preview */}
-            <div className="flex items-center justify-center overflow-auto bg-neutral-950 p-2 sm:p-3">
+            <div className="flex items-center justify-center overflow-auto bg-surface-muted p-2 sm:p-3">
               {!paymentScreenshotError && paymentScreenshotUrl !== "error" ? (
                 <img
                   src={paymentScreenshotUrl}
                   alt="Payment screenshot"
-                  className="block h-auto w-auto max-h-[76vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl sm:max-h-[78vh] sm:max-w-[820px]"
+                  className="block h-auto w-auto max-h-[76vh] max-w-[90vw] rounded-xl object-contain shadow-soft sm:max-h-[78vh] sm:max-w-[820px]"
                   onError={() => setPaymentScreenshotError(true)}
                 />
               ) : (
-                <div className="flex min-h-[260px] w-[86vw] max-w-md flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 p-6 text-center sm:min-h-[320px]">
-                  <p className="text-lg font-black text-red-700">Could not load payment screenshot.</p>
-                  <p className="mt-2 text-sm text-red-600">
+                <div className="flex min-h-[260px] w-[86vw] max-w-md flex-col items-center justify-center rounded-xl border border-destructive bg-destructive-soft p-6 text-center sm:min-h-[320px]">
+                  <p className="text-lg font-semibold text-destructive">Could not load payment screenshot.</p>
+                  <p className="mt-2 text-sm text-destructive">
                     Please check if the file URL is public or signed correctly.
                   </p>
                 </div>
               )}
             </div>
-          </div>
+          </StudioModal>
         </div>
       )}
     </div>

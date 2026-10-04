@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
+import { CircleAlert } from 'lucide-react'
 
 export default function AdminError({
   error,
@@ -15,24 +16,21 @@ export default function AdminError({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas p-6 text-ink">
+      <div className="max-w-md w-full bg-surface border border-line shadow-soft rounded-xl p-8">
         <div className="text-center">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Admin Error
+          <CircleAlert className="mx-auto mb-5 h-6 w-6 text-destructive" aria-hidden="true" />
+          <p className="studio-eyebrow justify-center mb-3">GOSH · Studio administration</p>
+          <h2 className="studio-display text-ink mb-4">
+            A moment of interruption
           </h2>
-          <p className="text-gray-600 mb-2">
+          <p className="text-secondary mb-2">
             An error occurred in the admin panel.
           </p>
-          {error.message && (
-            <p className="text-sm text-gray-500 mb-6 font-mono bg-gray-50 p-3 rounded">
-              {error.message}
-            </p>
-          )}
+          <p className="text-sm text-muted mb-6">Please try again. If this continues, contact your studio administrator.</p>
           <button
             onClick={reset}
-            className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors w-full"
+            className="studio-compact-button studio-compact-button--primary w-full"
           >
             Try again
           </button>

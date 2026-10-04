@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { Reveal, GradientText } from "./ui/StudioMotion";
 import Link from "next/link";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
@@ -12,30 +12,25 @@ export default function BrandStory() {
     <section 
       role="region" 
       aria-label="Brand story" 
-      className="bg-[var(--site-bg)] px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
+      className="studio-section studio-story"
     >
-      <div className="mx-auto max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-center"
+      <div className="studio-container studio-story-grid"><Reveal className="studio-story-art"><div className="studio-story-art-ring" aria-hidden="true" /><span className="studio-eyebrow">GOSH / A CONSIDERED COLLECTION</span><span className="studio-story-art-type" aria-hidden="true">The art<br />of <em>feeling.</em></span><span className="studio-story-art-bottom">PERSONAL. DISTINCTIVE. UNFORGETTABLE.</span></Reveal>
+        <Reveal className="studio-story-content"
         >
           {/* Label */}
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#b88700] dark:text-[#d4af37] sm:mb-5 sm:text-sm">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-accent  sm:mb-5 sm:text-sm">
             The {websiteName} Experience
           </p>
 
           {/* Main statement */}
-          <h2 className="mb-5 text-[clamp(1.9rem,5.5vw,3rem)] font-black leading-[1.08] tracking-tight text-[#1f1a14] dark:text-[#fff7e6] sm:mb-6 lg:mb-7">
+          <h2 className="studio-display mb-5 text-[clamp(1.9rem,5.5vw,3rem)] font-semibold leading-[1.08] tracking-tight text-ink  sm:mb-6 lg:mb-7">
             Curated with Confidence,
             <br />
-            <span className="text-[#b88700] dark:text-[#d4af37]">Chosen for You</span>
+            <GradientText>Chosen for You</GradientText>
           </h2>
 
           {/* Body text */}
-          <div className="mx-auto mb-8 max-w-2xl space-y-4 text-[15px] leading-[1.7] text-[#7a6a55] dark:text-[#b8a892] sm:mb-10 sm:text-base lg:mb-12 lg:text-[17px] lg:leading-[1.75]">
+          <div className="mx-auto mb-8 max-w-2xl space-y-4 text-[15px] leading-[1.7] text-muted  sm:mb-10 sm:text-base lg:mb-12 lg:text-[17px] lg:leading-[1.75]">
             <p>
               {websiteName} is an independent curated perfume shop focused on carefully sourced fragrances, clear product details, and a trustworthy shopping experience.
             </p>
@@ -50,7 +45,7 @@ export default function BrandStory() {
           {/* Simple CTA link */}
           <Link
             href="/about"
-            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] dark:text-[#d4af37] dark:hover:text-[#f0c847]"
+            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-accent transition hover:gap-3 hover:text-accent  "
           >
             Learn More About Us
             <svg 
@@ -69,7 +64,7 @@ export default function BrandStory() {
               <polyline points="12 5 19 12 12 19"/>
             </svg>
           </Link>
-        </motion.div>
+        </Reveal>
       </div>
     </section>
   );

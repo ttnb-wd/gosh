@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import BrandIntroduction from "@/components/BrandIntroduction";
-import FeaturedProducts from "@/components/FeaturedProducts";
+import { HomepageHero, HomepageIntroduction, HomepageScentStory, HomepageFinale, HomepageAtmosphere } from "@/components/homepage/HomepageVisuals";
+import "./homepage.css";
 import PromotionBanner from "@/components/PromotionBanner";
 import CollectionsNavigation from "@/components/CollectionsNavigation";
 import BrandStory from "@/components/BrandStory";
 import Testimonials from "@/components/Testimonials";
-import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -46,22 +44,22 @@ export default function Page() {
   };
 
   return (
-    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
+    <main role="main" className="studio-page homepage-luxury min-h-screen bg-[var(--site-bg)] text-ink">
+      <HomepageAtmosphere />
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
       />
-      {/* HERO - LOCKED, DO NOT MODIFY */}
-      <Hero />
+      {/* Original animated fragrance composition */}
+      <HomepageHero />
       
-      {/* NEW HOMEPAGE STRUCTURE - VISUAL RHYTHM REDESIGN */}
-      <BrandIntroduction />
-      <FeaturedProducts />
+      <HomepageIntroduction />
+      <HomepageScentStory />
       <PromotionBanner />
       <CollectionsNavigation />
       <BrandStory />
       <Testimonials />
-      <FinalCTA />
+      <HomepageFinale />
       <Footer />
       
       {/* Cart Drawer - Rendered once at page level */}

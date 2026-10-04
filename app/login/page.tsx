@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -273,13 +274,13 @@ try {
 
 return ( <main
    role="main"
-   className="min-h-screen flex items-center justify-center bg-[#fffaf0] px-4 py-10 dark:bg-[#0f0b07] lg:py-16"
- > <div className="w-full max-w-5xl"> <div className="relative overflow-hidden rounded-3xl border border-yellow-300/70 bg-white shadow-[0_24px_80px_rgba(234,179,8,0.18)] dark:border-[#d4af37]/30 dark:bg-[#15100b] dark:shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+   className="studio-login studio-page min-h-screen flex items-center justify-center bg-surface px-4 py-10  lg:py-16"
+ > <div className="w-full max-w-5xl"> <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-panel   ">
 
       <div className="relative grid grid-cols-1 lg:grid-cols-2">
 
         <div
-          className={`relative z-10 order-1 p-8 sm:p-10 lg:p-12 transition-all duration-700 ${
+          className={`studio-login-form relative z-10 order-1 p-8 sm:p-10 lg:p-12 transition-all duration-700 ${
             mode === "signup"
               ? "lg:order-2"
               : "lg:order-1"
@@ -291,31 +292,31 @@ return ( <main
               href="/"
               className="inline-block"
             >
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-yellow-600">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-accent">
                 GOSH PERFUME
               </p>
             </Link>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-black text-neutral-950 dark:!text-[#fff7e6] lg:text-4xl">
+            <h1 className="studio-gradient text-3xl font-semibold text-ink  lg:text-4xl">
               {mode === "login"
                 ? "Welcome Back"
                 : "Create Account"}
             </h1>
 
-            <p className="mt-2 text-sm text-neutral-500 dark:!text-[#fff7e6]/70">
+            <p className="mt-2 text-sm text-muted ">
               {mode === "login"
                 ? "Sign in to continue your journey"
                 : "Join us and discover luxury fragrances"}
             </p>
           </div>
 
-          {searchParams.get("verified") === "1" && <p role="status" className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700">Your email is verified. Sign in to continue.</p>}
+          {searchParams.get("verified") === "1" && <p role="status" className="mb-6 rounded-xl border border-success bg-success-soft px-5 py-4 text-sm text-success">Your email is verified. Sign in to continue.</p>}
           {accountCreated && (
             <div
               role="alert"
-              className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-bold text-green-700"
+              className="mb-6 rounded-xl border border-success bg-success-soft px-5 py-4 text-sm font-bold text-success"
             >
               Account created successfully. Please log in.
             </div>
@@ -333,14 +334,14 @@ return ( <main
                 <label htmlFor="full-name" className="mb-2 block text-sm font-bold">Full Name</label>
                 <input id="full-name" name="name" autoComplete="name" required minLength={2} maxLength={100} aria-invalid={!!fieldErrors.fullName} aria-describedby={fieldErrors.fullName ? "full-name-error" : undefined}
                   value={fullName} onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-neutral-950 dark:bg-[#1c160f] dark:text-[#fff7e6]" />
-                {fieldErrors.fullName && <p id="full-name-error" role="alert" className="mt-1 text-sm text-red-600">{fieldErrors.fullName}</p>}
+                  className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink  " />
+                {fieldErrors.fullName && <p id="full-name-error" role="alert" className="mt-1 text-sm text-destructive">{fieldErrors.fullName}</p>}
               </div>
             )}
             <div>
               <label
                 htmlFor="login-email"
-                className="mb-2 block text-sm font-bold text-neutral-800 dark:!text-[#fff7e6]"
+                className="mb-2 block text-sm font-bold text-ink "
               >
                 Email
               </label>
@@ -375,9 +376,9 @@ return ( <main
                 }}
                 className={`w-full rounded-2xl border ${
                   fieldErrors.email
-                    ? "border-red-300 focus:border-red-400 focus:ring-red-200/60"
-                    : "border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60"
-                } bg-white px-4 py-3 text-sm font-semibold text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:ring-4 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45`}
+                    ? "border-destructive focus:border-destructive focus:ring-destructive/60"
+                    : "border-line focus:border-focus focus:ring-focus/15"
+                } bg-surface px-4 py-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:ring-4    `}
                 placeholder="your@email.com"
                 aria-invalid={
                   !!fieldErrors.email
@@ -392,7 +393,7 @@ return ( <main
               {fieldErrors.email && (
                 <p
                   id="email-error"
-                  className="mt-1 text-sm text-red-600"
+                  className="mt-1 text-sm text-destructive"
                 >
                   {
                     fieldErrors.email
@@ -404,7 +405,7 @@ return ( <main
             <div>
               <label
                 htmlFor="login-password"
-                className="mb-2 block text-sm font-bold text-neutral-800 dark:!text-[#fff7e6]"
+                className="mb-2 block text-sm font-bold text-ink "
               >
                 Password
               </label>
@@ -438,9 +439,9 @@ return ( <main
                 }}
                 className={`w-full rounded-2xl border ${
                   fieldErrors.password
-                    ? "border-red-300 focus:border-red-400 focus:ring-red-200/60"
-                    : "border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60"
-                } bg-white px-4 py-3 text-sm font-semibold text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:ring-4 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45`}
+                    ? "border-destructive focus:border-destructive focus:ring-destructive/60"
+                    : "border-line focus:border-focus focus:ring-focus/15"
+                } bg-surface px-4 py-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:ring-4    `}
                 placeholder="Enter your password"
                 minLength={mode === "signup" ? 8 : undefined}
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
@@ -457,7 +458,7 @@ return ( <main
               {fieldErrors.password && (
                 <p
                   id="password-error"
-                  className="mt-1 text-sm text-red-600"
+                  className="mt-1 text-sm text-destructive"
                 >
                   {
                     fieldErrors.password
@@ -467,7 +468,7 @@ return ( <main
 
               {mode === "signup" &&
                 !fieldErrors.password && (
-                  <p className="mt-1 text-xs text-neutral-500 dark:!text-[#fff7e6]/60">
+                  <p className="mt-1 text-xs text-muted ">
                     At least 8 characters with letters and numbers
                   </p>
                 )}
@@ -478,17 +479,17 @@ return ( <main
                 <label htmlFor="confirm-password" className="mb-2 block text-sm font-bold">Confirm Password</label>
                 <input id="confirm-password" type="password" autoComplete="new-password" required aria-invalid={!!fieldErrors.confirmPassword} aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
                   value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-neutral-950 dark:bg-[#1c160f] dark:text-[#fff7e6]" />
-                {fieldErrors.confirmPassword && <p id="confirm-password-error" role="alert" className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>}
+                  className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink  " />
+                {fieldErrors.confirmPassword && <p id="confirm-password-error" role="alert" className="mt-1 text-sm text-destructive">{fieldErrors.confirmPassword}</p>}
               </div>
             )}
-            {mode === "login" && <Link href="/forgot-password" className="block text-sm text-yellow-700">Forgot Password?</Link>}
+            {mode === "login" && <Link href="/forgot-password" className="block text-sm text-accent">Forgot Password?</Link>}
             {error && (
               <div
                 role="alert"
-                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                className="rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-semibold text-destructive"
               >
-                {error}
+                <StudioErrorText message={error} />
               </div>
             )}
 
@@ -515,7 +516,7 @@ return ( <main
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:from-yellow-300 hover:to-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="studio-button studio-button--primary w-full rounded-full bg-gradient-to-r from-accent to-accent px-6 py-3 text-sm font-semibold text-ink shadow-panel transition hover:from-accent hover:to-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Please wait..."
@@ -540,7 +541,7 @@ return ( <main
                     : "login"
               );
             }}
-            className="mt-6 w-full text-center text-sm font-semibold text-neutral-500 transition hover:text-yellow-700 dark:!text-[#fff7e6]/70 dark:hover:!text-[#d4af37]"
+            className="mt-6 w-full text-center text-sm font-semibold text-muted transition hover:text-accent  "
           >
             {mode === "login"
               ? "Need an account? Sign up"
@@ -550,7 +551,7 @@ return ( <main
           <div className="mt-6 text-center lg:hidden">
             <Link
               href="/"
-              className="text-sm font-medium text-zinc-600 transition hover:text-yellow-600 dark:!text-[#fff7e6]/70 dark:hover:!text-[#d4af37]"
+              className="text-sm font-medium text-secondary transition hover:text-accent  "
             >
               ← Back to Website
             </Link>
@@ -559,33 +560,33 @@ return ( <main
         </div>
 
         <div
-          className={`relative order-2 hidden overflow-hidden lg:flex lg:items-center lg:justify-center lg:p-12 transition-all duration-700 ${
+          className={`studio-login-art relative order-2 hidden overflow-hidden lg:flex lg:items-center lg:justify-center lg:p-12 transition-all duration-700 ${
             mode === "signup"
               ? "lg:order-1"
               : "lg:order-2"
           }`}
         >
 
-          <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-[#fff4c2] to-yellow-200/80 dark:from-[#1c160f] dark:via-[#15100b] dark:to-[#231b12]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-accent via-surface to-accent/80   " />
 
           <div className="relative z-10 max-w-md text-center">
 
             <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 p-4 shadow-lg">
+              <div className="rounded-full bg-gradient-to-br from-accent to-accent p-4 shadow-soft">
                 <Sparkles
-                  className="h-10 w-10 text-white"
+                  className="h-10 w-10 text-on-brand"
                   strokeWidth={2.5}
                 />
               </div>
             </div>
 
-            <h2 className="text-3xl font-black text-neutral-950 dark:!text-[#fff7e6] lg:text-4xl">
+            <h2 className="text-3xl font-semibold text-ink  lg:text-4xl">
               {mode === "login"
                 ? "Welcome Back!"
                 : "Join GOSH"}
             </h2>
 
-            <p className="mt-4 text-base leading-relaxed text-neutral-700 dark:!text-[#fff7e6]/75">
+            <p className="mt-4 text-base leading-relaxed text-secondary ">
               {mode === "login"
                 ? "Continue your journey through the world of luxury fragrances. Your perfect scent awaits."
                 : "Discover handcrafted perfumes that tell your story. Experience elegance in every drop."}
@@ -594,40 +595,40 @@ return ( <main
             <div className="mx-auto mt-10 max-w-sm space-y-4">
 
               <div className="flex items-center gap-4">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-line bg-surface/50  ">
                   <Diamond
-                    className="h-4 w-4 text-yellow-600"
+                    className="h-4 w-4 text-accent"
                     strokeWidth={2.5}
                   />
                 </span>
 
-                <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">
+                <span className="text-sm font-semibold text-ink ">
                   Premium artisan fragrances
                 </span>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-line bg-surface/50  ">
                   <Gem
-                    className="h-4 w-4 text-yellow-600"
+                    className="h-4 w-4 text-accent"
                     strokeWidth={2.5}
                   />
                 </span>
 
-                <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">
+                <span className="text-sm font-semibold text-ink ">
                   Handcrafted with finest ingredients
                 </span>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-yellow-300/70 bg-white/50 dark:border-[#d4af37]/35 dark:bg-[#0f0b07]/80">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-line bg-surface/50  ">
                   <Sparkles
-                    className="h-4 w-4 text-yellow-600"
+                    className="h-4 w-4 text-accent"
                     strokeWidth={2.5}
                   />
                 </span>
 
-                <span className="text-sm font-semibold text-neutral-900 dark:!text-[#fff7e6]">
+                <span className="text-sm font-semibold text-ink ">
                   Exclusive luxury collections
                 </span>
               </div>
@@ -637,7 +638,7 @@ return ( <main
             <div className="mt-10 hidden lg:block">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-sm font-bold text-neutral-700 transition hover:text-yellow-700 dark:!text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
+                className="inline-flex items-center gap-2 text-sm font-bold text-secondary transition hover:text-accent  "
               >
                 ← Back to Website
               </Link>
@@ -659,8 +660,8 @@ return (
 <Suspense
 fallback={ <main
        role="main"
-       className="min-h-screen bg-[var(--site-bg)] px-4 py-10 text-neutral-950"
-     > <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center"> <div className="text-center"> <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" /> </div> </div> </main>
+       className="studio-page min-h-screen bg-[var(--site-bg)] px-4 py-10 text-ink"
+     > <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center"> <div className="text-center"> <div className="h-8 w-8 animate-spin rounded-full border-4 border-line border-t-transparent" /> </div> </div> </main>
 }
 > <LoginForm /> </Suspense>
 );

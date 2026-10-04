@@ -1,4 +1,6 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
+import StudioModal from "@/components/ui/StudioModal";
 import devLog from "@/lib/dev-log";
 
 import {
@@ -9,11 +11,9 @@ import {
   useState,
 } from "react";
 import {
-  CheckCircle,
   ChevronLeft,
   ChevronRight,
   Edit,
-  EyeOff,
   Package,
   Plus,
   Search,
@@ -31,6 +31,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { SCENT_COLLECTIONS } from "@/lib/collections";
+import StudioRowActions from "@/components/ui/StudioRowActions";
 import PremiumSelect from "./PremiumSelect";
 import { ComponentErrorBoundary } from "../ErrorBoundaries";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
@@ -1715,11 +1716,11 @@ function ProductManagerContent() {
       {/* Header Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-black">
+          <h2 className="text-xl font-bold text-ink">
             Product Inventory
           </h2>
 
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-secondary">
             {totalProducts} products in inventory
           </p>
         </div>
@@ -1727,7 +1728,7 @@ function ProductManagerContent() {
         <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:w-auto lg:grid-cols-3">
           <a
             href="/admin/brands"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand hover:shadow-panel focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
           >
             <Tags className="h-4 w-4" />
             Manage Brands
@@ -1738,7 +1739,7 @@ function ProductManagerContent() {
             onClick={() =>
               openAddProductForm()
             }
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand hover:shadow-panel focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
           >
             <Plus className="h-4 w-4" />
             Add Perfume Product
@@ -1751,7 +1752,7 @@ function ProductManagerContent() {
                 "Accessories"
               )
             }
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-[0_18px_42px_rgba(234,179,8,0.34)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand hover:shadow-panel focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2"
           >
             <Plus className="h-4 w-4" />
             Add Accessories Product
@@ -1760,9 +1761,9 @@ function ProductManagerContent() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-3 rounded-[24px] border border-zinc-200 bg-white p-4 shadow-sm dark:border-yellow-400/25 dark:bg-[#15100b]">
+      <div className="space-y-3 rounded-xl border border-line bg-surface p-4 shadow-soft  ">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
 
           <input
             id="admin-product-search"
@@ -1775,7 +1776,7 @@ function ProductManagerContent() {
               )
             }
             placeholder="Search product, brand, or category..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45"
+            className="w-full rounded-xl border border-line bg-surface py-3 pl-12 pr-4 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-focus focus:ring-4 focus:ring-focus/15    "
           />
         </div>
 
@@ -1793,8 +1794,8 @@ function ProductManagerContent() {
                 className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                   statusFilter ===
                   item.value
-                    ? "bg-yellow-400 text-black shadow-md"
-                    : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-[#d4af37]"
+                    ? "bg-brand text-on-brand shadow-soft"
+                    : "border border-line bg-surface text-secondary hover:border-line hover:bg-accent-soft     "
                 }`}
               >
                 {item.label}
@@ -1817,8 +1818,8 @@ function ProductManagerContent() {
                 className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                   categoryFilter ===
                   item.value
-                    ? "bg-yellow-400 text-black shadow-md"
-                    : "border border-zinc-200 bg-white text-zinc-700 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12] dark:hover:!text-[#d4af37]"
+                    ? "bg-brand text-on-brand shadow-soft"
+                    : "border border-line bg-surface text-secondary hover:border-line hover:bg-accent-soft     "
                 }`}
               >
                 {item.label}
@@ -1827,7 +1828,7 @@ function ProductManagerContent() {
           )}
         </div>
 
-        <div className="w-full max-w-[320px] border-t border-yellow-100 pt-3 dark:border-yellow-400/20">
+        <div className="w-full max-w-[320px] border-t border-line pt-3 ">
           <PremiumSelect
             label="Filter by Brand"
             value={brandFilter}
@@ -1840,18 +1841,18 @@ function ProductManagerContent() {
 
       {/* Pagination */}
       {!showListLoading && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-secondary ">
           <p>
             Showing{" "}
-            <span className="font-bold text-black dark:!text-[#fff7e6]">
+            <span className="font-bold text-ink ">
               {pageStart}
             </span>
             -
-            <span className="font-bold text-black dark:!text-[#fff7e6]">
+            <span className="font-bold text-ink ">
               {pageEnd}
             </span>{" "}
             of{" "}
-            <span className="font-bold text-black dark:!text-[#fff7e6]">
+            <span className="font-bold text-ink ">
               {totalProducts}
             </span>{" "}
             products
@@ -1870,13 +1871,13 @@ function ProductManagerContent() {
                 )
               }
               disabled={currentPage <= 1}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
+              className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink transition hover:border-line hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50    "
             >
               <ChevronLeft className="h-4 w-4" />
               Prev
             </button>
 
-            <span className="rounded-full bg-yellow-50 px-4 py-2 text-sm font-black text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
+            <span className="rounded-full bg-accent-soft px-4 py-2 text-sm font-semibold text-accent  ">
               {currentPage} /{" "}
               {totalPages}
             </span>
@@ -1895,7 +1896,7 @@ function ProductManagerContent() {
               disabled={
                 currentPage >= totalPages
               }
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 py-2 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6]/75 dark:hover:bg-[#231b12]"
+              className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink transition hover:border-line hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50    "
             >
               Next
               <ChevronRight className="h-4 w-4" />
@@ -1906,270 +1907,48 @@ function ProductManagerContent() {
 
       {/* Products */}
       {showListLoading ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center dark:border-yellow-400/25 dark:bg-[#15100b]">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
+        <div className="rounded-xl border border-line bg-surface p-12 text-center  ">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-line border-t-transparent" />
 
-          <p className="mt-4 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
+          <p className="mt-4 text-sm text-secondary ">
             Loading products...
           </p>
         </div>
       ) : paginatedProducts.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center dark:border-yellow-400/25 dark:bg-[#15100b]">
-          <Package className="mx-auto h-12 w-12 text-zinc-300 dark:text-[#fff7e6]/35" />
+        <div className="rounded-xl border border-line bg-surface p-12 text-center  ">
+          <Package className="mx-auto h-12 w-12 text-faint " />
 
-          <h3 className="mt-4 text-lg font-bold text-black dark:!text-[#fff7e6]">
+          <h3 className="mt-4 text-lg font-bold text-ink ">
             No products found
           </h3>
 
-          <p className="mt-2 text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
+          <p className="mt-2 text-sm text-secondary ">
             Add your first product to get started.
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="studio-table">
           {paginatedProducts.map(
             (product) => (
-              <div
-                key={product.id}
-                className={`group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white text-black shadow-sm transition-all duration-300 hover:border-yellow-400/50 hover:shadow-lg dark:border-yellow-400/25 dark:bg-[#15100b] dark:text-[#fff7e6] dark:shadow-[0_18px_42px_rgba(0,0,0,0.28)] dark:hover:border-yellow-400/45 ${
-                  product.category ===
-                  "Accessories"
-                    ? "w-full max-w-[320px] justify-self-start"
-                    : ""
-                }`}
-              >
-                {/* Image */}
-                <div
-                  className={`relative overflow-hidden bg-zinc-50 dark:bg-[#0f0b07] ${
-                    product.category ===
-                    "Accessories"
-                      ? "h-36 sm:h-40"
-                      : "h-40 sm:h-44 lg:h-48"
-                  }`}
-                >
-                  <img
-                    src={getSafeProductImage(
-                      product.image
-                    )}
-                    alt={product.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                    onError={(e) => {
-                      const image =
-                        e.currentTarget;
-
-                      if (
-                        image.src !==
-                        FALLBACK_PRODUCT_IMAGE
-                      ) {
-                        image.src =
-                          FALLBACK_PRODUCT_IMAGE;
-                      }
-                    }}
-                  />
-
-                  {product.badge && (
-                    <span className="absolute left-3 top-3 rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold uppercase text-black">
-                      {product.badge}
-                    </span>
-                  )}
-
-                  {!product.is_active && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                      <span className="rounded-full bg-red-500 px-4 py-2 text-xs font-bold uppercase text-white">
-                        Inactive
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="p-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-yellow-600 dark:!text-yellow-300">
-                      {product.brands?.name ||
-                        product.brand ||
-                        "Unlinked brand"}
-                    </p>
-
-                    <div className="flex shrink-0 items-center gap-1">
-                      {product.brands && (
-                        <span
-                          className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${
-                            product.brands
-                              .is_active
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:!text-emerald-200"
-                              : "bg-zinc-100 text-zinc-500 dark:bg-[#231b12] dark:!text-[#fff7e6]/55"
-                          }`}
-                        >
-                          {product.brands
-                            .is_active
-                            ? "Brand active"
-                            : "Brand inactive"}
-                        </span>
-                      )}
-
-                      {!product.brand_id && (
-                        <span className="rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black uppercase text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
-                          Legacy
-                        </span>
-                      )}
-
-                      {product.category ===
-                        "Accessories" && (
-                        <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700 dark:bg-[#f7e7b3] dark:!text-[#8d5f00]">
-                          Accessory
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <h3 className="mt-1 line-clamp-1 text-base font-bold leading-tight text-black dark:!text-[#fff7e6]">
-                    {product.name}
-                  </h3>
-
-                  {product.scent_collection && (
-                    <div className="mt-1.5">
-                      <span className="inline-flex rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-yellow-700 dark:border-yellow-400/30 dark:bg-[#231b12] dark:!text-yellow-300">
-                        {
-                          product.scent_collection
-                        }
-                      </span>
-                    </div>
-                  )}
-
-                  <p className="mt-1 line-clamp-1 min-h-[20px] text-sm text-zinc-600 dark:!text-[#fff7e6]/65">
-                    {product.description}
-                  </p>
-
-                  <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-lg font-black text-yellow-600 dark:!text-yellow-300">
-                      {formatPrice(
-                        product.price
-                      )}
-                    </span>
-
-                    <span className="text-sm font-semibold text-zinc-600 dark:!text-[#fff7e6]/75">
-                      Stock:{" "}
-                      {product.stock}
-                    </span>
-                  </div>
-
-                  {product.category !==
-                    "Accessories" &&
-                    product.decants &&
-                    product.decants.length >
-                      0 && (
-                      <div className="mt-2.5">
-                        <p className="text-xs font-semibold text-zinc-500 dark:!text-[#fff7e6]/65">
-                          Decant Sizes:
-                        </p>
-
-                        <div className="mt-1 flex max-h-[52px] flex-wrap gap-1 overflow-hidden">
-                          {product.decants.map(
-                            (decant) => (
-                              <span
-                                key={
-                                  decant.label
-                                }
-                                className="rounded-full border border-transparent bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:border-yellow-400/20 dark:bg-[#231b12] dark:!text-[#fff7e6]/75"
-                              >
-                                {
-                                  decant.label
-                                }{" "}
-                                -{" "}
-                                {formatPrice(
-                                  decant.price
-                                )}
-                              </span>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Actions */}
-                  <div className="mt-3 space-y-2.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleProductStatus(
-                          product.id,
-                          product.is_active
-                        )
-                      }
-                      disabled={updatingProducts.has(
-                        product.id
-                      )}
-                      className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        product.is_active
-                          ? "border border-yellow-200 bg-white text-neutral-800 hover:border-yellow-400 hover:bg-yellow-50 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:hover:bg-[#231b12]"
-                          : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/30 dark:bg-emerald-950/35 dark:!text-emerald-200"
-                      }`}
-                      aria-label={
-                        product.is_active
-                          ? "Deactivate product"
-                          : "Activate product"
-                      }
-                    >
-                      {updatingProducts.has(
-                        product.id
-                      ) ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          <span>
-                            Updating...
-                          </span>
-                        </>
-                      ) : product.is_active ? (
-                        <>
-                          <EyeOff className="h-4 w-4" />
-                          <span>
-                            Deactivate
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4" />
-                          <span>
-                            Activate
-                          </span>
-                        </>
-                      )}
-                    </button>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openEditProductForm(
-                            product
-                          )
-                        }
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-yellow-400/25 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:hover:bg-[#231b12]"
-                        aria-label="Edit product"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openDeleteModal(
-                            product
-                          )
-                        }
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-400/30 dark:bg-red-950/35 dark:!text-red-200 dark:hover:bg-red-950/50"
-                        aria-label="Delete product"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <article key={product.id} className="studio-table-row studio-admin-product-row">
+    <div className="relative h-[88px] w-[72px] overflow-hidden rounded-lg bg-surface-muted"><img src={getSafeProductImage(product.image)} alt={product.name} loading="lazy" className="h-full w-full object-cover" onError={event => { const image = event.currentTarget; if (image.src !== FALLBACK_PRODUCT_IMAGE) image.src = FALLBACK_PRODUCT_IMAGE; }} /></div>
+    <div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-accent">{product.brands?.name || product.brand || "Unlinked brand"}</p><h3 className="mt-1 text-sm font-semibold text-ink">{product.name}</h3><p className="mt-1 line-clamp-1 text-xs text-muted">{product.description}</p><div className="mt-2 flex flex-wrap gap-1.5">
+      <span className={"rounded-md px-2 py-1 text-[10px] " + (product.is_active ? "bg-success-soft text-success" : "bg-surface-muted text-muted")}>{product.is_active ? "Active" : "Inactive"}</span>
+      {product.badge && <span className="rounded-md bg-accent-soft px-2 py-1 text-[10px] text-accent">{product.badge}</span>}
+      {product.brands && <span className={"rounded-md px-2 py-1 text-[10px] " + (product.brands.is_active ? "bg-success-soft text-success" : "bg-surface-muted text-muted")}>{product.brands.is_active ? "Brand active" : "Brand inactive"}</span>}
+      {!product.brand_id && <span className="rounded-md bg-warning-soft px-2 py-1 text-[10px] text-warning">Legacy</span>}
+      {product.scent_collection && <span className="rounded-md border border-line px-2 py-1 text-[10px] text-muted">{product.scent_collection}</span>}
+      {product.category === "Accessories" && <span className="rounded-md bg-accent-soft px-2 py-1 text-[10px] text-accent">Accessory</span>}
+    </div></div>
+    <div className="studio-admin-product-price"><div className="flex flex-wrap items-baseline justify-between gap-2 text-xs"><span className="font-medium tabular-nums text-ink">{formatPrice(product.price)}</span><span className="tabular-nums text-muted">Stock: {product.stock}</span></div>
+      {product.category !== "Accessories" && product.decants && product.decants.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{product.decants.map(decant => <span key={decant.label} className="rounded-md bg-surface-muted px-2 py-1 text-[10px] text-secondary">{decant.label} · {formatPrice(decant.price)}</span>)}</div>}
+    </div>
+    <StudioRowActions label={"Actions for " + product.name}>
+      <button type="button" onClick={() => toggleProductStatus(product.id, product.is_active)} disabled={updatingProducts.has(product.id)} className="studio-compact-button">{updatingProducts.has(product.id) ? "Updating…" : product.is_active ? "Deactivate" : "Activate"}</button>
+      <button type="button" onClick={() => openEditProductForm(product)} className="studio-compact-button"><Edit size={14} />Edit</button>
+      <button type="button" onClick={() => openDeleteModal(product)} className="studio-compact-button text-destructive"><Trash2 size={14} />Delete</button>
+    </StudioRowActions>
+  </article>
             )
           )}
         </div>
@@ -2177,18 +1956,18 @@ function ProductManagerContent() {
 
       {/* Add/Edit Modal */}
       {showProductForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-md">
-          <div className="relative flex max-h-[86vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-yellow-300/70 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.28),0_0_45px_rgba(234,179,8,0.25)]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-overlay px-4 py-6 ">
+          <StudioModal label="Product editor" onDismiss={closeProductForm} lockScroll={false} className="relative flex max-h-[86vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-panel">
             {/* Header */}
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-yellow-200/70 bg-[#fffdf6]/95 px-6 py-5 backdrop-blur">
+            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-surface/95 px-6 py-5 ">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-yellow-600">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-accent">
                   {isAccessoryForm
                     ? "Admin Accessory"
                     : "Admin Product"}
                 </p>
 
-                <h2 className="mt-1 text-2xl font-black text-neutral-950">
+                <h2 className="mt-1 text-2xl font-semibold text-ink">
                   {editingProduct
                     ? isAccessoryForm
                       ? "Edit Accessory"
@@ -2204,7 +1983,7 @@ function ProductManagerContent() {
                 onClick={
                   closeProductForm
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-400 text-xl font-bold text-black shadow-[0_10px_25px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xl font-bold text-on-brand shadow-panel transition hover:bg-brand"
                 aria-label="Close product form"
               >
                 ×
@@ -2223,21 +2002,21 @@ function ProductManagerContent() {
                 {error && (
                   <div
                     role="alert"
-                    className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                    className="rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-semibold text-destructive"
                   >
-                    {error}
+                    <StudioErrorText message={error} />
                   </div>
                 )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="studio-components-admin-ProductManager-1" className="mb-2 block text-sm font-bold text-ink">
                       {isAccessoryForm
                         ? "Accessory Name *"
                         : "Product Name *"}
                     </label>
 
-                    <input
+                    <input id="studio-components-admin-ProductManager-1"
                       type="text"
                       name="name"
                       required
@@ -2247,7 +2026,7 @@ function ProductManagerContent() {
                       onChange={
                         handleInputChange
                       }
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder={
                         isAccessoryForm
                           ? "Travel Atomizer"
@@ -2326,7 +2105,7 @@ function ProductManagerContent() {
                     />
 
                     {legacyBrand && (
-                      <p className="mt-2 text-xs font-bold text-yellow-700">
+                      <p className="mt-2 text-xs font-bold text-accent">
                         Legacy brand:{" "}
                         {legacyBrand}.
                         Choose a brand
@@ -2338,11 +2117,11 @@ function ProductManagerContent() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  <label htmlFor="studio-components-admin-ProductManager-2" className="mb-2 block text-sm font-bold text-ink">
                     Description
                   </label>
 
-                  <textarea
+                  <textarea id="studio-components-admin-ProductManager-2"
                     name="description"
                     value={
                       formData.description
@@ -2350,7 +2129,7 @@ function ProductManagerContent() {
                     onChange={
                       handleInputChange
                     }
-                    className="min-h-28 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                    className="min-h-28 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                     placeholder={
                       isAccessoryForm
                         ? "Premium refillable perfume travel atomizer with a clean leak-resistant finish."
@@ -2361,11 +2140,11 @@ function ProductManagerContent() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="studio-components-admin-ProductManager-3" className="mb-2 block text-sm font-bold text-ink">
                       Price (MMK) *
                     </label>
 
-                    <input
+                    <input id="studio-components-admin-ProductManager-3"
                       type="number"
                       name="price"
                       required
@@ -2377,7 +2156,7 @@ function ProductManagerContent() {
                       onChange={
                         handleInputChange
                       }
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder={
                         isAccessoryForm
                           ? "25000"
@@ -2387,11 +2166,11 @@ function ProductManagerContent() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="studio-components-admin-ProductManager-4" className="mb-2 block text-sm font-bold text-ink">
                       Stock
                     </label>
 
-                    <input
+                    <input id="studio-components-admin-ProductManager-4"
                       type="number"
                       name="stock"
                       min="0"
@@ -2401,7 +2180,7 @@ function ProductManagerContent() {
                       onChange={
                         handleInputChange
                       }
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder={
                         isAccessoryForm
                           ? "25"
@@ -2455,9 +2234,9 @@ function ProductManagerContent() {
                   />
                   
                   {formData.badge === "New" && (
-                    <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-900/20">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        <strong>Note:</strong> The "New" badge is independent of promotions. Only use for genuinely new products. Creating a promotion for an existing product will NOT automatically add this badge.
+                    <div className="mt-2 rounded-lg border border-info bg-info-soft p-3  ">
+                      <p className="text-sm text-info ">
+                        <strong>Note:</strong> The &quot;New&quot; badge is independent of promotions. Use it for new products. Creating a promotion for an existing product does not automatically add this badge.
                       </p>
                     </div>
                   )}
@@ -2495,7 +2274,7 @@ function ProductManagerContent() {
 
                 {/* ImageKit Upload */}
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-neutral-800">
+                  <label className="mb-2 block text-sm font-bold text-ink">
                     Product Image
                   </label>
 
@@ -2504,26 +2283,26 @@ function ProductManagerContent() {
                       !uploadingImage &&
                       fileInputRef.current?.click()
                     }
-                    className={`flex items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-yellow-300 bg-yellow-50/50 px-4 py-5 transition ${
+                    className={`flex items-center justify-center gap-3 rounded-xl border-2 border-dashed border-line bg-accent-soft/50 px-4 py-5 transition ${
                       uploadingImage
                         ? "cursor-wait opacity-70"
-                        : "cursor-pointer hover:border-yellow-400 hover:bg-yellow-50"
+                        : "cursor-pointer hover:border-line hover:bg-accent-soft"
                     }`}
                   >
                     {uploadingImage ? (
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-yellow-600 border-t-transparent" />
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-transparent" />
                     ) : (
-                      <Upload className="h-5 w-5 text-yellow-600" />
+                      <Upload className="h-5 w-5 text-accent" />
                     )}
 
                     <div>
-                      <p className="text-sm font-bold text-neutral-800">
+                      <p className="text-sm font-bold text-ink">
                         {imageFile
                           ? imageFile.name
                           : "Click to upload image"}
                       </p>
 
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-muted">
                         ImageKit • PNG, JPG,
                         WEBP — max 5MB
                       </p>
@@ -2545,13 +2324,13 @@ function ProductManagerContent() {
                   />
 
                   <div className="my-3 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-yellow-200" />
+                    <div className="h-px flex-1 bg-accent-soft" />
 
-                    <span className="text-xs font-semibold text-neutral-400">
+                    <span className="text-xs font-semibold text-muted">
                       OR paste URL
                     </span>
 
-                    <div className="h-px flex-1 bg-yellow-200" />
+                    <div className="h-px flex-1 bg-accent-soft" />
                   </div>
 
                   <input
@@ -2591,13 +2370,13 @@ function ProductManagerContent() {
                         }
                       }
                     }}
-                    className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                    className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                     placeholder="https://ik.imagekit.io/..."
                   />
 
                   {(imagePreview ||
                     formData.image) && (
-                    <div className="relative mt-3 overflow-hidden rounded-2xl border border-yellow-200 bg-white p-2">
+                    <div className="relative mt-3 overflow-hidden rounded-xl border border-line bg-surface p-2">
                       <img
                         src={
                           imagePreview ||
@@ -2648,7 +2427,7 @@ function ProductManagerContent() {
                               "";
                           }
                         }}
-                        className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+                        className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-soft text-on-brand transition hover:bg-brand/80"
                         aria-label="Remove image"
                       >
                         <X className="h-4 w-4" />
@@ -2658,15 +2437,15 @@ function ProductManagerContent() {
                 </div>
 
                 {/* Quick View */}
-                <div className="rounded-[24px] border border-yellow-200 bg-white/70 p-4">
+                <div className="rounded-xl border border-line bg-surface/70 p-4">
                   <div className="mb-4">
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
                       {isAccessoryForm
                         ? "Accessory Details"
                         : "Quick View Details"}
                     </p>
 
-                    <p className="mt-1 text-sm text-neutral-500">
+                    <p className="mt-1 text-sm text-muted">
                       {isAccessoryForm
                         ? "Optional content shown inside accessory quick view."
                         : "Optional content shown inside product quick view."}
@@ -2675,13 +2454,13 @@ function ProductManagerContent() {
 
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-neutral-800">
+                      <label htmlFor="studio-components-admin-ProductManager-5" className="mb-2 block text-sm font-bold text-ink">
                         {isAccessoryForm
                           ? "Product Details"
                           : "The Story"}
                       </label>
 
-                      <textarea
+                      <textarea id="studio-components-admin-ProductManager-5"
                         name="quickStory"
                         value={
                           formData.quickStory
@@ -2689,7 +2468,7 @@ function ProductManagerContent() {
                         onChange={
                           handleInputChange
                         }
-                        className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                        className="min-h-24 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                         placeholder={
                           isAccessoryForm
                             ? "A short realistic description of the accessory, finish, and daily use."
@@ -2700,13 +2479,13 @@ function ProductManagerContent() {
 
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        <label htmlFor="studio-components-admin-ProductManager-6" className="mb-2 block text-sm font-bold text-ink">
                           {isAccessoryForm
                             ? "Key Features"
                             : "Top Notes"}
                         </label>
 
-                        <input
+                        <input id="studio-components-admin-ProductManager-6"
                           type="text"
                           name="topNotes"
                           value={
@@ -2715,7 +2494,7 @@ function ProductManagerContent() {
                           onChange={
                             handleInputChange
                           }
-                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                           placeholder={
                             isAccessoryForm
                               ? "Refillable, Leak-resistant"
@@ -2725,13 +2504,13 @@ function ProductManagerContent() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        <label htmlFor="studio-components-admin-ProductManager-7" className="mb-2 block text-sm font-bold text-ink">
                           {isAccessoryForm
                             ? "Materials"
                             : "Heart Notes"}
                         </label>
 
-                        <input
+                        <input id="studio-components-admin-ProductManager-7"
                           type="text"
                           name="heartNotes"
                           value={
@@ -2740,7 +2519,7 @@ function ProductManagerContent() {
                           onChange={
                             handleInputChange
                           }
-                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                           placeholder={
                             isAccessoryForm
                               ? "Glass, Metal"
@@ -2750,13 +2529,13 @@ function ProductManagerContent() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        <label htmlFor="studio-components-admin-ProductManager-8" className="mb-2 block text-sm font-bold text-ink">
                           {isAccessoryForm
                             ? "Care Tips"
                             : "Base Notes"}
                         </label>
 
-                        <input
+                        <input id="studio-components-admin-ProductManager-8"
                           type="text"
                           name="baseNotes"
                           value={
@@ -2765,7 +2544,7 @@ function ProductManagerContent() {
                           onChange={
                             handleInputChange
                           }
-                          className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                           placeholder={
                             isAccessoryForm
                               ? "Keep dry, Clean gently"
@@ -2777,11 +2556,11 @@ function ProductManagerContent() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        <label htmlFor="studio-components-admin-ProductManager-9" className="mb-2 block text-sm font-bold text-ink">
                           Made With
                         </label>
 
-                        <textarea
+                        <textarea id="studio-components-admin-ProductManager-9"
                           name="madeWith"
                           value={
                             formData.madeWith
@@ -2789,7 +2568,7 @@ function ProductManagerContent() {
                           onChange={
                             handleInputChange
                           }
-                          className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          className="min-h-24 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                           placeholder={
                             isAccessoryForm
                               ? "Durable materials selected for daily perfume storage and gifting."
@@ -2799,11 +2578,11 @@ function ProductManagerContent() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-neutral-800">
+                        <label htmlFor="studio-components-admin-ProductManager-10" className="mb-2 block text-sm font-bold text-ink">
                           Best For
                         </label>
 
-                        <textarea
+                        <textarea id="studio-components-admin-ProductManager-10"
                           name="bestFor"
                           value={
                             formData.bestFor
@@ -2811,7 +2590,7 @@ function ProductManagerContent() {
                           onChange={
                             handleInputChange
                           }
-                          className="min-h-24 w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                          className="min-h-24 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                           placeholder={
                             isAccessoryForm
                               ? "Travel, gifting, handbag carry, and perfume refills."
@@ -2826,7 +2605,7 @@ function ProductManagerContent() {
                 {/* Decants */}
                 {!isAccessoryForm && (
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="studio-components-admin-ProductManager-11" className="mb-2 block text-sm font-bold text-ink">
                       Decant Sizes (Price in
                       MMK)
                     </label>
@@ -2864,13 +2643,13 @@ function ProductManagerContent() {
                               decant.name
                             }
                           >
-                            <label className="mb-1 block text-xs font-semibold text-neutral-600">
+                            <label className="mb-1 block text-xs font-semibold text-secondary">
                               {
                                 decant.label
                               }
                             </label>
 
-                            <input
+                            <input id="studio-components-admin-ProductManager-11"
                               type="number"
                               name={
                                 decant.name
@@ -2883,7 +2662,7 @@ function ProductManagerContent() {
                               onChange={
                                 handleInputChange
                               }
-                              className="w-full rounded-2xl border border-yellow-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                               placeholder="12000"
                             />
                           </div>
@@ -2894,13 +2673,13 @@ function ProductManagerContent() {
                 )}
 
                 {/* Promotion Section */}
-                <div className="rounded-[24px] border border-yellow-200 bg-white/70 p-4">
+                <div className="rounded-xl border border-line bg-surface/70 p-4">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
                         PRODUCT PROMOTION
                       </p>
-                      <p className="mt-1 text-sm text-neutral-500">
+                      <p className="mt-1 text-sm text-muted">
                         {editingProduct ? "Set promotional pricing for this product" : "Add promotion to this new product"}
                       </p>
                     </div>
@@ -2920,9 +2699,9 @@ function ProductManagerContent() {
                             setProductSearchQuery("");
                           }
                         }}
-                        className="h-4 w-4 rounded border-yellow-300 text-yellow-400 focus:ring-2 focus:ring-yellow-400"
+                        className="h-4 w-4 rounded border-line text-accent focus:ring-2 focus:ring-focus"
                       />
-                      <span className="text-sm font-semibold text-neutral-800">Enable Promotion</span>
+                      <span className="text-sm font-semibold text-ink">Enable Promotion</span>
                     </label>
                   </div>
 
@@ -2932,13 +2711,13 @@ function ProductManagerContent() {
                       {!editingProduct && (
                         <>
                           <div>
-                            <label className="mb-2 block text-sm font-bold text-neutral-800">
+                            <label className="mb-2 block text-sm font-bold text-ink">
                               Select Existing Product for Promotion
                             </label>
                             <button
                               type="button"
                               onClick={() => setShowProductSelector(!showProductSelector)}
-                              className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-left text-sm font-semibold text-neutral-900 transition hover:border-yellow-400 focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-200/60"
+                              className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-left text-sm font-semibold text-ink transition hover:border-line focus:border-focus focus:outline-none focus:ring-4 focus:ring-focus/15"
                             >
                               {formData.selectedProductForPromotion ? (
                                 <span className="flex items-center gap-3">
@@ -2951,9 +2730,9 @@ function ProductManagerContent() {
                                   )}
                                   <span className="flex-1">
                                     <span className="font-bold">{formData.selectedProductForPromotion.name}</span>
-                                    <span className="ml-2 text-neutral-500">• {formData.selectedProductForPromotion.brand}</span>
+                                    <span className="ml-2 text-muted">• {formData.selectedProductForPromotion.brand}</span>
                                   </span>
-                                  <span className="font-black text-yellow-600">{formatPrice(formData.selectedProductForPromotion.price)}</span>
+                                  <span className="font-semibold text-accent">{formatPrice(formData.selectedProductForPromotion.price)}</span>
                                 </span>
                               ) : (
                                 "Choose a product..."
@@ -2962,7 +2741,7 @@ function ProductManagerContent() {
                           </div>
 
                           {showProductSelector && (
-                            <div className="rounded-2xl border border-yellow-200 bg-white p-4">
+                            <div className="rounded-xl border border-line bg-surface p-4">
                               {/* Search */}
                               <div className="mb-4">
                                 <input
@@ -2970,7 +2749,7 @@ function ProductManagerContent() {
                                   placeholder="Search products by name or brand..."
                                   value={productSearchQuery}
                                   onChange={(e) => setProductSearchQuery(e.target.value)}
-                                  className="w-full rounded-xl border border-yellow-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                                  className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                                 />
                               </div>
 
@@ -2986,7 +2765,7 @@ function ProductManagerContent() {
                                         container.scrollBy({ left: -300, behavior: 'smooth' });
                                       }
                                     }}
-                                    className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-yellow-300 bg-white text-yellow-600 shadow-lg transition hover:border-yellow-400 hover:bg-yellow-50"
+                                    className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-line bg-surface text-accent shadow-soft transition hover:border-line hover:bg-accent-soft"
                                   >
                                     <ChevronLeft className="h-5 w-5" />
                                   </button>
@@ -3024,10 +2803,10 @@ function ProductManagerContent() {
                                           setShowProductSelector(false);
                                           setProductSearchQuery("");
                                         }}
-                                        className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border-2 border-yellow-200 bg-white transition-all hover:border-yellow-400 hover:shadow-lg"
+                                        className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-line bg-surface transition-all hover:border-line hover:shadow-soft"
                                       >
                                         {/* Product Image */}
-                                        <div className="relative h-[140px] w-full overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee]">
+                                        <div className="relative h-[140px] w-full overflow-hidden bg-surface-muted">
                                           <img 
                                             src={getSafeProductImage(product.image)} 
                                             alt={product.name}
@@ -3038,7 +2817,7 @@ function ProductManagerContent() {
                                             }}
                                           />
                                           {product.badge && (
-                                            <div className="absolute left-2 top-2 rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-bold uppercase text-black">
+                                            <div className="absolute left-2 top-2 rounded-full bg-brand px-2 py-1 text-[10px] font-bold uppercase text-on-brand">
                                               {product.badge}
                                             </div>
                                           )}
@@ -3046,13 +2825,13 @@ function ProductManagerContent() {
 
                                         {/* Product Info */}
                                         <div className="p-3">
-                                          <p className="truncate text-[10px] font-black uppercase tracking-wider text-yellow-600">
+                                          <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-accent">
                                             {product.brands?.name || product.brand}
                                           </p>
-                                          <h4 className="mt-1 line-clamp-2 min-h-[32px] text-sm font-black text-neutral-900">
+                                          <h4 className="mt-1 line-clamp-2 min-h-[32px] text-sm font-semibold text-ink">
                                             {product.name}
                                           </h4>
-                                          <p className="mt-2 text-base font-black text-yellow-600">
+                                          <p className="mt-2 text-base font-semibold text-accent">
                                             {formatPrice(product.price)}
                                           </p>
                                         </div>
@@ -3069,7 +2848,7 @@ function ProductManagerContent() {
                                       container.scrollBy({ left: 300, behavior: 'smooth' });
                                     }
                                   }}
-                                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-yellow-300 bg-white text-yellow-600 shadow-lg transition hover:border-yellow-400 hover:bg-yellow-50"
+                                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-line bg-surface text-accent shadow-soft transition hover:border-line hover:bg-accent-soft"
                                 >
                                   <ChevronRight className="h-5 w-5" />
                                 </button>
@@ -3084,7 +2863,7 @@ function ProductManagerContent() {
                         <>
                           {/* Selected Product Display */}
                           {formData.selectedProductForPromotion && (
-                            <div className="rounded-xl border border-yellow-200 bg-gradient-to-br from-yellow-50/50 to-white p-4">
+                            <div className="rounded-xl border border-line bg-accent-soft p-4">
                               <div className="flex items-center gap-4">
                                 {formData.selectedProductForPromotion.image && (
                                   <img 
@@ -3094,13 +2873,13 @@ function ProductManagerContent() {
                                   />
                                 )}
                                 <div className="flex-1">
-                                  <p className="text-xs font-bold uppercase text-yellow-600">Selected Product</p>
-                                  <p className="mt-1 font-black text-neutral-900">{formData.selectedProductForPromotion.name}</p>
-                                  <p className="text-sm text-neutral-600">{formData.selectedProductForPromotion.brand}</p>
+                                  <p className="text-xs font-bold uppercase text-accent">Selected Product</p>
+                                  <p className="mt-1 font-semibold text-ink">{formData.selectedProductForPromotion.name}</p>
+                                  <p className="text-sm text-secondary">{formData.selectedProductForPromotion.brand}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-xs font-bold uppercase text-neutral-500">Original Price</p>
-                                  <p className="text-xl font-black text-yellow-600">{formatPrice(formData.selectedProductForPromotion.price)}</p>
+                                  <p className="text-xs font-bold uppercase text-muted">Original Price</p>
+                                  <p className="text-xl font-semibold text-accent">{formatPrice(formData.selectedProductForPromotion.price)}</p>
                                 </div>
                               </div>
                             </div>
@@ -3108,7 +2887,7 @@ function ProductManagerContent() {
 
                           {/* Or for editing existing product */}
                           {editingProduct && !formData.selectedProductForPromotion && (
-                            <div className="rounded-xl border border-yellow-200 bg-gradient-to-br from-yellow-50/50 to-white p-4">
+                            <div className="rounded-xl border border-line bg-accent-soft p-4">
                               <div className="flex items-center gap-4">
                                 {editingProduct.image && (
                                   <img 
@@ -3118,13 +2897,13 @@ function ProductManagerContent() {
                                   />
                                 )}
                                 <div className="flex-1">
-                                  <p className="text-xs font-bold uppercase text-yellow-600">Product</p>
-                                  <p className="mt-1 font-black text-neutral-900">{editingProduct.name}</p>
-                                  <p className="text-sm text-neutral-600">{editingProduct.brands?.name || editingProduct.brand}</p>
+                                  <p className="text-xs font-bold uppercase text-accent">Product</p>
+                                  <p className="mt-1 font-semibold text-ink">{editingProduct.name}</p>
+                                  <p className="text-sm text-secondary">{editingProduct.brands?.name || editingProduct.brand}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-xs font-bold uppercase text-neutral-500">Original Price</p>
-                                  <p className="text-xl font-black text-yellow-600">{formatPrice(editingProduct.price)}</p>
+                                  <p className="text-xs font-bold uppercase text-muted">Original Price</p>
+                                  <p className="text-xl font-semibold text-accent">{formatPrice(editingProduct.price)}</p>
                                 </div>
                               </div>
                             </div>
@@ -3133,10 +2912,10 @@ function ProductManagerContent() {
                           {/* Discount Percentage Input */}
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div>
-                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                              <label htmlFor="studio-components-admin-ProductManager-12" className="mb-2 block text-sm font-bold text-ink">
                                 Discount Percentage *
                               </label>
-                              <input
+                              <input id="studio-components-admin-ProductManager-12"
                                 type="number"
                                 name="promotionDiscountPercent"
                                 required={formData.hasPromotion}
@@ -3156,16 +2935,16 @@ function ProductManagerContent() {
                                     promotionPrice: String(promotionPrice),
                                   }));
                                 }}
-                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                                className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                                 placeholder="25"
                               />
                             </div>
 
                             <div>
-                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                              <label className="mb-2 block text-sm font-bold text-ink">
                                 Promotion Price (MMK)
                               </label>
-                              <div className="w-full rounded-2xl border border-yellow-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-neutral-500">
+                              <div className="w-full rounded-xl border border-line bg-surface-muted px-4 py-3 text-sm font-semibold text-muted">
                                 {formData.promotionPrice ? formatPrice(parseFloat(formData.promotionPrice)) : '---'}
                               </div>
                             </div>
@@ -3173,13 +2952,13 @@ function ProductManagerContent() {
 
                           {/* Discount Display */}
                           {formData.promotionDiscountPercent && formData.promotionPrice && parseFloat(formData.promotionPrice) > 0 && (
-                            <div className="flex items-center gap-3 rounded-2xl bg-green-50 px-4 py-3 border border-green-200">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white font-black text-lg">
+                            <div className="flex items-center gap-3 rounded-xl bg-success-soft px-4 py-3 border border-success">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success text-on-brand font-semibold text-lg">
                                 %
                               </div>
                               <div className="flex-1">
-                                <p className="text-xs font-bold uppercase text-green-700">You Save</p>
-                                <p className="text-lg font-black text-green-600">
+                                <p className="text-xs font-bold uppercase text-success">You Save</p>
+                                <p className="text-lg font-semibold text-success">
                                   {formData.promotionDiscountPercent}% OFF • {formatPrice((editingProduct?.price || formData.selectedProductForPromotion?.price || 0) - parseFloat(formData.promotionPrice))} Saved
                                 </p>
                               </div>
@@ -3189,30 +2968,30 @@ function ProductManagerContent() {
                           {/* Promotion Dates */}
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div>
-                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                              <label htmlFor="studio-components-admin-ProductManager-13" className="mb-2 block text-sm font-bold text-ink">
                                 Start Date & Time *
                               </label>
-                              <input
+                              <input id="studio-components-admin-ProductManager-13"
                                 type="datetime-local"
                                 name="promotionStartDate"
                                 required={formData.hasPromotion}
                                 value={formData.promotionStartDate}
                                 onChange={handleInputChange}
-                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+                                className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
                               />
                             </div>
 
                             <div>
-                              <label className="mb-2 block text-sm font-bold text-neutral-800">
+                              <label htmlFor="studio-components-admin-ProductManager-14" className="mb-2 block text-sm font-bold text-ink">
                                 End Date & Time *
                               </label>
-                              <input
+                              <input id="studio-components-admin-ProductManager-14"
                                 type="datetime-local"
                                 name="promotionEndDate"
                                 required={formData.hasPromotion}
                                 value={formData.promotionEndDate}
                                 onChange={handleInputChange}
-                                className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+                                className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
                               />
                             </div>
                           </div>
@@ -3225,11 +3004,11 @@ function ProductManagerContent() {
                               id="promotion_active"
                               checked={formData.promotionActive}
                               onChange={handleInputChange}
-                              className="h-4 w-4 rounded border-yellow-300 text-yellow-400 focus:ring-2 focus:ring-yellow-400"
+                              className="h-4 w-4 rounded border-line text-accent focus:ring-2 focus:ring-focus"
                             />
                             <label
                               htmlFor="promotion_active"
-                              className="text-sm font-semibold text-neutral-800"
+                              className="text-sm font-semibold text-ink"
                             >
                               Promotion Active (visible to customers)
                             </label>
@@ -3252,12 +3031,12 @@ function ProductManagerContent() {
                     onChange={
                       handleInputChange
                     }
-                    className="h-4 w-4 rounded border-yellow-300 text-yellow-400 focus:ring-2 focus:ring-yellow-400"
+                    className="h-4 w-4 rounded border-line text-accent focus:ring-2 focus:ring-focus"
                   />
 
                   <label
                     htmlFor="is_active"
-                    className="text-sm font-semibold text-neutral-800"
+                    className="text-sm font-semibold text-ink"
                   >
                     Active (visible on
                     client products
@@ -3268,14 +3047,14 @@ function ProductManagerContent() {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 z-20 flex items-center justify-end gap-3 border-t border-yellow-200/70 bg-[#fffdf6]/95 px-6 py-4 backdrop-blur">
+            <div className="sticky bottom-0 z-20 flex items-center justify-end gap-3 border-t border-line bg-surface/95 px-6 py-4 ">
               <button
                 type="button"
                 onClick={
                   closeProductForm
                 }
                 disabled={loading}
-                className="rounded-full border border-yellow-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full border border-line bg-surface px-5 py-3 text-sm font-bold text-secondary transition hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -3287,7 +3066,7 @@ function ProductManagerContent() {
                   loading ||
                   uploadingImage
                 }
-                className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-on-brand shadow-panel transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {showImageUploadLoading
                   ? "Uploading image..."
@@ -3304,21 +3083,21 @@ function ProductManagerContent() {
                   : "Add Product"}
               </button>
             </div>
-          </div>
+          </StudioModal>
         </div>
       )}
 
       {/* Delete Modal */}
       {showDeleteModal &&
         productToDelete && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-md">
-            <div className="relative w-full max-w-md overflow-hidden rounded-[24px] border border-red-300/70 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(239,68,68,0.25)]">
-              <div className="border-b border-red-200/70 px-6 py-5">
-                <h2 className="text-xl font-black text-neutral-950">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-overlay px-4 py-6 ">
+            <StudioModal label="Delete product" onDismiss={closeDeleteModal} lockScroll={false} className="relative w-full max-w-md overflow-hidden rounded-xl border border-destructive/70 bg-surface shadow-panel">
+              <div className="border-b border-destructive/70 px-6 py-5">
+                <h2 className="text-xl font-semibold text-ink">
                   Delete Product?
                 </h2>
 
-                <p className="mt-2 text-sm text-neutral-600">
+                <p className="mt-2 text-sm text-secondary">
                   This action permanently
                   removes &quot;
                   {
@@ -3331,7 +3110,7 @@ function ProductManagerContent() {
                 {deleteError && (
                   <div
                     role="alert"
-                    className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+                    className="mt-4 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive"
                   >
                     {deleteError}
                   </div>
@@ -3347,7 +3126,7 @@ function ProductManagerContent() {
                   disabled={
                     deletingProduct
                   }
-                  className="rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full border border-line bg-surface px-5 py-3 text-sm font-bold text-secondary transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -3360,11 +3139,11 @@ function ProductManagerContent() {
                   disabled={
                     deletingProduct
                   }
-                  className="flex items-center gap-2 rounded-full bg-red-500 px-6 py-3 text-sm font-black text-white shadow-[0_14px_35px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex items-center gap-2 rounded-full bg-destructive px-6 py-3 text-sm font-semibold text-on-brand shadow-panel transition hover:bg-destructive disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {deletingProduct ? (
                     <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-transparent" />
 
                       <span>
                         Deleting...
@@ -3381,7 +3160,7 @@ function ProductManagerContent() {
                   )}
                 </button>
               </div>
-            </div>
+            </StudioModal>
           </div>
         )}
     </div>

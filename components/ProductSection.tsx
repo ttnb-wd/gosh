@@ -1,18 +1,19 @@
 "use client";
+import { Reveal } from "@/components/ui/StudioMotion";
+import StudioLoading from "@/components/ui/StudioLoading";
 import devLog from "@/lib/dev-log";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Eye, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
-import Image from "next/image";
+import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import StudioSelect from "@/components/ui/StudioSelect";
 import QuickViewModal from "./QuickViewModal";
 import ProductCardWithPromotion from "./ProductCardWithPromotion";
 import { useProductPromotions } from "@/hooks/useProductPromotions";
 import { db } from "@/lib/firebase/config";
-import { SCENT_COLLECTIONS, isScentCollection } from "@/lib/collections";
+import { isScentCollection } from "@/lib/collections";
 import {
   collection,
   getDocs,
@@ -99,508 +100,8 @@ const container = {
   },
 };
 
-const item = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1 },
-};
-
-// Normalize image URL helper
-const normalizeImageUrl = (url?: string | null): string => {
-  if (!url || url.trim() === "") return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
-  const u = url.trim();
-  if (u.startsWith("http://") || u.startsWith("https://")) return u;
-  if (u.startsWith("/")) return u;
-  if (u.startsWith("photo-")) return `https://images.unsplash.com/${u}`;
-  return "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
-};
-
-const formatMmk = (value: number) => `${Math.round(value || 0).toLocaleString()} MMK`;
-
 // Scroll reveal wrapper component
-function ProductRevealCard({
-  children,
-  index,
-}: {
-  children: React.ReactNode;
-  index: number;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(element);
-        }
-      },
-      {
-        threshold: 0.15,
-        rootMargin: "0px 0px -40px 0px",
-      }
-    );
-
-    observer.observe(element);
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        transitionDelay: `${Math.min(index * 80, 480)}ms`,
-      }}
-      className={`min-w-0 transition-all duration-700 ease-out ${
-        visible
-          ? "translate-y-0 opacity-100"
-          : "translate-y-6 opacity-0"
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
-// Portal-based Decant Dropdown Component
-interface DecantDropdownProps {
-  product: Product;
-  selectedDecant: { label: string; price: number } | undefined;
-  isOpen: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-  onSelect: (decant: { label: string; price: number }) => void;
-}
-
-function DecantDropdown({ product, selectedDecant, isOpen, onToggle, onClose, onSelect }: DecantDropdownProps) {
-  const [mounted, setMounted] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const [position, setPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const updatePosition = () => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportPadding = 12;
-    
-    // Close dropdown if trigger is outside viewport
-    if (
-      rect.bottom < 0 ||
-      rect.top > window.innerHeight ||
-      rect.right < 0 ||
-      rect.left > window.innerWidth
-    ) {
-      onClose();
-      return;
-    }
-    
-    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
-    const maxLeft = window.innerWidth - width - viewportPadding;
-    let top = rect.bottom + 10;
-    
-    // If dropdown would go below viewport, open upward
-    const estimatedMenuHeight = 240;
-    if (top + estimatedMenuHeight > window.innerHeight - viewportPadding) {
-      top = Math.max(viewportPadding, rect.top - estimatedMenuHeight - 10);
-    }
-    
-    setPosition({
-      top,
-      left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
-      width,
-    });
-  };
-
-  // Update position on scroll/resize when open
-  useEffect(() => {
-    if (!isOpen) return;
-    updatePosition();
-    const handleUpdate = () => {
-      requestAnimationFrame(updatePosition);
-    };
-    window.addEventListener("scroll", handleUpdate, true);
-    window.addEventListener("resize", handleUpdate);
-    window.addEventListener("orientationchange", handleUpdate);
-    return () => {
-      window.removeEventListener("scroll", handleUpdate, true);
-      window.removeEventListener("resize", handleUpdate);
-      window.removeEventListener("orientationchange", handleUpdate);
-    };
-  }, [isOpen]);
-
-  // Click outside to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        triggerRef.current &&
-        !triggerRef.current.contains(target) &&
-        menuRef.current &&
-        !menuRef.current.contains(target)
-      ) {
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose]);
-
-  return (
-    <div className="relative z-[1000] mt-3 min-h-[42px] w-full">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          updatePosition();
-          onToggle();
-        }}
-        className="flex w-full items-center justify-between rounded-full border border-yellow-300 bg-white/95 px-4 py-2.5 text-left text-sm font-bold text-neutral-900 shadow-[0_12px_30px_rgba(234,179,8,0.14)] transition-all duration-300 hover:border-yellow-400 hover:bg-yellow-50/70 focus:outline-none focus:ring-4 focus:ring-yellow-200/70"
-      >
-        <span className="truncate">
-          {selectedDecant?.label || "Select decant size"}
-        </span>
-        <span
-          className={`shrink-0 text-yellow-600 transition-transform duration-300 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        >
-          ▾
-        </span>
-      </button>
-
-      {mounted && isOpen &&
-        createPortal(
-          <div
-            ref={menuRef}
-            className="fixed z-[999999] max-h-[240px] overflow-y-auto rounded-[24px] border border-yellow-200 bg-white p-3 shadow-[0_24px_70px_rgba(0,0,0,0.22),0_0_30px_rgba(234,179,8,0.14)]"
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-              width: `${position.width}px`,
-            }}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onSelect({ label: "", price: 0 });
-                onClose();
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold text-neutral-500 transition hover:bg-yellow-50 hover:text-yellow-700"
-            >
-              Select decant size
-            </button>
-            {(product.decants || []).slice(0, 4).map((decant) => {
-              const isSelected = selectedDecant?.label === decant.label;
-              return (
-                <button
-                  key={decant.label}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelect(decant);
-                    onClose();
-                  }}
-                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 ${
-                    isSelected
-                      ? "bg-yellow-400 text-black shadow-[0_8px_22px_rgba(234,179,8,0.28)]"
-                      : "text-neutral-800 hover:bg-yellow-50 hover:text-yellow-700"
-                  }`}
-                >
-                  <span>{decant.label}</span>
-                  <span className={isSelected ? "text-black" : "text-yellow-700"}>
-                    {formatMmk(decant.price)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>,
-          document.body
-        )}
-    </div>
-  );
-}
-
-interface ProductCardProps {
-  product: Product;
-  onAddToBag: (product: Product) => void;
-  onQuickView: (product: Product) => void;
-  priority?: boolean;
-  selectedDecants: Record<string, { label: string; price: number }>;
-  setSelectedDecants: React.Dispatch<React.SetStateAction<Record<string, { label: string; price: number }>>>;
-  openDecantDropdown: string | null;
-  setOpenDecantDropdown: React.Dispatch<React.SetStateAction<string | null>>;
-}
-
-function ProductCard({ product, onAddToBag, onQuickView, priority = false, selectedDecants, setSelectedDecants, openDecantDropdown, setOpenDecantDropdown }: ProductCardProps) {
-  const productKey = String(product.id);
-  const productImageUrl = normalizeImageUrl(product.image);
-  const [imageSrc, setImageSrc] = useState(productImageUrl);
-  const isDecantOpen = openDecantDropdown === productKey;
-  const selectedDecant = selectedDecants[productKey];
-  const isAccessory = product.category === "Accessories";
-  const hasDecants = Array.isArray(product.decants) && product.decants.length > 0;
-
-  useEffect(() => {
-    setImageSrc(productImageUrl);
-  }, [productImageUrl]);
-  
-  const handleAddToBag = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // For accessories, add directly without decant selection
-    if (isAccessory) {
-      onAddToBag({ ...product, selectedSize: "Accessory", price: product.price });
-      return;
-    }
-    
-    // If a decant is selected, add that size; otherwise add the full-size product.
-    if (hasDecants) {
-      onAddToBag({
-        ...product,
-        selectedSize: selectedDecant?.label || "Full Size",
-        price: selectedDecant?.price || product.price
-      });
-      return;
-    }
-    
-    // For products without decants, add directly
-    onAddToBag({ ...product, selectedSize: "", price: product.price });
-  };
-
-  const handleQuickView = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onQuickView(product);
-  };
-
-  const getBadgeColor = (badge: string | null) => {
-    if (!badge) return "";
-    if (badge === "Best Seller") return "bg-[#d4af37] text-[#1f1a14]";
-    if (badge === "New") return "border border-[#6f1d1b]/20 bg-[#f8eeee] text-[#6f1d1b]";
-    if (badge === "Limited") return "bg-[#6f1d1b] text-white";
-    return "bg-[#1f1a14] text-white";
-  };
-
-  if (isAccessory) {
-    return (
-      <motion.div
-        variants={item}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="group relative h-full min-w-0"
-      >
-        <div className="group flex h-[430px] min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#d4af37]/25 bg-white shadow-[0_16px_45px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:h-full sm:min-h-[285px] sm:rounded-[26px]">
-          <div className="pointer-events-none absolute -inset-1 rounded-[24px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[28px]" />
-
-          <div className="relative z-0 h-[165px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[175px] lg:h-[190px]">
-            <Image
-              src={imageSrc}
-              alt={product.name}
-              fill
-              loading={priority ? undefined : "lazy"}
-              priority={priority}
-              sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
-              unoptimized={imageSrc.includes("ik.imagekit.io")}
-              className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
-              onError={() => {
-                setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
-              }}
-            />
-            {product.badge && (
-              <div className={`absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getBadgeColor(product.badge)}`}>
-                {product.badge}
-              </div>
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
-                {product.brand || "GOSH PERFUME"}
-              </p>
-              {product?.scent_collection && (
-                <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
-                  {product.scent_collection}
-                </span>
-              )}
-            </div>
-            <h3 className="mt-1.5 line-clamp-1 text-base font-black leading-tight text-[#1f1a14] sm:text-lg">
-              {product.name}
-            </h3>
-            <p className="mt-1.5 line-clamp-2 min-h-[36px] text-xs leading-[18px] text-[#7a6a55] sm:line-clamp-1 sm:min-h-[20px] sm:leading-5 sm:text-sm">
-              {product.description || "Premium accessory for your fragrance routine."}
-            </p>
-
-            <div className="mt-auto space-y-2 pt-2.5 sm:space-y-2.5 sm:pt-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="shrink-0 text-lg font-black text-[#b88705] sm:text-xl">
-                  {formatMmk(product.price)}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleQuickView}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
-                  aria-label={`Quick view ${product.name}`}
-                  title={`Quick view ${product.name}`}
-                >
-                  <Eye className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddToBag}
-                aria-label={`Add ${product.name} to bag`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-2 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
-              >
-                <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                Add to Bag
-              </button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div
-      variants={item}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative h-full min-w-0"
-    >
-      <div className="group flex h-[500px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-white shadow-[0_18px_55px_rgba(31,26,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] sm:h-full sm:min-h-[350px] sm:rounded-[28px]">
-        {/* Gold glow effect on hover */}
-        <div className="pointer-events-none absolute -inset-1 rounded-[26px] bg-gradient-to-br from-[#d4af37]/0 via-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 sm:rounded-[32px]" />
-        
-        {/* Image Container - Fixed Square Ratio */}
-        <div className="relative z-0 h-[185px] w-full min-w-0 shrink-0 overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] sm:h-[185px] lg:h-[205px]">
-          <Image
-            src={imageSrc}
-            alt={product.name}
-            fill
-            loading={priority ? undefined : "lazy"}
-            priority={priority}
-            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            unoptimized={imageSrc.includes("ik.imagekit.io")}
-            className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
-            onError={() => {
-              setImageSrc("https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop");
-            }}
-          />
-          
-          {/* Badge */}
-          {product.badge && (
-            <div className={`absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getBadgeColor(product.badge)}`}>
-              {product.badge}
-            </div>
-          )}
-          
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-        </div>
-
-        {/* Content - Flex Column with Fixed Heights */}
-        <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
-          {/* Brand - Truncate */}
-          <div className="flex min-w-0 items-center justify-between gap-2">
-            <p className="min-w-0 truncate text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
-              {product.brand || product.category || "GOSH PERFUME"}
-            </p>
-            {product?.scent_collection && (
-              <span className="inline-flex items-center rounded-full border border-[#d4af37]/45 bg-[#fff7e6] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#b88705]">
-                {product.scent_collection}
-              </span>
-            )}
-          </div>
-          
-          {/* Product Name - Line Clamp 2 with Min Height */}
-          <h3 className="mt-1.5 line-clamp-2 min-h-[38px] text-base font-black leading-tight text-[#1f1a14] sm:min-h-[40px] sm:text-lg">
-            {product.name}
-          </h3>
-          
-          {/* Description - Line Clamp 3 with Min Height */}
-          <p className="mt-1.5 line-clamp-2 min-h-[36px] text-xs leading-[18px] text-[#7a6a55] sm:line-clamp-1 sm:min-h-[20px] sm:leading-5 sm:text-sm">
-            {product.description || "Premium luxury perfume crafted for an elegant everyday scent."}
-          </p>
-          
-          {/* Decant Dropdown using Portal - Only for non-accessories with decants */}
-          {!isAccessory && hasDecants && (
-            <DecantDropdown
-              product={product}
-              selectedDecant={selectedDecant}
-              isOpen={isDecantOpen}
-              onToggle={() =>
-                setOpenDecantDropdown((prev: string | null) =>
-                  prev === productKey ? null : productKey
-                )
-              }
-              onClose={() => setOpenDecantDropdown(null)}
-              onSelect={(decant) =>
-                setSelectedDecants((prev) => ({
-                  ...prev,
-                  [productKey]: decant,
-                }))
-              }
-            />
-          )}
-          
-          {/* Spacer for accessories to maintain card height */}
-          {(isAccessory || !hasDecants) && (
-            <div className="mt-2 min-h-[18px] sm:mt-3 sm:min-h-[24px]" />
-          )}
-          
-          {/* Price and Buttons - Push to Bottom with mt-auto */}
-          <div className="mt-auto space-y-2 pt-2 sm:pt-2.5">
-            <div className="flex min-w-0 flex-col gap-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
-              <span className="shrink-0 text-xl font-black text-[#b88705] sm:text-2xl">
-                {formatMmk(isAccessory || !hasDecants ? product.price : (selectedDecant?.price || product.price))}
-              </span>
-              
-              <button 
-                type="button"
-                onClick={handleQuickView}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/25 bg-white text-[#1f1a14] transition-all duration-300 hover:border-[#d4af37] hover:bg-[#fff7e6] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
-                aria-label={`Quick view ${product.name}`}
-                title={`Quick view ${product.name}`}
-              >
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-            
-            <button 
-              type="button"
-              onClick={handleAddToBag}
-              aria-label={`Add ${product.name} to bag`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-2 text-sm font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.28)] focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:ring-offset-2"
-            >
-              <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-              Add to Bag
-            </button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+function ProductRevealCard({ children, index }: { children: React.ReactNode; index: number }) { return <Reveal className="min-w-0" delay={Math.min(index * .04, .2)}>{children}</Reveal>; }
 
 interface ProductSectionProps {
   selectedBrand?: string;
@@ -608,7 +109,6 @@ interface ProductSectionProps {
   onAddToBag: (product: Product) => void;
 }
 
-const scentCollectionOptions = SCENT_COLLECTIONS;
 
 export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
   const searchParams = useSearchParams();
@@ -795,26 +295,14 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [selectedDecants, setSelectedDecants] = useState<Record<string, { label: string; price: number }>>({});
-  const [openDecantDropdown, setOpenDecantDropdown] = useState<string | null>(null);
-  const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
-  const [isCollectionMenuOpen, setIsCollectionMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Perfumes");
   const [selectedCollection, setSelectedCollection] = useState<string>(urlCollection || "All Collections");
-  const [isMounted, setIsMounted] = useState(false);
-  const brandMenuRef = useRef<HTMLDivElement>(null);
-  const collectionMenuRef = useRef<HTMLDivElement>(null);
-  const brandButtonRef = useRef<HTMLButtonElement>(null);
-  const brandDropdownRef = useRef<HTMLDivElement>(null);
-  const [brandMenuPos, setBrandMenuPos] = useState<{ top: number; left: number; width: number }>({
-    top: 0,
-    left: 0,
-    width: 250,
-  });
+
   const loadRequestRef = useRef(0);
   const activeBrandsRef = useRef<BrandOption[]>([]);
 
   // Use the promotion hook to fetch active promotions
-  const { getPromotion, loading: promotionsLoading } = useProductPromotions();
+  const { getPromotion } = useProductPromotions();
 
   const normalizeProduct = (
     productId: string,
@@ -872,7 +360,6 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
   };
 
   useEffect(() => {
-    setIsMounted(true);
     loadActiveBrands();
   }, []);
 
@@ -1044,115 +531,6 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     }
   }, [brands, onBrandSelect, selectedBrand]);
   
-  // Close filter menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const insideBrand =
-        (brandMenuRef.current && brandMenuRef.current.contains(event.target as Node)) ||
-        (brandDropdownRef.current && brandDropdownRef.current.contains(event.target as Node));
-      if (isBrandMenuOpen && !insideBrand) {
-        setIsBrandMenuOpen(false);
-      }
-      if (isCollectionMenuOpen && collectionMenuRef.current && !collectionMenuRef.current.contains(event.target as Node)) {
-        setIsCollectionMenuOpen(false);
-      }
-    };
-    
-    if (isBrandMenuOpen || isCollectionMenuOpen) {
-      document.addEventListener('click', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isBrandMenuOpen, isCollectionMenuOpen]);
-
-  const updateBrandMenuPosition = () => {
-    const btn = brandButtonRef.current;
-    if (!btn) return;
-
-    const rect = btn.getBoundingClientRect();
-    const viewportPadding = 12;
-    const width = Math.min(250, window.innerWidth - viewportPadding * 2);
-    const maxLeft = window.innerWidth - width - viewportPadding;
-
-    // Center the dropdown on the Brands button but always keep it fully inside the
-    // viewport so it is never clipped nor collides with neighbouring content.
-    let left = rect.left + rect.width / 2 - width / 2;
-    left = Math.max(viewportPadding, Math.min(left, maxLeft));
-
-    let top = rect.bottom + 10;
-    const estimatedMenuHeight = Math.min(230, window.innerHeight - viewportPadding * 2) + 64;
-    if (top + estimatedMenuHeight > window.innerHeight - viewportPadding) {
-      top = Math.max(viewportPadding, rect.top - estimatedMenuHeight - 10);
-    }
-
-    setBrandMenuPos({ top, left, width });
-  };
-
-  // Keep the DESKTOP/TABLET portal dropdown pinned to the trigger while open / scrolling / resizing.
-  // On mobile (<640 px) the Brands dropdown uses a fixed full-screen overlay and does NOT need
-  // position tracking – skipping it also avoids the dropdown jumping when body is scroll-locked.
-  useEffect(() => {
-    if (!isBrandMenuOpen) return;
-
-    // Only update position for desktop/tablet; mobile uses a fixed overlay, not positional anchoring.
-    const isMobileViewport =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 639px)").matches;
-    if (isMobileViewport) return;
-
-    updateBrandMenuPosition();
-    const handleUpdate = () => requestAnimationFrame(updateBrandMenuPosition);
-    window.addEventListener("scroll", handleUpdate, true);
-    window.addEventListener("resize", handleUpdate);
-    window.addEventListener("orientationchange", handleUpdate);
-    return () => {
-      window.removeEventListener("scroll", handleUpdate, true);
-      window.removeEventListener("resize", handleUpdate);
-      window.removeEventListener("orientationchange", handleUpdate);
-    };
-  }, [isBrandMenuOpen]);
-  
-// Lock the background page ONLY while the MOBILE Brands dropdown is open.
-  //
-  // The mobile dropdown is a `fixed` overlay, so the page behind it must stay
-  // completely stationary while the dropdown's own list scrolls. We only lock on
-  // mobile viewports (< 640px, matching the `sm:hidden` mobile dropdown) to keep
-  // the desktop dropdown behavior (which repositions with the scroll) untouched.
-  // The previous body styles are captured and restored exactly on close, and the
-  // cleanup runs correctly under React Strict Mode.
-  useEffect(() => {
-    if (!isBrandMenuOpen) return;
-
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 639px)").matches;
-    if (!isMobile) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalPosition = document.body.style.position;
-    const originalWidth = document.body.style.width;
-    const originalTop = document.body.style.top;
-    const scrollY = window.scrollY;
-
-    // Lock the page behind the fixed dropdown: prevent further scrolling and
-    // pin the body in place so nothing moves behind the open dropdown.
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.width = "100%";
-    document.body.style.top = `-${scrollY}px`;
-
-    return () => {
-      // Restore the body to its exact prior state so normal scrolling resumes.
-      document.body.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.width = originalWidth;
-      document.body.style.top = originalTop;
-      window.scrollTo(0, scrollY);
-    };
-  }, [isBrandMenuOpen]);
-
   const handleQuickView = (product: typeof products[0]) => {
     setQuickViewProduct(product);
     setIsQuickViewOpen(true);
@@ -1260,19 +638,19 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-6 text-center sm:mb-8"
+        className="studio-shop-heading mb-6 sm:mb-8"
       >
-        <p className="text-xs uppercase tracking-[0.32em] text-[#6f1d1b] sm:text-sm sm:tracking-[0.35em]">
+        <p className="text-xs uppercase tracking-[0.32em] text-brand sm:text-sm sm:tracking-[0.35em]">
           Our Collection
         </p>
-        <h2 className="mt-3 text-3xl font-black text-[#1f1a14] sm:mt-4 sm:text-5xl">
+        <h2 className="studio-display studio-gradient mt-3 text-3xl font-semibold text-ink sm:mt-4 sm:text-5xl">
           {getBrandTitle()}
         </h2>
         {isCollectionFilterActive && (
           <Link
             href="/products"
             onClick={() => setSelectedCollection("All Collections")}
-            className="mt-4 inline-flex rounded-full border border-[#d4af37]/35 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#b88700] shadow-[0_10px_25px_rgba(212,175,55,0.12)] transition hover:bg-[#fff7e6]"
+            className="mt-4 inline-flex rounded-full border border-line bg-surface px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-accent shadow-panel transition hover:bg-surface"
           >
             Clear Collection
           </Link>
@@ -1289,8 +667,8 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               onClick={() => setSelectedCategory(category)}
               className={`min-w-0 rounded-full px-3 py-2.5 text-sm font-bold transition-all duration-300 sm:shrink-0 sm:px-5 ${
                 selectedCategory === category
-                  ? "bg-[linear-gradient(135deg,#d4af37,#f7d774)] text-[#1f1a14] shadow-[0_10px_25px_rgba(212,175,55,0.28)]"
-                  : "border border-[#d4af37]/35 bg-white text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#1f1a14]"
+                  ? "bg-brand text-on-brand shadow-panel"
+                  : "border border-line bg-surface text-muted hover:bg-surface hover:text-ink"
               }`}
             >
               <span className="block truncate whitespace-nowrap">{category}</span>
@@ -1298,230 +676,15 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           ))}
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <motion.div
-            ref={collectionMenuRef}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.16 }}
-            className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
-          >
-            {/* Collection Dropdown - Hidden but logic kept intact */}
-            <div className="hidden">
-            <button
-              type="button"
-              onClick={() => {
-                setIsBrandMenuOpen(false);
-                setIsCollectionMenuOpen((prev) => !prev);
-              }}
-              className="group inline-flex h-11 w-full max-w-[280px] items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[190px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
-              aria-haspopup="listbox"
-              aria-expanded={isCollectionMenuOpen}
-            >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />
-                Collection
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-300 ${
-                  isCollectionMenuOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            <AnimatePresence>
-              {isCollectionMenuOpen && (
-                <motion.div
-                  key="desktop-collection-dropdown"
-                  initial={{ opacity: 0, x: 22 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 22 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute right-0 top-[calc(100%+10px)] z-[999] hidden w-[250px] overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur sm:block"
-                >
-                  <div className="mb-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setIsCollectionMenuOpen(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
-                      aria-label="Close collection menu"
-                    >
-                      Ã—
-                    </button>
-                  </div>
-                  <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
-                    {["All Collections", ...scentCollectionOptions].map((collection, index) => (
-                      <motion.button
-                        key={`desktop-collection-${isCollectionMenuOpen}-${collection}-${index}`}
-                        type="button"
-                        initial={{ opacity: 0, x: 22 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.52,
-                          delay: index * 0.09,
-                          ease: [0.22, 1, 0.36, 1]
-                        }}
-                        onClick={() => {
-                          setSelectedCollection(collection);
-                          setIsCollectionMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
-                          selectedCollection === collection
-                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
-                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
-                        }`}
-                      >
-                        <span className="truncate">{collection}</span>
-                        {selectedCollection === collection && <Check className="h-3.5 w-3.5 shrink-0" />}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            </div>
-            {/* End Collection Dropdown */}
-          </motion.div>
-
-          {/* Brand Filter Dropdown */}
-          {onBrandSelect && brands.length > 1 && (
-          <motion.div
-            ref={brandMenuRef}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative z-40 flex w-full justify-center overflow-visible sm:z-30 sm:block sm:w-auto"
-          >
-            <button
-              ref={brandButtonRef}
-              type="button"
-              onClick={() => {
-                setIsCollectionMenuOpen(false);
-                setIsBrandMenuOpen((prev) => !prev);
-              }}
-              className="group inline-flex h-11 w-auto items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 text-sm font-black text-[#1f1a14] shadow-[0_16px_40px_rgba(212,175,55,0.22)] transition-all duration-300 active:scale-95 sm:flex sm:h-auto sm:w-auto sm:min-w-[170px] sm:justify-between sm:gap-0 sm:px-5 sm:py-3 sm:shadow-[0_14px_35px_rgba(212,175,55,0.28)] sm:hover:-translate-y-0.5 sm:hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
-              aria-haspopup="listbox"
-              aria-expanded={isBrandMenuOpen}
-            >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />
-                Brands
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-300 ${
-                  isBrandMenuOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {/* Desktop/tablet brand dropdown now renders via a portal at the bottom of this
-                component (see createPortal below) so it is never clipped by overflow-hidden
-                parents and always stacks above neighbouring content. */}
-          </motion.div>
-        )}
+        <div className="w-full sm:w-56">
+          {onBrandSelect && brands.length > 1 && <StudioSelect value={selectedBrand} placeholder="Choose brand" ariaLabel="Filter by brand"
+            options={brands.map(brand => ({ value: brand.id, label: brand.id === "All" ? "All brands" : brand.name || "Unbranded" }))} onChange={onBrandSelect} />}
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         {loading ? (
-          <motion.div
-            key="loading-state"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex min-h-[60vh] items-center justify-center py-20"
-          >
-            <div className="relative">
-              {/* Soft glow effect */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-64 w-64 rounded-full bg-[#d4af37]/20 blur-3xl" />
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10 flex flex-col items-center gap-6">
-                {/* Animated Icon */}
-                <motion.div
-                  animate={{
-                    rotate: 360,
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    rotate: {
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "linear",
-                    },
-                    scale: {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                  }}
-                  className="relative"
-                >
-                  {/* Outer ring */}
-                  <div className="h-20 w-20 rounded-full border-4 border-[#d4af37]/30 border-t-[#d4af37]" />
-                  
-                  {/* Inner sparkle */}
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <ShoppingBag className="h-8 w-8 text-[#d4af37]" />
-                  </motion.div>
-                </motion.div>
-
-                {/* Text */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <motion.p
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="text-sm font-medium tracking-wider text-[#7a6a55] sm:text-base"
-                  >
-                    Loading products...
-                  </motion.p>
-                </motion.div>
-
-                {/* Animated dots */}
-                <div className="flex gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        scale: [1, 1.5, 1],
-                        opacity: [0.3, 1, 0.3],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                        ease: "easeInOut",
-                      }}
-                      className="h-2 w-2 rounded-full bg-[#d4af37]"
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <StudioLoading label="Loading products…" grid />
         ) : filteredProducts.length > 0 ? (
           <motion.div
             key={`${selectedBrand}-${selectedCollection}`}
@@ -1552,249 +715,27 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
             transition={{ duration: 0.5 }}
             className="flex justify-center"
           >
-            <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-12">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-50 text-yellow-600">
+            <div className="w-full rounded-xl border border-line bg-surface p-6 text-center shadow-soft sm:p-12">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                 <ShoppingBag className="h-8 w-8" />
               </div>
-              <h3 className="mb-2 text-xl font-bold text-black">No perfumes found</h3>
+              <h3 className="mb-2 text-xl font-bold text-ink">No perfumes found</h3>
               {isCollectionFilterActive ? (
-                <p className="text-zinc-600">
-                  No products found in <span className="font-medium text-yellow-600">{selectedCollection} Collection</span> yet.
+                <p className="text-secondary">
+                  No products found in <span className="font-medium text-accent">{selectedCollection} Collection</span> yet.
                 </p>
               ) : (
-                <p className="text-zinc-600">
-                  No perfumes available for <span className="font-medium text-yellow-600">{selectedBrandLabel}</span> in this collection yet.
+                <p className="text-secondary">
+                  No perfumes available for <span className="font-medium text-accent">{selectedBrandLabel}</span> in this collection yet.
                 </p>
               )}
-              <p className="mt-2 text-sm text-zinc-500">
+              <p className="mt-2 text-sm text-muted">
                 Check back soon for new arrivals!
               </p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {isMounted &&
-        createPortal(
-          <AnimatePresence>
-            {/* Desktop/tablet brand dropdown - rendered in a portal so it is never clipped
-                by overflow-hidden parents and always stacks above neighbouring content. */}
-            {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
-              <motion.div
-                ref={brandDropdownRef}
-                key="desktop-brand-overlay"
-                className="fixed z-[9999] hidden sm:block"
-                style={{ top: brandMenuPos.top, left: brandMenuPos.left, width: brandMenuPos.width }}
-              >
-                <motion.div
-                  initial={{ opacity: 0, x: 22 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 22 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden rounded-2xl border border-[#d4af37]/25 bg-white/95 p-2 shadow-[0_18px_45px_rgba(31,26,20,0.12),0_0_24px_rgba(212,175,55,0.16)] backdrop-blur"
-                >
-                  <div className="mb-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff7e6] text-xs font-black text-[#1f1a14] transition hover:bg-[#f7e7b3]"
-                      aria-label="Close brands menu"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="scrollbar-auto-hide grid max-h-[245px] gap-1 overflow-y-auto">
-                    {brands.map((brand, index) => (
-                      <motion.button
-                        key={`desktop-${isBrandMenuOpen}-${brand.id}-${index}`}
-                        type="button"
-                        initial={{ opacity: 0, x: 22 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.52,
-                          delay: index * 0.09,
-                          ease: [0.22, 1, 0.36, 1]
-                        }}
-                        onClick={() => {
-                          onBrandSelect?.(brand.id);
-                          setIsBrandMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-300 ${
-                          selectedBrand === brand.id
-                            ? "bg-[#d4af37] text-[#1f1a14] shadow-[0_8px_18px_rgba(212,175,55,0.20)]"
-                            : "bg-[#fffaf0] text-[#7a6a55] hover:bg-[#fff7e6] hover:text-[#6f1d1b]"
-                        }`}
-                      >
-                        <span className="truncate">{brand.name || "Unbranded"}</span>
-                        {selectedBrand === brand.id && <Check className="h-3.5 w-3.5 shrink-0" />}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-            {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
-              // Mobile-only: full-screen backdrop overlay so the dropdown stays
-              // perfectly stationary regardless of where the user tapped the button.
-              // Backdrop click dismisses the menu. Only the inner list scrolls.
-              <motion.div
-                key="mobile-brand-overlay"
-                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                onClick={() => setIsBrandMenuOpen(false)}
-              >
-                <motion.div
-                  role="listbox"
-                  aria-label="Choose brand"
-                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
-                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                  onClick={(event) => event.stopPropagation()}
-                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
-                        Filter by brand
-                      </p>
-                      <h3 className="mt-1 text-xl font-black text-neutral-950">
-                        Choose Brand
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
-                      aria-label="Close brands popup"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  {/* List: scrollable; overscroll-behavior prevents scroll chaining to background */}
-                  <div
-                    className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1"
-                    style={{ overscrollBehaviorY: "contain" }}
-                  >
-                    {brands.map((brand, index) => {
-                      const active = selectedBrand === brand.id;
-                      const label = brand.name || "Unbranded";
-
-                      return (
-                        <motion.button
-                          key={`mobile-brand-popup-${brand.id}-${index}`}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.24,
-                            delay: Math.min(index * 0.025, 0.18),
-                            ease: [0.22, 1, 0.36, 1],
-                          }}
-                          onClick={() => {
-                            onBrandSelect?.(brand.id);
-                            setIsBrandMenuOpen(false);
-                          }}
-                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
-                            active
-                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
-                              : "bg-white text-neutral-700 active:bg-yellow-50"
-                          }`}
-                        >
-                          <span className="truncate">{label}</span>
-                          {active && <Check className="h-4 w-4 shrink-0" />}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-
-            {isCollectionMenuOpen && (
-              <motion.div
-                key="mobile-collection-popup"
-                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                onClick={() => setIsCollectionMenuOpen(false)}
-              >
-                <motion.div
-                  role="listbox"
-                  aria-label="Choose collection"
-                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
-                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                  onClick={(event) => event.stopPropagation()}
-                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
-                        Filter by collection
-                      </p>
-                      <h3 className="mt-1 text-xl font-black text-neutral-950">
-                        Choose Collection
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsCollectionMenuOpen(false)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
-                      aria-label="Close collection popup"
-                    >
-                      Ã—
-                    </button>
-                  </div>
-
-                  <div className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1">
-                    {["All Collections", ...scentCollectionOptions].map((collection, index) => {
-                      const active = selectedCollection === collection;
-
-                      return (
-                        <motion.button
-                          key={`mobile-popup-collection-${collection}-${index}`}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.24,
-                            delay: Math.min(index * 0.025, 0.18),
-                            ease: [0.22, 1, 0.36, 1],
-                          }}
-                          onClick={() => {
-                            setSelectedCollection(collection);
-                            setIsCollectionMenuOpen(false);
-                          }}
-                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
-                            active
-                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
-                              : "bg-white text-neutral-700 active:bg-yellow-50"
-                          }`}
-                        >
-                          <span className="truncate">{collection}</span>
-                          {active && <Check className="h-4 w-4 shrink-0" />}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
 
       {/* Quick View Modal */}
       <QuickViewModal

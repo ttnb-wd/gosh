@@ -23,7 +23,7 @@ function ImageCard({
   sizes: string;
 }) {
   return (
-    <div className={`relative overflow-hidden border border-[#f7d774]/20 bg-[#11100e] shadow-[0_26px_70px_rgba(0,0,0,0.35),0_0_34px_rgba(212,175,55,0.12)] ${className}`}>
+    <div className={`relative overflow-hidden border border-accent-soft/20 bg-brand shadow-panel ${className}`}>
       <Image
         src={src}
         alt={alt}
@@ -31,7 +31,7 @@ function ImageCard({
         sizes={sizes}
         className="object-cover object-center transition-transform duration-700 hover:scale-105"
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,250,240,0.02),rgba(0,0,0,0.18))]" />
+      <div className="pointer-events-none absolute inset-0 bg-surface-muted" />
     </div>
   );
 }
@@ -53,27 +53,27 @@ export default function ArtisanPerfumeShowcase() {
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
       >
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#090b0e] p-5 shadow-[0_28px_80px_rgba(31,26,20,0.22)] sm:p-8 lg:rounded-[2.5rem] lg:p-10">
-          <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-[#d4af37]/12 blur-3xl" />
-          <div className="pointer-events-none absolute -right-16 bottom-8 h-64 w-64 rounded-full bg-[#f7d774]/10 blur-3xl" />
+        <div className="relative overflow-hidden rounded-xl bg-surface p-5 shadow-panel sm:p-8 lg:rounded-xl lg:p-10">
+          <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-brand-soft hidden" />
+          <div className="pointer-events-none absolute -right-16 bottom-8 h-64 w-64 rounded-full bg-accent-soft/10 hidden" />
 
           <div className="relative grid gap-8 lg:min-h-[680px]">
             <div className="relative z-10">
-              <p className="text-sm font-black text-[#fffaf0] sm:text-base">Elite Artisan Perfumes</p>
+              <p className="text-sm font-semibold text-ink sm:text-base">Elite Artisan Perfumes</p>
 
-              <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[1.04] text-[#f7d774] sm:text-5xl lg:text-6xl">
+              <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.04] text-accent sm:text-5xl lg:text-6xl">
                 Experience the Essence
                 <span className="block">of Luxury with Every</span>
                 <span className="block">Scent</span>
               </h2>
 
-              <p className="mt-4 max-w-md text-xs font-medium leading-6 text-[#fffaf0]/72 lg:absolute lg:left-[52%] lg:top-[152px] lg:mt-0">
+              <p className="mt-4 max-w-md text-xs font-medium leading-6 text-ink/72 lg:absolute lg:left-[52%] lg:top-[152px] lg:mt-0">
                 Fine ingredients, timeless elegance, and a signature trail.
               </p>
 
               <button
                 type="button"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#f7d774]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-3 text-sm font-bold text-[#1f1a14] shadow-[0_14px_34px_rgba(212,175,55,0.22)] transition hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl border border-accent-soft/45 bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-panel transition hover:-translate-y-0.5 hover:bg-brand"
               >
                 Discover More
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -81,7 +81,7 @@ export default function ArtisanPerfumeShowcase() {
             </div>
 
             <div className="relative z-10 min-h-[430px] sm:min-h-[560px] lg:absolute lg:inset-0 lg:min-h-0">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#d4af37]/10 blur-3xl" />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-soft hidden" />
 
               <ImageCard
                 src={showcaseImages.wide}
@@ -112,8 +112,8 @@ export default function ArtisanPerfumeShowcase() {
               />
             </div>
 
-            <h3 className="relative z-10 mt-2 text-center text-3xl font-black leading-tight text-[#fffaf0] sm:text-4xl lg:absolute lg:bottom-4 lg:left-1/2 lg:mt-0 lg:-translate-x-1/2">
-              Elevate Your <span className="text-[#f7d774]">Fragrance</span>
+            <h3 className="relative z-10 mt-2 text-center text-3xl font-semibold leading-tight text-ink sm:text-4xl lg:absolute lg:bottom-4 lg:left-1/2 lg:mt-0 lg:-translate-x-1/2">
+              Elevate Your <span className="text-accent">Fragrance</span>
             </h3>
           </div>
         </div>

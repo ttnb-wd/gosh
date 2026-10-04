@@ -1,4 +1,6 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
+import StudioModal from "@/components/ui/StudioModal";
 import devLog from "@/lib/dev-log";
 
 import { useState, useEffect, useMemo } from "react";
@@ -119,11 +121,11 @@ function PaymentIcon({
 
   const fallbackIcon =
     type === "cod" ? (
-      <Banknote className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
+      <Banknote className="h-7 w-7 text-accent sm:h-10 sm:w-10" />
     ) : type === "bank" ? (
-      <Building2 className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
+      <Building2 className="h-7 w-7 text-accent sm:h-10 sm:w-10" />
     ) : (
-      <Smartphone className="h-7 w-7 text-yellow-700 sm:h-10 sm:w-10" />
+      <Smartphone className="h-7 w-7 text-accent sm:h-10 sm:w-10" />
     );
 
   if (src && !failed) {
@@ -141,10 +143,10 @@ function PaymentIcon({
   const fixedLightFallbackSurface = type === "kbzpay" || type === "bank";
 
   return (
-    <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 sm:h-14 sm:w-14 ${
+    <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft sm:h-14 sm:w-14 ${
       fixedLightFallbackSurface
-        ? "dark:bg-yellow-100"
-        : "dark:border dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
+        ? ""
+        : "   "
     }`}>
       {fallbackIcon}
     </div>
@@ -274,7 +276,7 @@ function CheckoutPageContent() {
 
   // Dynamic grid class based on available payment methods count
   const paymentGridClass = useMemo(() => {
-    return "grid w-full grid-cols-2 place-items-center gap-x-3 gap-y-5 sm:gap-6 lg:grid-cols-4";
+    return "grid w-full grid-cols-2 gap-3 lg:grid-cols-4";
   }, [availablePaymentMethods.length]);
 
   // Auto-select first available payment method if current selection is disabled
@@ -623,7 +625,7 @@ function CheckoutPageContent() {
   }, [showPaymentModal]);
 
   return (
-    <main role="main" className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]">
+    <main role="main" className="studio-page studio-checkout min-h-screen bg-[var(--site-bg)] text-ink">
       <Navbar 
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
@@ -639,29 +641,29 @@ function CheckoutPageContent() {
           <div className="mb-16 text-center">
             {/* Top Label */}
             <div className="mb-6 flex items-center justify-center gap-3">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-yellow-400" />
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-600">
+              <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent">
                 SAFE • SECURE • CONVENIENT
               </p>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-yellow-400" />
+              <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
             </div>
 
             {/* Main Heading */}
-            <h1 className="mb-6 text-3xl font-black sm:text-5xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 bg-clip-text text-transparent">
+            <h1 className="studio-gradient mb-6 text-3xl font-semibold sm:text-5xl lg:text-7xl">
+              <span className="bg-gradient-to-r from-accent via-accent to-accent bg-clip-text text-transparent">
                 CHECKOUT
               </span>
             </h1>
 
             {/* Divider with accent */}
             <div className="mx-auto mb-6 flex items-center justify-center gap-3">
-              <div className="h-px w-20 bg-gradient-to-r from-transparent via-zinc-200 to-zinc-200" />
-              <div className="h-2 w-2 rotate-45 bg-yellow-400" />
-              <div className="h-px w-20 bg-gradient-to-l from-transparent via-zinc-200 to-zinc-200" />
+              <div className="h-px w-20 bg-gradient-to-r from-transparent via-faint to-faint" />
+              <div className="h-2 w-2 rotate-45 bg-brand" />
+              <div className="h-px w-20 bg-gradient-to-l from-transparent via-faint to-faint" />
             </div>
 
             {/* Subtitle */}
-            <p className="mx-auto max-w-2xl text-base text-zinc-600 leading-relaxed sm:text-lg">
+            <p className="mx-auto max-w-2xl text-base text-secondary leading-relaxed sm:text-lg">
               Complete your order with secure payment
             </p>
           </div>
@@ -669,16 +671,16 @@ function CheckoutPageContent() {
           {/* Customer Information Form */}
           {SHOW_DELIVERY_INFORMATION && (
             <div className="mb-16">
-              <h2 className="mb-6 text-2xl font-bold text-black">Delivery Information</h2>
-              <div className="mx-auto max-w-3xl rounded-3xl border-2 border-yellow-200/40 bg-white p-8 shadow-lg">
+              <h2 className="mb-6 text-2xl font-bold text-ink">Delivery Information</h2>
+              <div className="mx-auto max-w-3xl rounded-xl border-2 border-line bg-surface p-8 shadow-soft">
                 {deliveryNote && (
-                  <p className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50/80 px-4 py-3 text-sm font-semibold text-neutral-700">
+                  <p className="mb-6 rounded-xl border border-line bg-accent-soft/80 px-4 py-3 text-sm font-semibold text-secondary">
                     {deliveryNote}
                   </p>
                 )}
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <label htmlFor="customer-fullname" className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="customer-fullname" className="mb-2 block text-sm font-bold text-ink">
                       Full Name *
                     </label>
                     <input
@@ -687,16 +689,16 @@ function CheckoutPageContent() {
                       type="text"
                       value={customerForm.fullName}
                       onChange={(e) => setCustomerForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder="John Doe"
                     />
                     {errors.fullName && (
-                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.fullName}</p>
+                      <p role="alert" className="mt-1 text-xs font-semibold text-destructive">{errors.fullName}</p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="customer-phone" className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="customer-phone" className="mb-2 block text-sm font-bold text-ink">
                       Phone Number *
                     </label>
                     <input
@@ -706,16 +708,16 @@ function CheckoutPageContent() {
                       autoComplete="tel"
                       value={customerForm.phone}
                       onChange={(e) => setCustomerForm((prev) => ({ ...prev, phone: e.target.value }))}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder="09123456789"
                     />
                     {errors.phone && (
-                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.phone}</p>
+                      <p role="alert" className="mt-1 text-xs font-semibold text-destructive">{errors.phone}</p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="customer-email" className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="customer-email" className="mb-2 block text-sm font-bold text-ink">
                       Email (Optional)
                     </label>
                     <input
@@ -725,13 +727,13 @@ function CheckoutPageContent() {
                       autoComplete="email"
                       value={customerForm.email}
                       onChange={(e) => setCustomerForm((prev) => ({ ...prev, email: e.target.value }))}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder="john@example.com"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label htmlFor="customer-address" className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="customer-address" className="mb-2 block text-sm font-bold text-ink">
                       Address *
                     </label>
                     <input
@@ -741,16 +743,16 @@ function CheckoutPageContent() {
                       autoComplete="street-address"
                       value={customerForm.address}
                       onChange={(e) => setCustomerForm((prev) => ({ ...prev, address: e.target.value }))}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder="Street address, building, floor"
                     />
                     {errors.address && (
-                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.address}</p>
+                      <p role="alert" className="mt-1 text-xs font-semibold text-destructive">{errors.address}</p>
                     )}
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label htmlFor="customer-city" className="mb-2 block text-sm font-bold text-neutral-800">
+                    <label htmlFor="customer-city" className="mb-2 block text-sm font-bold text-ink">
                       City *
                     </label>
                     <input
@@ -759,11 +761,11 @@ function CheckoutPageContent() {
                       type="text"
                       value={customerForm.city}
                       onChange={(e) => setCustomerForm((prev) => ({ ...prev, city: e.target.value }))}
-                      className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15"
                       placeholder="Yangon"
                     />
                     {errors.city && (
-                      <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.city}</p>
+                      <p role="alert" className="mt-1 text-xs font-semibold text-destructive">{errors.city}</p>
                     )}
                   </div>
                 </div>
@@ -773,16 +775,16 @@ function CheckoutPageContent() {
 
           {/* Payment Method Selection */}
           <div className="mx-auto mb-16 w-full max-w-6xl">
-            <h2 className="mb-8 text-2xl font-bold text-black">Select Payment Method</h2>
+            <h2 className="mb-8 text-2xl font-bold text-ink">Select Payment Method</h2>
             {errors.payment && (
-              <p role="alert" className="mb-4 text-sm font-semibold text-red-600">{errors.payment}</p>
+              <p role="alert" className="mb-4 text-sm font-semibold text-destructive">{errors.payment}</p>
             )}
 
             {/* Premium Payment Cards - Dynamic responsive grid */}
             {availablePaymentMethods.length === 0 ? (
-              <div className="rounded-[28px] border border-yellow-200 bg-yellow-50 p-8 text-center shadow-sm">
-                <h3 className="text-xl font-black text-neutral-950">No payment methods available</h3>
-                <p className="mt-2 text-sm font-medium text-neutral-600">
+              <div className="rounded-xl border border-line bg-accent-soft p-8 text-center shadow-soft">
+                <h3 className="text-xl font-semibold text-ink">No payment methods available</h3>
+                <p className="mt-2 text-sm font-medium text-secondary">
                   Please contact the store or try again later.
                 </p>
               </div>
@@ -790,139 +792,16 @@ function CheckoutPageContent() {
               <div className={paymentGridClass}>
                 {availablePaymentMethods.map((method, index) => {
                 const isSelected = selectedPayment === method.id;
-                const fixedLightIconSurface = method.id === "kbzpay" || method.id === "bank";
-
-                return (
-                  <motion.button
-                    key={method.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedPayment(method.id);
-                      setShowPaymentModal(true);
-                    }}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="group relative flex w-full justify-center"
-                  >
-                    <div className={`relative aspect-square w-[132px] overflow-hidden rounded-full border border-yellow-400/70 bg-white text-center shadow-[0_14px_40px_rgba(234,179,8,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(234,179,8,0.30)] min-[390px]:w-[142px] sm:w-[180px] lg:w-[210px] ${
-                      isSelected
-                        ? "ring-2 ring-yellow-400 shadow-[0_20px_60px_rgba(234,179,8,0.38)]"
-                        : ""
-                    }`}>
-                      <div className={`pointer-events-none absolute -inset-3 rounded-full bg-gradient-to-br from-yellow-400/0 via-yellow-300/30 to-yellow-400/0 opacity-0 blur-2xl transition-opacity duration-500 ${
-                        isSelected ? "opacity-100" : "group-hover:opacity-80"
-                      }`} />
-
-                      <div className="relative flex h-full w-full flex-col items-center justify-center px-3 py-4 sm:px-5 sm:py-6">
-
-                        {/* Selected check badge */}
-                        {isSelected && (
-                          <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                            className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-lg shadow-yellow-400/60 sm:h-7 sm:w-7"
-                          >
-                            <Check className="h-3.5 w-3.5 text-black font-bold sm:h-4 sm:w-4" />
-                          </motion.div>
-                        )}
-
-                        {/* Circular Icon Area */}
-                        <div className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center sm:mb-3.5 sm:h-14 sm:w-14">
-                          <motion.div
-                            animate={{ 
-                              rotate: isSelected ? 360 : 0,
-                              scale: isSelected ? [1, 1.08, 1] : 1
-                            }}
-                            transition={{ 
-                              rotate: { duration: 25, repeat: Infinity, ease: "linear" },
-                              scale: { duration: 2.5, repeat: Infinity }
-                            }}
-                            className={`pointer-events-none absolute inset-0 rounded-full border border-dashed transition-colors duration-300 ${
-                              isSelected ? "border-yellow-400/60" : "border-yellow-300/40 group-hover:border-yellow-400/60"
-                            }`}
-                          />
-
-                          <div className={`pointer-events-none absolute inset-1 rounded-full transition-all duration-300 ${
-                            isSelected 
-                              ? "bg-gradient-to-br from-yellow-400/30 to-yellow-500/30 blur-lg" 
-                              : "bg-gradient-to-br from-yellow-200/20 to-yellow-300/20 blur-lg group-hover:from-yellow-400/30 group-hover:to-yellow-500/30"
-                          }`} />
-
-                          <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-12 sm:w-12 ${
-                            fixedLightIconSurface
-                              ? "border-[#E8D7A2]/40 bg-[#FFFDF7] shadow-[0_1px_2px_rgba(0,0,0,0.05)] group-hover:border-yellow-400/50 group-hover:shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:border-[#E8D7A2]/40 dark:bg-[#FFFDF7] dark:shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-                              : isSelected
-                                ? "border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-50 shadow-xl shadow-yellow-400/50 dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
-                                : "border-yellow-300/30 bg-gradient-to-br from-white via-yellow-50/30 to-white shadow-lg group-hover:border-yellow-400/50 group-hover:shadow-xl group-hover:shadow-yellow-400/40 dark:border-yellow-400/25 dark:bg-[#15100b] dark:shadow-[0_0_20px_rgba(212,175,55,0.18)]"
-                          }`}>
-                            <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/70 via-transparent to-transparent" />
-                            
-                            <PaymentIcon
-                              src={method.icon}
-                              alt={method.name}
-                              type={method.id as "cod" | "kbzpay" | "wavepay" | "ayapay" | "bank"}
-                            />
-                          </div>
-
-                          <motion.div
-                            animate={{ 
-                              scale: [1, 1.4, 1],
-                              opacity: [0.5, 1, 0.5]
-                            }}
-                            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                            className="pointer-events-none absolute -right-1 -top-1 h-2 w-2 rounded-full bg-yellow-400 shadow-md shadow-yellow-400/70 sm:h-2.5 sm:w-2.5"
-                          />
-                          <motion.div
-                            animate={{ 
-                              scale: [1, 1.3, 1],
-                              opacity: [0.4, 0.9, 0.4]
-                            }}
-                            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                            className="pointer-events-none absolute -bottom-1 -left-1 h-1.5 w-1.5 rounded-full bg-yellow-300 shadow-sm shadow-yellow-300/70 sm:h-2 sm:w-2"
-                          />
-                        </div>
-
-                        <div className="relative text-center">
-                          <h3 className={`mb-2 flex min-h-[32px] items-center justify-center text-xs font-semibold transition-colors duration-300 sm:text-sm ${
-                            isSelected ? "text-black" : "text-zinc-800 group-hover:text-black"
-                          }`}>
-                            {method.name}
-                          </h3>
-                          
-                          <div className="mx-auto mb-2 flex items-center justify-center gap-1">
-                            <div className={`h-px w-4 rounded-full transition-all duration-300 sm:w-5 ${
-                              isSelected 
-                                ? "bg-gradient-to-r from-transparent via-yellow-400 to-yellow-400" 
-                                : "bg-gradient-to-r from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
-                            }`} />
-                            <div className={`h-1 w-1 rounded-full transition-all duration-300 ${
-                              isSelected ? "bg-yellow-400" : "bg-yellow-300 group-hover:bg-yellow-400"
-                            }`} />
-                            <div className={`h-px w-4 rounded-full transition-all duration-300 sm:w-5 ${
-                              isSelected 
-                                ? "bg-gradient-to-l from-transparent via-yellow-400 to-yellow-400" 
-                                : "bg-gradient-to-l from-transparent via-yellow-300 to-yellow-300 group-hover:via-yellow-400"
-                            }`} />
-                          </div>
-
-                          <p className="text-[10px] leading-4 text-gray-500 sm:text-xs">
-                            {method.description}
-                          </p>
-                        </div>
-
-                        <div className={`pointer-events-none absolute bottom-3 left-1/2 h-10 w-2/3 -translate-x-1/2 rounded-full transition-opacity duration-300 sm:bottom-4 sm:h-12 ${
-                          isSelected 
-                            ? "bg-gradient-to-t from-yellow-400/25 to-transparent blur-xl opacity-100" 
-                            : "bg-gradient-to-t from-yellow-300/15 to-transparent blur-xl opacity-0 group-hover:opacity-100"
-                        }`} />
-                      </div>
-                    </div>
-                  </motion.button>
-                );
+                return <motion.button key={method.id} type="button" aria-pressed={isSelected}
+                  onClick={() => { setSelectedPayment(method.id); setShowPaymentModal(true); }}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: .18, delay: index * .025 }} whileHover={{ y: -2 }}
+                  className={"studio-payment-choice " + (isSelected ? "is-selected" : "")}>
+                  <span className="studio-payment-icon"><PaymentIcon src={method.icon} alt={method.name} type={method.id as "cod" | "kbzpay" | "wavepay" | "ayapay" | "bank"} /></span>
+                  <span className="text-sm font-medium text-ink">{method.name}</span>
+                  <span className="text-xs text-muted">{method.description}</span>
+                  {isSelected && <Check className="absolute right-3 top-3 h-4 w-4 text-brand" aria-hidden="true" />}
+                </motion.button>;
               })}
               </div>
             )}
@@ -935,29 +814,29 @@ function CheckoutPageContent() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mb-12"
           >
-            <div className="mx-auto max-w-2xl rounded-3xl border-2 border-yellow-200/40 bg-gradient-to-br from-yellow-50/50 via-white to-white p-8 text-center shadow-lg">
+            <div className="mx-auto max-w-2xl rounded-xl border border-line bg-surface p-5 text-center">
               {/* Shield icon */}
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-lg shadow-yellow-400/30">
-                <svg className="h-8 w-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
 
               {/* Text */}
-              <h4 className="mb-2 text-xl font-bold text-black">
+              <h4 className="mb-2 text-sm font-medium text-ink">
                 Your payments are protected
               </h4>
               
               {/* Decorative divider */}
               <div className="mx-auto mb-3 flex items-center justify-center gap-2">
-                <div className="h-px w-12 bg-gradient-to-r from-transparent to-yellow-400" />
-                <div className="h-1.5 w-1.5 rotate-45 bg-yellow-400" />
-                <div className="h-px w-12 bg-gradient-to-l from-transparent to-yellow-400" />
+                <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+                <div className="h-1.5 w-1.5 rotate-45 bg-brand" />
+                <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
               </div>
 
               {/* Subtext */}
-              <p className="text-sm font-medium text-zinc-600">
-                <span className="text-yellow-600">Encrypted</span> • <span className="text-yellow-600">Trusted</span> • <span className="text-yellow-600">Secure</span>
+              <p className="text-sm font-medium text-secondary">
+                <span className="text-accent">Encrypted</span> • <span className="text-accent">Trusted</span> • <span className="text-accent">Secure</span>
               </p>
             </div>
           </motion.div>
@@ -981,52 +860,52 @@ function CheckoutPageContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[10000] bg-black/55 backdrop-blur-md"
+              className="fixed inset-0 z-[10000] bg-overlay "
             />
             <div className="fixed inset-0 z-[10000] flex items-center justify-center px-4 py-6">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+              <StudioModal label="Order confirmation" onDismiss={() => setShowSuccessModal(false)} lockScroll={false}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-md overflow-hidden rounded-[28px] border border-yellow-300/70 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.35),0_0_45px_rgba(234,179,8,0.25)]"
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="w-full max-w-md overflow-hidden rounded-xl border border-line bg-surface shadow-panel"
               >
                 <div className="p-8 text-center">
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-500 shadow-lg shadow-green-400/30">
-                    <CheckCircle className="h-10 w-10 text-white" />
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-success to-success shadow-soft shadow-soft">
+                    <CheckCircle className="h-10 w-10 text-on-brand" />
                   </div>
-                  <h2 className="mb-3 text-2xl font-black text-black">Order Placed Successfully!</h2>
+                  <h2 className="mb-3 text-2xl font-semibold text-ink">Order Placed Successfully!</h2>
                   
                   {successOrder.payment_status === "Verifying" ? (
                     <>
-                      <p className="mb-2 text-sm font-semibold text-yellow-700">
+                      <p className="mb-2 text-sm font-semibold text-accent">
                         Your payment proof has been submitted.
                       </p>
-                      <p className="mb-6 text-sm text-zinc-600">
-                        Your order is waiting for admin verification. We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> once payment is confirmed.
+                      <p className="mb-6 text-sm text-secondary">
+                        Your order is waiting for admin verification. We&apos;ll contact you at <span className="font-semibold text-ink">{successOrder.phone}</span> once payment is confirmed.
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="mb-2 text-sm text-zinc-600">
+                      <p className="mb-2 text-sm text-secondary">
                         Your order has been received and is being processed.
                       </p>
-                      <p className="mb-6 text-sm text-zinc-600">
-                        We&apos;ll contact you at <span className="font-semibold text-black">{successOrder.phone}</span> to confirm delivery.
+                      <p className="mb-6 text-sm text-secondary">
+                        We&apos;ll contact you at <span className="font-semibold text-ink">{successOrder.phone}</span> to confirm delivery.
                       </p>
                     </>
                   )}
                   
-                  <div className="mb-6 rounded-2xl border border-yellow-200 bg-white p-4 text-left">
-                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Order Number</p>
-                    <p className="mt-1 text-lg font-black text-yellow-600">{successOrder.order_number}</p>
+                  <div className="mb-6 rounded-xl border border-line bg-surface p-4 text-left">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted">Order Number</p>
+                    <p className="mt-1 text-lg font-semibold text-accent">{successOrder.order_number}</p>
                   </div>
 
                   {successOrder.payment_status === "Verifying" && (
-                    <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-                      <p className="text-xs font-bold text-yellow-800">
+                    <div className="mb-6 rounded-xl border border-line bg-accent-soft p-4">
+                      <p className="text-xs font-bold text-accent">
                         ⏳ Payment Verification Pending
                       </p>
-                      <p className="mt-2 text-xs leading-relaxed text-yellow-700">
+                      <p className="mt-2 text-xs leading-relaxed text-accent">
                         Our admin team will verify your payment proof and check the transaction in our account. Once verified, your order will proceed to delivery.
                       </p>
                     </div>
@@ -1038,12 +917,12 @@ function CheckoutPageContent() {
                       setShowSuccessModal(false);
                       router.push("/products");
                     }}
-                    className="w-full rounded-full bg-yellow-400 px-6 py-3 text-sm font-black text-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition hover:bg-yellow-300"
+                    className="w-full rounded-full bg-brand px-6 py-3 text-sm font-semibold text-on-brand shadow-panel transition hover:bg-brand"
                   >
                     Continue Shopping
                   </button>
                 </div>
-              </motion.div>
+              </StudioModal>
             </div>
           </>
         )}
@@ -1052,28 +931,28 @@ function CheckoutPageContent() {
       {/* Payment Details Modal */}
       {showPaymentModal && selectedPayment && paymentDetails[selectedPayment] && (
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-5 backdrop-blur-md"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-overlay px-4 py-5 "
           onClick={() => setShowPaymentModal(false)}
         >
-          <div
+          <StudioModal label="Payment details" onDismiss={() => setShowPaymentModal(false)} lockScroll={false}
             onClick={(e) => e.stopPropagation()}
-            className="relative z-[10000] mx-auto flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-[28px] border border-yellow-300/70 bg-[#fffdf6] shadow-[0_30px_100px_rgba(0,0,0,0.28),0_0_45px_rgba(234,179,8,0.28)]"
+            className="relative z-[10000] mx-auto flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-panel"
           >
             {/* Header */}
-            <div className={`relative z-[10001] shrink-0 border-b border-yellow-200/70 bg-[#fffdf6]/95 backdrop-blur ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "px-5 py-4 sm:px-6 sm:py-4" : "px-6 py-5"}`}>
+            <div className={`relative z-[10001] shrink-0 border-b border-line bg-surface/95  ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "px-5 py-4 sm:px-6 sm:py-4" : "px-6 py-5"}`}>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowPaymentModal(false);
                 }}
-                className={`absolute z-[10002] flex items-center justify-center rounded-full bg-yellow-400 font-bold text-black shadow-[0_8px_24px_rgba(234,179,8,0.45)] transition hover:scale-105 hover:bg-yellow-300 ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "right-3 top-3 h-7 w-7 text-base sm:right-4 sm:top-4 sm:h-8 sm:w-8 sm:text-lg" : "right-4 top-4 h-8 w-8 text-lg"}`}
+                className={`absolute z-[10002] flex items-center justify-center rounded-full bg-brand font-bold text-on-brand shadow-panel transition hover:scale-105 hover:bg-brand ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "right-3 top-3 h-7 w-7 text-base sm:right-4 sm:top-4 sm:h-8 sm:w-8 sm:text-lg" : "right-4 top-4 h-8 w-8 text-lg"}`}
                 aria-label="Close payment details"
               >
                 ×
               </button>
-              <p className={`font-semibold uppercase text-yellow-600 ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "text-[11px] tracking-[0.22em] sm:text-xs sm:tracking-[0.28em]" : "text-xs tracking-[0.28em]"}`}>Secure Payment</p>
-              <h2 className={`pr-12 font-bold leading-tight text-neutral-950 ${
+              <p className={`font-semibold uppercase text-accent ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "text-[11px] tracking-[0.22em] sm:text-xs sm:tracking-[0.28em]" : "text-xs tracking-[0.28em]"}`}>Secure Payment</p>
+              <h2 className={`pr-12 font-bold leading-tight text-ink ${
                 selectedPayment === "kbzpay"
                   ? "mt-1 text-[1.45rem] sm:mt-1.5 sm:text-[1.75rem]"
                   : selectedPayment === "wavepay"
@@ -1084,7 +963,7 @@ function CheckoutPageContent() {
               }`}>
                 {paymentDetails[selectedPayment].title}
               </h2>
-              <div className={`pointer-events-none h-px bg-gradient-to-r from-yellow-400 to-transparent ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 w-14 sm:mt-3 sm:w-16" : "mt-4 w-20"}`} />
+              <div className={`pointer-events-none h-px bg-gradient-to-r from-accent to-transparent ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 w-14 sm:mt-3 sm:w-16" : "mt-4 w-20"}`} />
             </div>
 
             {/* Body */}
@@ -1092,13 +971,13 @@ function CheckoutPageContent() {
               {/* Cash on Delivery */}
               {selectedPayment === "cod" && (
                 <>
-                  <div className="rounded-2xl border border-yellow-200/80 bg-white/80 p-5 shadow-[0_10px_30px_rgba(234,179,8,0.08)] text-center">
-                    <p className="text-base font-semibold text-neutral-800 leading-relaxed">
+                  <div className="rounded-xl border border-line bg-surface/80 p-5 shadow-panel text-center">
+                    <p className="text-base font-semibold text-ink leading-relaxed">
                       {paymentDetails[selectedPayment].message}
                     </p>
                   </div>
-                  <div className="mt-4 rounded-2xl bg-yellow-50/60 p-4">
-                    <p className="text-sm leading-6 text-neutral-600 text-center">
+                  <div className="mt-4 rounded-xl bg-accent-soft/60 p-4">
+                    <p className="text-sm leading-6 text-secondary text-center">
                       Our delivery team will collect payment upon delivery of your perfume.
                     </p>
                   </div>
@@ -1110,8 +989,8 @@ function CheckoutPageContent() {
                 <>
                   {(selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay") && paymentDetails[selectedPayment].qrImage && (
                     <div className="mb-4 flex justify-center">
-                      <div className="w-full max-w-[188px] rounded-[26px] border border-yellow-200/80 bg-white/90 p-2.5 shadow-[0_14px_36px_rgba(234,179,8,0.12)] sm:max-w-[250px] sm:p-3">
-                        <div className="overflow-hidden rounded-2xl border border-yellow-200/70 bg-[#fffaf0] shadow-[0_10px_26px_rgba(212,175,55,0.14)]">
+                      <div className="w-full max-w-[188px] rounded-xl border border-line bg-surface/90 p-2.5 shadow-panel sm:max-w-[250px] sm:p-3">
+                        <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-panel">
                           <Image
                             src={paymentDetails[selectedPayment].qrImage ?? (selectedPayment === "wavepay" ? WAVEPAY_QR_IMAGE : selectedPayment === "ayapay" ? AYAPAY_QR_IMAGE : KBZPAY_QR_IMAGE)}
                             alt={selectedPayment === "wavepay" ? "WavePay QR code" : selectedPayment === "ayapay" ? "AYA Pay QR code" : "KBZPay QR code"}
@@ -1122,21 +1001,21 @@ function CheckoutPageContent() {
                             priority
                           />
                         </div>
-                        <div className="mt-2.5 rounded-2xl bg-yellow-50/60 px-2.5 py-2 text-center sm:mt-3 sm:px-3 sm:py-2.5">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                        <div className="mt-2.5 rounded-xl bg-accent-soft/60 px-2.5 py-2 text-center sm:mt-3 sm:px-3 sm:py-2.5">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">
                             {selectedPayment === "wavepay" ? "Scan With WavePay" : selectedPayment === "ayapay" ? "Scan With AYA Pay" : "Scan With KBZPay"}
                           </p>
-                          <p className="mt-1 text-xs font-bold text-neutral-950 sm:mt-1.5 sm:text-sm">
+                          <p className="mt-1 text-xs font-bold text-ink sm:mt-1.5 sm:text-sm">
                             {paymentDetails[selectedPayment].accountName}
                           </p>
                           <div className="mt-1 flex translate-x-4 items-center justify-center gap-1.5 sm:mt-1.5 sm:gap-2">
-                            <span className="text-[11px] font-bold text-neutral-950 sm:text-xs">
+                            <span className="text-[11px] font-bold text-ink sm:text-xs">
                               {paymentDetails[selectedPayment].phone}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
-                              className="rounded-full border border-yellow-300 bg-yellow-50 px-1.5 py-0.5 text-[9px] font-bold text-yellow-700 transition hover:bg-yellow-100 sm:px-2 sm:text-[10px]"
+                              className="rounded-full border border-line bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent transition hover:bg-accent-soft sm:px-2 sm:text-[10px]"
                             >
                               {copiedField === "phone" ? "Copied!" : "Copy"}
                             </button>
@@ -1146,29 +1025,29 @@ function CheckoutPageContent() {
                     </div>
                   )}
                   {selectedPayment !== "kbzpay" && selectedPayment !== "wavepay" && selectedPayment !== "ayapay" && (
-                    <div className="rounded-2xl border border-yellow-200/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(234,179,8,0.08)]">
+                    <div className="rounded-xl border border-line bg-surface/80 p-4 shadow-panel">
                       <div className="space-y-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Account Name</span>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Account Name</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
+                            <span className="text-sm font-bold text-ink sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
                             <button
                               type="button"
                               onClick={() => handleCopy(paymentDetails[selectedPayment].accountName ?? "", "accountName")}
-                              className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
+                              className="rounded-full border border-line bg-accent-soft px-3 py-1 text-xs font-bold text-accent transition hover:bg-accent-soft"
                             >
                               {copiedField === "accountName" ? "Copied!" : "Copy"}
                             </button>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 text-center">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Phone</span>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Phone</span>
                           <div className="flex translate-x-4 items-center justify-center gap-2">
-                            <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].phone}</span>
+                            <span className="text-sm font-bold text-ink sm:text-base">{paymentDetails[selectedPayment].phone}</span>
                             <button
                               type="button"
                               onClick={() => handleCopy(paymentDetails[selectedPayment].phone ?? "", "phone")}
-                              className="rounded-full border border-yellow-300 bg-yellow-50 px-2 py-0.5 text-[10px] font-bold text-yellow-700 transition hover:bg-yellow-100 sm:px-2.5 sm:text-[11px]"
+                              className="rounded-full border border-line bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent transition hover:bg-accent-soft sm:px-2.5 sm:text-[11px]"
                             >
                               {copiedField === "phone" ? "Copied!" : "Copy"}
                             </button>
@@ -1177,19 +1056,19 @@ function CheckoutPageContent() {
                       </div>
                     </div>
                   )}
-                  <div className={`rounded-2xl bg-yellow-50/60 ${selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 p-2.5 sm:mt-3 sm:p-3" : "mt-3 p-3"}`}>
-                    <p className="text-sm leading-5 text-neutral-600">
-                      <span className="font-bold text-yellow-700">Instruction: </span>
+                  <div className={`rounded-xl bg-accent-soft/60 ${selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-2.5 p-2.5 sm:mt-3 sm:p-3" : "mt-3 p-3"}`}>
+                    <p className="text-sm leading-5 text-secondary">
+                      <span className="font-bold text-accent">Instruction: </span>
                       {paymentDetails[selectedPayment].instruction}
                     </p>
                     {paymentDetails[selectedPayment].secondaryInstruction && (
-                      <p className="mt-1.5 text-sm leading-5 text-neutral-600">
+                      <p className="mt-1.5 text-sm leading-5 text-secondary">
                         {paymentDetails[selectedPayment].secondaryInstruction}
                       </p>
                     )}
                   </div>
                   {paymentDetails[selectedPayment].note && (
-                    <p className="mt-4 text-center text-xs italic text-neutral-400">{paymentDetails[selectedPayment].note}</p>
+                    <p className="mt-4 text-center text-xs italic text-muted">{paymentDetails[selectedPayment].note}</p>
                   )}
                 </>
               )}
@@ -1197,24 +1076,24 @@ function CheckoutPageContent() {
               {/* Bank Transfer */}
               {selectedPayment === "bank" && (
                 <>
-                  <div className="rounded-2xl border border-yellow-200/80 bg-white/80 p-4 shadow-[0_10px_30px_rgba(234,179,8,0.08)]">
+                  <div className="rounded-xl border border-line bg-surface/80 p-4 shadow-panel">
                     <div className="space-y-4">
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Bank Name</span>
-                        <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].bankName}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Bank Name</span>
+                        <span className="text-sm font-bold text-ink sm:text-base">{paymentDetails[selectedPayment].bankName}</span>
                       </div>
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Account Name</span>
-                        <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Account Name</span>
+                        <span className="text-sm font-bold text-ink sm:text-base">{paymentDetails[selectedPayment].accountName}</span>
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Account Number</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Account Number</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-neutral-950 sm:text-base">{paymentDetails[selectedPayment].accountNumber}</span>
+                          <span className="text-sm font-bold text-ink sm:text-base">{paymentDetails[selectedPayment].accountNumber}</span>
                           <button
                             type="button"
                             onClick={() => handleCopy(paymentDetails[selectedPayment].accountNumber ?? "", "accountNumber")}
-                            className="rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 transition hover:bg-yellow-100"
+                            className="rounded-full border border-line bg-accent-soft px-3 py-1 text-xs font-bold text-accent transition hover:bg-accent-soft"
                           >
                             {copiedField === "accountNumber" ? "Copied!" : "Copy"}
                           </button>
@@ -1222,9 +1101,9 @@ function CheckoutPageContent() {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-2xl bg-yellow-50/60 p-4">
-                    <p className="text-sm leading-6 text-neutral-600">
-                      <span className="font-bold text-yellow-700">Instruction: </span>
+                  <div className="mt-4 rounded-xl bg-accent-soft/60 p-4">
+                    <p className="text-sm leading-6 text-secondary">
+                      <span className="font-bold text-accent">Instruction: </span>
                       {paymentDetails[selectedPayment].instruction}
                     </p>
                   </div>
@@ -1233,14 +1112,14 @@ function CheckoutPageContent() {
 
               {/* Payment Screenshot Upload */}
               {selectedPayment && ["kbzpay", "wavepay", "ayapay", "bank"].includes(selectedPayment) && (
-                <div className={`rounded-2xl border border-yellow-200/80 bg-white/80 shadow-[0_10px_30px_rgba(234,179,8,0.08)] ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-3 p-3" : "mt-5 p-4"}`}>
-                  <p className="text-sm font-bold text-neutral-950">Upload payment screenshot</p>
-                  <p className="mt-1 text-xs text-neutral-500">Attach your transaction screenshot after payment.</p>
+                <div className={`rounded-xl border border-line bg-surface/80 shadow-panel ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-3 p-3" : "mt-5 p-4"}`}>
+                  <p className="text-sm font-bold text-ink">Upload payment screenshot</p>
+                  <p className="mt-1 text-xs text-muted">Attach your transaction screenshot after payment.</p>
                   
-                  <label htmlFor={`payment-screenshot-${selectedPayment}`} className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-yellow-300 bg-yellow-50/50 px-4 py-4 text-center transition hover:bg-yellow-50">
-                    <span className="text-2xl text-yellow-600">☁</span>
-                    <span className="mt-1 text-sm font-bold text-yellow-700">Choose screenshot</span>
-                    <span className="mt-1 text-xs text-neutral-500">PNG, JPG, JPEG, WEBP</span>
+                  <label htmlFor={`payment-screenshot-${selectedPayment}`} className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-line bg-accent-soft/50 px-4 py-4 text-center transition hover:bg-accent-soft">
+                    <span className="text-2xl text-accent">☁</span>
+                    <span className="mt-1 text-sm font-bold text-accent">Choose screenshot</span>
+                    <span className="mt-1 text-xs text-muted">PNG, JPG, JPEG, WEBP</span>
                     <input
                       id={`payment-screenshot-${selectedPayment}`}
                       name={`paymentScreenshot_${selectedPayment}`}
@@ -1255,15 +1134,15 @@ function CheckoutPageContent() {
                   </label>
 
                   {paymentScreenshots[selectedPayment] && (
-                    <div className="mt-4 rounded-2xl border border-yellow-100 bg-white p-3">
+                    <div className="mt-4 rounded-xl border border-line bg-surface p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="truncate text-xs font-semibold text-neutral-600 flex-1 pr-2">
+                        <p className="truncate text-xs font-semibold text-secondary flex-1 pr-2">
                           {paymentScreenshots[selectedPayment]!.name}
                         </p>
                         <button
                           type="button"
                           onClick={() => handlePaymentScreenshotUpload(selectedPayment, null)}
-                          className="text-xs text-red-500 hover:text-red-700 font-medium whitespace-nowrap"
+                          className="text-xs text-destructive hover:text-destructive font-medium whitespace-nowrap"
                         >
                           Remove
                         </button>
@@ -1276,7 +1155,7 @@ function CheckoutPageContent() {
                     </div>
                   )}
 
-                  <p className="mt-3 rounded-xl bg-yellow-50/60 px-3 py-2 text-center text-xs italic text-neutral-500">
+                  <p className="mt-3 rounded-xl bg-accent-soft/60 px-3 py-2 text-center text-xs italic text-muted">
                     Your screenshot is only used to verify your payment.
                   </p>
                 </div>
@@ -1284,7 +1163,7 @@ function CheckoutPageContent() {
             </div>
 
             {/* Footer */}
-            <div className="relative z-[10002] shrink-0 border-t border-yellow-200/70 bg-[#fffdf6]/95 px-6 py-4 backdrop-blur">
+            <div className="relative z-[10002] shrink-0 border-t border-line bg-surface/95 px-6 py-4 ">
               {/* Validation Helper Functions */}
               {(() => {
                 const getCustomerValue = (keys: string[]) => {
@@ -1337,29 +1216,29 @@ function CheckoutPageContent() {
                   <>
                     {/* Checkout disabled message */}
                     {!settings.enable_checkout && (
-                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="mb-3 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive">
                         Checkout is currently unavailable.
                       </div>
                     )}
 
                     {/* Minimum order amount message */}
                     {isBelowMinimumOrder && (
-                      <div role="alert" className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-700">
+                      <div role="alert" className="mb-3 rounded-xl border border-line bg-accent-soft px-4 py-3 text-sm font-bold text-accent">
                         Minimum order amount is {minimumOrderAmount.toLocaleString()} MMK.
                       </div>
                     )}
 
                     {/* No payment methods available */}
                     {availablePaymentMethods.length === 0 && (
-                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                      <div role="alert" className="mb-3 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive">
                         No payment methods are currently available.
                       </div>
                     )}
 
                     {/* Error message */}
                     {submitError && (
-                      <div role="alert" className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                        {submitError}
+                      <div role="alert" className="mb-3 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive">
+                        <StudioErrorText message={submitError} />
                       </div>
                     )}
 
@@ -1389,10 +1268,10 @@ function CheckoutPageContent() {
                         void submitGuestOrder();
                       }}
                       disabled={confirmDisabled}
-                      className={`relative z-[10003] w-full rounded-full px-5 py-3 text-sm font-black shadow-[0_14px_35px_rgba(234,179,8,0.35)] transition pointer-events-auto ${
+                      className={`relative z-[10003] w-full rounded-full px-5 py-3 text-sm font-semibold shadow-panel transition pointer-events-auto ${
                         confirmDisabled
-                          ? "cursor-not-allowed bg-neutral-200 text-neutral-500 shadow-none"
-                          : "bg-yellow-400 text-black hover:bg-yellow-300"
+                          ? "cursor-not-allowed bg-surface-muted text-muted shadow-none"
+                          : "bg-brand text-on-brand hover:bg-brand"
                       }`}
                     >
                       {showSubmitLoading
@@ -1405,7 +1284,7 @@ function CheckoutPageContent() {
                 );
               })()}
             </div>
-          </div>
+          </StudioModal>
         </div>
       )}
     </main>

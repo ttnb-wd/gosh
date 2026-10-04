@@ -1,4 +1,5 @@
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
+import AdminHeader from "@/components/admin/AdminHeader";
 
 export const metadata = {
   title: "Announcements | Admin",
@@ -6,5 +7,5 @@ export const metadata = {
 };
 
 export default function AnnouncementsPage() {
-  return <AnnouncementManager />;
+  return <><AdminHeader title="Announcements" subtitle="The latest from your studio" /><main><AnnouncementManager /></main></>;
 }

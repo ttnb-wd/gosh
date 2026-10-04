@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -326,12 +327,12 @@ export default function AdminLoginPage() {
   return (
     <main
       role="main"
-      className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.16),transparent_34%),linear-gradient(135deg,#fffaf0_0%,#ffffff_52%,#fff7e6_100%)] px-4 py-12"
+      className="studio-admin-login flex min-h-screen items-center justify-center bg-surface-muted px-4 py-12"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-[#f7e7b3]/40 blur-3xl" />
+        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-accent-soft/40 hidden" />
 
-        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-[#f8eeee]/70 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-brand-soft/70 hidden" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -340,30 +341,30 @@ export default function AdminLoginPage() {
             href="/"
             className="inline-block"
           >
-            <h1 className="text-4xl font-black text-[#1f1a14]">
+            <h1 className="text-4xl font-semibold text-ink">
               GOSH{" "}
-              <span className="text-[#b88705]">
+              <span className="text-accent">
                 ADMIN
               </span>
             </h1>
 
-            <p className="mt-2 text-sm text-[#7a6a55]">
+            <p className="mt-2 text-sm text-muted">
               Perfume Dashboard
             </p>
           </Link>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-white shadow-2xl">
-          <div className="border-b border-[#d4af37]/15 bg-gradient-to-br from-[#fff7e6] to-white p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#d4af37,#f7d774)] shadow-lg shadow-[#d4af37]/30">
-              <Lock className="h-8 w-8 text-[#1f1a14]" />
+        <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-soft">
+          <div className="border-b border-line bg-surface-muted p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-brand shadow-soft shadow-panel/30">
+              <Lock className="h-8 w-8 text-ink" />
             </div>
 
-            <h2 className="text-2xl font-bold text-[#1f1a14]">
+            <h2 className="text-2xl font-bold text-ink">
               Admin Login
             </h2>
 
-            <p className="mt-2 text-sm text-[#7a6a55]">
+            <p className="mt-2 text-sm text-muted">
               Sign in to access the dashboard
             </p>
           </div>
@@ -373,11 +374,11 @@ export default function AdminLoginPage() {
             className="p-8"
           >
             {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-destructive bg-destructive-soft p-4">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
 
-                <p className="text-sm text-red-600">
-                  {error}
+                <p className="text-sm text-destructive">
+                  <StudioErrorText message={error} />
                 </p>
               </div>
             )}
@@ -385,13 +386,13 @@ export default function AdminLoginPage() {
             <div className="mb-6">
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-semibold text-[#7a6a55]"
+                className="mb-2 block text-sm font-semibold text-muted"
               >
                 Email Address
               </label>
 
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a6a55]/70" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted/70" />
 
                 <input
                   id="email"
@@ -424,14 +425,14 @@ export default function AdminLoginPage() {
                   placeholder="admin@goshperfume.com"
                   className={`w-full rounded-xl border ${
                     fieldErrors.email
-                      ? "border-red-300 focus:border-red-400 focus:ring-red-400/20"
-                      : "border-[#d4af37]/25 focus:border-[#d4af37] focus:ring-[#f7e7b3]/70"
-                  } bg-white py-3 pl-12 pr-4 text-sm font-medium text-[#1f1a14] transition focus:outline-none focus:ring-4`}
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                      : "border-line focus:border-focus focus:ring-accent-soft/70"
+                  } bg-surface py-3 pl-12 pr-4 text-sm font-medium text-ink transition focus:outline-none focus:ring-4`}
                 />
               </div>
 
               {fieldErrors.email && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-destructive">
                   {fieldErrors.email}
                 </p>
               )}
@@ -440,13 +441,13 @@ export default function AdminLoginPage() {
             <div className="mb-6">
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-semibold text-[#7a6a55]"
+                className="mb-2 block text-sm font-semibold text-muted"
               >
                 Password
               </label>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a6a55]/70" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted/70" />
 
                 <input
                   id="password"
@@ -483,9 +484,9 @@ export default function AdminLoginPage() {
                   placeholder="Enter your password"
                   className={`w-full rounded-xl border ${
                     fieldErrors.password
-                      ? "border-red-300 focus:border-red-400 focus:ring-red-400/20"
-                      : "border-[#d4af37]/25 focus:border-[#d4af37] focus:ring-[#f7e7b3]/70"
-                  } bg-white py-3 pl-12 pr-12 text-sm font-medium text-[#1f1a14] transition focus:outline-none focus:ring-4`}
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                      : "border-line focus:border-focus focus:ring-accent-soft/70"
+                  } bg-surface py-3 pl-12 pr-12 text-sm font-medium text-ink transition focus:outline-none focus:ring-4`}
                 />
 
                 <button
@@ -500,7 +501,7 @@ export default function AdminLoginPage() {
                       ? "Hide password"
                       : "Show password"
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7a6a55]/70 transition hover:text-[#1f1a14]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/70 transition hover:text-ink"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -511,7 +512,7 @@ export default function AdminLoginPage() {
               </div>
 
               {fieldErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-destructive">
                   {fieldErrors.password}
                 </p>
               )}
@@ -539,7 +540,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[linear-gradient(135deg,#d4af37,#f7d774)] py-3 text-sm font-bold text-[#1f1a14] shadow-lg shadow-[#d4af37]/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full rounded-xl bg-brand py-3 text-sm font-bold text-on-brand shadow-soft shadow-panel/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {loading
                 ? "Signing in..."
@@ -547,10 +548,10 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          <div className="border-t border-[#d4af37]/15 bg-[#fffaf0] px-8 py-4 text-center">
+          <div className="border-t border-line bg-surface px-8 py-4 text-center">
             <Link
               href="/"
-              className="text-sm font-medium text-[#7a6a55] transition hover:text-[#6f1d1b]"
+              className="text-sm font-medium text-muted transition hover:text-brand"
             >
               Back to GOSH
             </Link>

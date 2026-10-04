@@ -1,4 +1,5 @@
 "use client";
+import StudioRowActions from "@/components/ui/StudioRowActions";
 
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Edit, EyeOff, Plus, Search, Tags, Trash2, X } from "lucide-react";
@@ -400,14 +401,14 @@ function BrandManagerContent() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-yellow-200/80 bg-[#fffdf6] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.06)]">
+      <section className="rounded-xl border border-line bg-surface p-5 shadow-panel">
         <div className="mb-5 flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
             <Tags className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-black">Brand Management</h2>
-            <p className="mt-1 text-sm font-semibold text-zinc-500">
+            <h2 className="text-xl font-semibold text-ink">Brand Management</h2>
+            <p className="mt-1 text-sm font-semibold text-muted">
               Active brands appear on the customer product filter. Inactive brands stay manageable here.
             </p>
           </div>
@@ -416,10 +417,10 @@ function BrandManagerContent() {
         {(message || error) && (
           <div
             role="alert"
-            className={`mb-4 rounded-2xl border px-4 py-3 text-sm font-bold ${
+            className={`mb-4 rounded-xl border px-4 py-3 text-sm font-bold ${
               error
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-green-200 bg-green-50 text-green-700"
+                ? "border-destructive bg-destructive-soft text-destructive"
+                : "border-success bg-success-soft text-success"
             }`}
           >
             {error || message}
@@ -428,24 +429,24 @@ function BrandManagerContent() {
 
         <form onSubmit={handleSave} className="grid gap-3 lg:grid-cols-[1fr_1.4fr_auto] lg:items-end">
           <div>
-            <label className="mb-2 block text-sm font-bold text-neutral-800">Brand Name</label>
+            <label className="mb-2 block text-sm font-bold text-ink">Brand Name</label>
             <input
               id="brand-name"
               name="brand_name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+              className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-focus focus:ring-4 focus:ring-focus/15"
               placeholder="Dior"
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-bold text-neutral-800">Description</label>
+            <label className="mb-2 block text-sm font-bold text-ink">Description</label>
             <input
               id="brand-description"
               name="brand_description"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+              className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-focus focus:ring-4 focus:ring-focus/15"
               placeholder="Luxury fragrance house"
             />
           </div>
@@ -454,7 +455,7 @@ function BrandManagerContent() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="inline-flex h-12 items-center justify-center rounded-full border border-yellow-300 bg-white px-5 text-sm font-black text-neutral-700 transition hover:bg-yellow-50"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-line bg-surface px-5 text-sm font-semibold text-secondary transition hover:bg-accent-soft"
               >
                 Cancel
               </button>
@@ -462,7 +463,7 @@ function BrandManagerContent() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-yellow-400 px-6 text-sm font-black text-black shadow-[0_14px_34px_rgba(234,179,8,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
               {saving ? "Saving..." : editingBrand ? "Save Brand" : "Add Brand"}
@@ -471,16 +472,16 @@ function BrandManagerContent() {
         </form>
       </section>
 
-      <section className="rounded-[28px] border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-xl border border-line bg-surface p-4 shadow-soft sm:p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-black text-black">All Brands</h2>
-            <p className="text-sm font-semibold text-zinc-500">
+            <h2 className="text-lg font-semibold text-ink">All Brands</h2>
+            <p className="text-sm font-semibold text-muted">
               {brands.length + legacyBrands.length} brands in dashboard
             </p>
           </div>
           <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
               id="brand-search"
               name="brand_search"
@@ -488,134 +489,138 @@ function BrandManagerContent() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search brand..."
-              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+              className="w-full rounded-xl border border-line bg-surface py-3 pl-12 pr-4 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-focus focus:ring-4 focus:ring-focus/15"
             />
           </div>
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 text-center text-sm font-bold text-zinc-500">
+          <div className="rounded-xl border border-line-muted bg-surface-muted p-6 text-center text-sm font-bold text-muted">
             Loading brands...
           </div>
         ) : totalVisibleBrands === 0 ? (
-          <div className="rounded-2xl border border-yellow-100 bg-yellow-50/40 p-6 text-center text-sm font-bold text-zinc-600">
+          <div className="rounded-xl border border-line bg-accent-soft/40 p-6 text-center text-sm font-bold text-secondary">
             No brands found.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-zinc-100">
+          <div className="studio-table rounded-xl border border-line-muted">
             {filteredBrands.map((brand) => {
               const productCount = brand.products?.length || 0;
               return (
                 <div
                   key={brand.id}
-                  className="grid gap-3 border-b border-zinc-100 bg-white p-4 last:border-b-0 md:grid-cols-[1.2fr_1fr_auto] md:items-center"
+                  className="grid gap-3 border-b border-line-muted bg-surface p-4 last:border-b-0 md:grid-cols-[1.2fr_1fr_auto] md:items-center"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="truncate text-base font-black text-black">{brand.name}</h3>
+                      <h3 className="truncate text-base font-semibold text-ink">{brand.name}</h3>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-black ${
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           brand.is_active
-                            ? "bg-green-50 text-green-700"
-                            : "bg-zinc-100 text-zinc-500"
+                            ? "bg-success-soft text-success"
+                            : "bg-surface-muted text-muted"
                         }`}
                       >
                         {brand.is_active ? "Active" : "Inactive"}
                       </span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-zinc-500">
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-muted">
                       {brand.description || "No description"}
                     </p>
                   </div>
 
-                  <div className="text-sm font-bold text-zinc-600">
-                    <span className="text-black">{productCount}</span>{" "}
+                  <div className="text-sm font-bold text-secondary">
+                    <span className="text-ink">{productCount}</span>{" "}
                     linked product{productCount === 1 ? "" : "s"}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 md:justify-end">
-                    <button
+                  <StudioRowActions>
+<button
                       type="button"
                       onClick={() => handleEdit(brand)}
-                      className="inline-flex h-10 items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 text-sm font-black text-neutral-700 transition hover:bg-yellow-50"
+                      className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-secondary transition hover:bg-accent-soft"
                     >
                       <Edit className="h-4 w-4" />
                       Edit
                     </button>
-                    <button
+
+<button
                       type="button"
                       onClick={() => toggleBrand(brand)}
-                      className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-black transition ${
+                      className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
                         brand.is_active
-                          ? "border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100"
-                          : "bg-yellow-400 text-black hover:bg-yellow-300"
+                          ? "border border-line bg-surface-muted text-secondary hover:bg-surface-muted"
+                          : "bg-brand text-on-brand hover:bg-brand"
                       }`}
                     >
                       {brand.is_active ? <EyeOff className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                       {brand.is_active ? "Deactivate" : "Activate"}
                     </button>
-                    <button
+
+<button aria-label={productCount > 0 ? "Brands with products are deactivated instead of deleted" : "Delete brand"}
                       type="button"
                       onClick={() => deleteBrand(brand)}
-                      className="inline-flex h-10 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100"
-                      title={productCount > 0 ? "Brands with products are deactivated instead of deleted" : "Delete brand"}
+                      className="inline-flex h-10 items-center gap-2 rounded-full border border-destructive bg-destructive-soft px-4 text-sm font-semibold text-destructive transition hover:bg-destructive-soft"
+                      data-studio-tooltip={productCount > 0 ? "Brands with products are deactivated instead of deleted" : "Delete brand"}
                     >
                       {productCount > 0 ? <X className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                       {productCount > 0 ? "Deactivate" : "Delete"}
-                    </button>
-                  </div>
+                    <span className="text-xs">{productCount > 0 ? "Brands with products are deactivated instead of deleted" : "Delete brand"}</span></button>
+</StudioRowActions>
                 </div>
               );
             })}
             {filteredLegacyBrands.map((legacyBrand) => (
               <div
                 key={`legacy-${legacyBrand.name}`}
-                className="grid gap-3 border-b border-zinc-100 bg-yellow-50/35 p-4 last:border-b-0 md:grid-cols-[1.2fr_1fr_auto] md:items-center"
+                className="grid gap-3 border-b border-line-muted bg-accent-soft/35 p-4 last:border-b-0 md:grid-cols-[1.2fr_1fr_auto] md:items-center"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-base font-black text-black">{legacyBrand.name}</h3>
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700">
+                    <h3 className="truncate text-base font-semibold text-ink">{legacyBrand.name}</h3>
+                    <span className="rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success">
                       Active
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-zinc-500">
+                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-muted">
                     No description
                   </p>
                 </div>
 
-                <div className="text-sm font-bold text-zinc-600">
-                  <span className="text-black">{legacyBrand.productCount}</span>{" "}
+                <div className="text-sm font-bold text-secondary">
+                  <span className="text-ink">{legacyBrand.productCount}</span>{" "}
                   linked product{legacyBrand.productCount === 1 ? "" : "s"}
                 </div>
 
-                <div className="flex flex-wrap gap-2 md:justify-end">
-                  <button
+                <StudioRowActions>
+<button
                     type="button"
                     onClick={() => editLegacyBrand(legacyBrand)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-yellow-200 bg-white px-4 text-sm font-black text-neutral-700 transition hover:bg-yellow-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-secondary transition hover:bg-accent-soft"
                   >
                     <Edit className="h-4 w-4" />
                     Edit
                   </button>
-                  <button
+
+<button
                     type="button"
                     onClick={() => deactivateLegacyBrand(legacyBrand)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-4 text-sm font-black text-zinc-700 transition hover:bg-zinc-100"
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface-muted px-4 text-sm font-semibold text-secondary transition hover:bg-surface-muted"
                   >
                     <EyeOff className="h-4 w-4" />
                     Deactivate
                   </button>
-                  <button
+
+<button aria-label="Remove this old brand text from unlinked products"
                     type="button"
                     onClick={() => deleteLegacyBrand(legacyBrand)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100"
-                    title="Remove this old brand text from unlinked products"
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-destructive bg-destructive-soft px-4 text-sm font-semibold text-destructive transition hover:bg-destructive-soft"
+                    data-studio-tooltip="Remove this old brand text from unlinked products"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </button>
-                </div>
+</StudioRowActions>
               </div>
             ))}
           </div>

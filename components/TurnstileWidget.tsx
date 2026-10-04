@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "@/components/ThemeProvider";
 
 declare global {
   interface Window {
@@ -40,6 +41,7 @@ export default function TurnstileWidget({
   onError,
   resetKey = 0,
 }: TurnstileWidgetProps) {
+  const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -101,7 +103,7 @@ export default function TurnstileWidget({
     widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
       action,
-      theme: "light",
+      theme,
       "response-field": false,
       callback: onVerify,
       "expired-callback": onExpire,
@@ -121,7 +123,7 @@ export default function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [action, isLocalBypass, onError, onExpire, onVerify, resetKey, scriptReady]);
+  }, [action, isLocalBypass, onError, onExpire, onVerify, resetKey, scriptReady, theme]);
 
   if (isLocalBypass) {
     return (
@@ -134,14 +136,14 @@ export default function TurnstileWidget({
 
   if (!siteKey) {
     return (
-      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+      <div role="alert" className="rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-semibold text-destructive">
         Security check is not configured.
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center rounded-2xl border border-yellow-200 bg-white/70 px-3 py-3">
+    <div className="flex justify-center rounded-xl border border-line bg-surface/70 px-3 py-3">
       <div ref={containerRef} />
       {errorCode && (
         <span className="sr-only">

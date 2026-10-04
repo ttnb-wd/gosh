@@ -1,4 +1,5 @@
 "use client";
+import StudioModal from "@/components/ui/StudioModal";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
@@ -83,31 +84,31 @@ function CartDrawerContent({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 z-50 bg-overlay "
             onClick={onClose}
           />
 
           {/* Cart Drawer */}
-          <motion.div
+          <StudioModal label="Your shopping bag" onDismiss={onClose} lockScroll={false}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed right-0 top-0 z-[60] h-full w-full bg-white shadow-2xl sm:max-w-[92vw] sm:rounded-l-3xl md:max-w-md"
+            className="studio-cart fixed right-0 top-0 z-[60] h-full w-full bg-surface shadow-soft sm:max-w-[92vw] sm:rounded-l-3xl md:max-w-md"
           >
             <div className="flex h-full flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-zinc-200 p-6">
+              <div className="flex items-center justify-between border-b border-line p-6">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold text-black">Your Bag</h2>
+                  <h2 className="text-2xl font-bold text-ink">Your Bag</h2>
                   {!isEmpty && (
                     <button
                       type="button"
                       onClick={handleRemoveAll}
                       aria-label="Remove all items from bag"
-                      className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-semibold text-neutral-800 shadow-[0_8px_24px_rgba(234,179,8,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_12px_30px_rgba(234,179,8,0.24)]"
+                      className="group inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface/90 px-4 py-2 text-sm font-semibold text-ink shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:border-line hover:bg-accent-soft hover:text-accent hover:shadow-panel"
                     >
-                      <Trash2 className="h-4 w-4 text-yellow-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                      <Trash2 className="h-4 w-4 text-accent transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
                       <span>Remove All</span>
                     </button>
                   )}
@@ -115,7 +116,7 @@ function CartDrawerContent({
                 <button
                   onClick={onClose}
                   type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-700"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-all duration-200 hover:border-line hover:bg-surface-muted hover:text-secondary"
                   aria-label="Close shopping bag"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
@@ -127,18 +128,18 @@ function CartDrawerContent({
                 {isEmpty ? (
                   /* Empty State */
                   <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-yellow-400/30 bg-yellow-50 text-yellow-600">
+                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                       <ShoppingBag className="h-10 w-10" />
                     </div>
-                    <h3 className="mb-2 text-xl font-bold text-black">Your bag is empty</h3>
-                    <p className="mb-6 text-zinc-600">
+                    <h3 className="mb-2 text-xl font-bold text-ink">Your bag is empty</h3>
+                    <p className="mb-6 text-secondary">
                       Discover our luxury fragrances and add them to your bag.
                     </p>
                     <button
                       onClick={handleContinueShopping}
                       type="button"
                       aria-label="Continue shopping"
-                      className="rounded-2xl bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300"
+                      className="studio-button studio-button--primary rounded-xl bg-brand px-6 py-3 font-semibold text-on-brand transition hover:bg-brand"
                     >
                       Continue Shopping
                     </button>
@@ -154,7 +155,7 @@ function CartDrawerContent({
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -20 }}
-                          className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+                          className="flex gap-4 rounded-xl border border-line bg-surface p-4 shadow-soft"
                         >
                           <img
                             src={item.image}
@@ -163,14 +164,14 @@ function CartDrawerContent({
                           />
                           <div className="flex-1">
                             <div className="mb-2">
-                              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                              <p className="text-xs font-medium uppercase tracking-wider text-muted">
                                 {item.brand}
                               </p>
-                              <h4 className="font-semibold text-black">{item.name}</h4>
+                              <h4 className="font-semibold text-ink">{item.name}</h4>
                               {item.selectedSize && (
-                                <p className="text-xs text-neutral-500 mt-0.5">Size: {item.selectedSize}</p>
+                                <p className="text-xs text-muted mt-0.5">Size: {item.selectedSize}</p>
                               )}
-                              <p className="text-sm font-bold text-yellow-600">{formatMmk(item.price)}</p>
+                              <p className="text-sm font-bold text-accent">{formatMmk(item.price)}</p>
                             </div>
                             
                             <div className="flex items-center justify-between">
@@ -179,24 +180,24 @@ function CartDrawerContent({
                                   onClick={() => onUpdateQuantity(item.id, item.selectedSize, item.qty - 1)}
                                   type="button"
                                   aria-label={`Decrease quantity of ${item.name}`}
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-700"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-surface text-muted transition hover:border-line hover:text-secondary"
                                 >
                                   <Minus className="h-3 w-3" aria-hidden="true" />
                                 </button>
-                                <span className="w-8 text-center text-sm font-medium text-black" aria-label={`Quantity: ${item.qty}`}>
+                                <span className="w-8 text-center text-sm font-medium text-ink" aria-label={`Quantity: ${item.qty}`}>
                                   {item.qty}
                                 </span>
                                 <button
                                   onClick={() => onUpdateQuantity(item.id, item.selectedSize, item.qty + 1)}
                                   type="button"
                                   aria-label={`Increase quantity of ${item.name}`}
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-700"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-surface text-muted transition hover:border-line hover:text-secondary"
                                 >
                                   <Plus className="h-3 w-3" aria-hidden="true" />
                                 </button>
                               </div>
                               
-                              <p className="text-sm font-bold text-black">
+                              <p className="text-sm font-bold text-ink">
                                 {formatMmk(item.price * item.qty)}
                               </p>
                             </div>
@@ -210,14 +211,14 @@ function CartDrawerContent({
 
               {/* Footer - Only show if not empty */}
               {!isEmpty && (
-                <div className="border-t border-zinc-200 p-6">
+                <div className="border-t border-line p-6">
                   {/* Subtotal */}
                   <div className="mb-6 space-y-2">
-                    <div className="flex justify-between text-sm text-zinc-600">
+                    <div className="flex justify-between text-sm text-secondary">
                       <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.qty, 0)} items)</span>
                       <span>{formatMmk(subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-lg font-bold text-black">
+                    <div className="flex justify-between text-lg font-bold text-ink">
                       <span>Total</span>
                       <span>{formatMmk(subtotal)}</span>
                     </div>
@@ -229,7 +230,7 @@ function CartDrawerContent({
                       onClick={handleCheckout}
                       type="button"
                       aria-label="Proceed to checkout"
-                      className="w-full rounded-2xl bg-yellow-400 py-4 font-semibold text-black transition hover:bg-yellow-300"
+                      className="studio-button studio-button--primary w-full rounded-xl bg-brand py-4 font-semibold text-on-brand transition hover:bg-brand"
                     >
                       Checkout
                     </button>
@@ -237,7 +238,7 @@ function CartDrawerContent({
                       onClick={handleContinueShopping}
                       type="button"
                       aria-label="Continue shopping for more products"
-                      className="w-full rounded-2xl border border-zinc-200 bg-white py-4 font-semibold text-black transition hover:bg-zinc-50"
+                      className="w-full rounded-xl border border-line bg-surface py-4 font-semibold text-ink transition hover:bg-surface-muted"
                     >
                       Continue Shopping
                     </button>
@@ -245,7 +246,7 @@ function CartDrawerContent({
                 </div>
               )}
             </div>
-          </motion.div>
+          </StudioModal>
         </>
       )}
     </AnimatePresence>

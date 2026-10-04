@@ -20,7 +20,7 @@ export default async function AdminProtectedLayout({
     <AdminAuthProvider>
       <div
         data-admin-theme
-        className="admin-premium-type min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.12),transparent_34%),linear-gradient(180deg,#fffaf0_0%,#ffffff_52%,#fff7e6_100%)] text-[#1f1a14] dark:bg-[#0f0b07] dark:text-[#fff7e6]"
+        className="min-h-screen bg-canvas text-ink"
       >
         <AdminSidebar />
 

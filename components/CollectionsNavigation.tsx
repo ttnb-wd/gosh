@@ -53,24 +53,24 @@ const CollectionCard = ({ name, index }: { name: ScentCollection; index: number 
         href={`/products?collection=${encodeURIComponent(name)}`}
         className="group block"
       >
-        <div className="relative overflow-hidden rounded-2xl border border-[#d4af37]/15 bg-[#fbf6ed]/60 px-5 py-6 backdrop-blur transition-all duration-300 hover:border-[#d4af37]/35 hover:bg-[#fbf6ed] hover:shadow-[0_8px_24px_rgba(212,175,55,0.12)] dark:border-[#d4af37]/10 dark:bg-[#15100b]/40 dark:hover:border-[#d4af37]/25 dark:hover:bg-[#15100b]/70 sm:px-6 sm:py-7">
-          {/* Icon */}
-          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#fff7e6]/80 text-[#d4af37] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#d4af37] group-hover:text-[#1f1a14] dark:bg-[#1c160f]/80 dark:group-hover:bg-[#d4af37] sm:mb-4 sm:h-12 sm:w-12">
+        <div className="studio-collection-card relative overflow-hidden rounded-xl border border-line bg-surface/60 px-5 py-6  transition-all duration-300 hover:border-line hover:bg-surface hover:shadow-panel     sm:px-6 sm:py-7">
+          <span className="studio-collection-index" aria-hidden="true">0{index + 1}</span>{/* Icon */}
+          <div className="studio-collection-icon mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-accent transition-all duration-300 group-hover:scale-110 group-hover:bg-brand group-hover:text-on-brand   sm:mb-4 sm:h-12 sm:w-12">
             <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
 
           {/* Collection name */}
-          <h3 className="mb-1 text-lg font-black leading-tight text-[#1f1a14] dark:text-[#fff7e6] sm:text-xl">
+          <h3 className="mb-1 text-lg font-semibold leading-tight text-ink  sm:text-xl">
             {name}
           </h3>
 
           {/* Accent description */}
-          <p className="mb-2 text-xs leading-snug text-[#7a6a55] dark:text-[#b8a892] sm:text-sm">
+          <p className="mb-2 text-xs leading-snug text-muted  sm:text-sm">
             {collection.accent}
           </p>
 
           {/* Arrow icon */}
-          <div className="flex items-center gap-1 text-[#b88700] opacity-0 transition-all duration-300 group-hover:gap-2 group-hover:opacity-100 dark:text-[#d4af37]">
+          <div className="studio-collection-explore flex items-center gap-1 text-accent opacity-0 transition-all duration-300 group-hover:gap-2 group-hover:opacity-100 ">
             <span className="text-xs font-bold uppercase tracking-wide">Explore</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </div>
@@ -95,7 +95,7 @@ export default function CollectionsNavigation() {
     <section 
       role="region" 
       aria-label="Shop by collection" 
-      className="bg-[var(--site-bg)] px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14"
+      className="studio-section studio-collections bg-[var(--site-bg)] px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14"
     >
       <div className="mx-auto max-w-7xl">
         {/* Section header */}
@@ -104,12 +104,12 @@ export default function CollectionsNavigation() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-8 text-center sm:mb-10 lg:mb-12"
+          className="studio-section-heading mb-8 sm:mb-10 lg:mb-12"
         >
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#b88700] sm:text-sm">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-accent sm:text-sm">
             Discover Your Scent
           </p>
-          <h2 className="text-[clamp(1.75rem,4.5vw,2.5rem)] font-black leading-[1.1] text-[#1f1a14] dark:text-[#fff7e6]">
+          <h2 className="studio-display studio-gradient text-[clamp(1.75rem,4.5vw,2.5rem)] font-semibold leading-[1.1] text-ink ">
             Shop by Collection
           </h2>
         </motion.div>
@@ -120,7 +120,7 @@ export default function CollectionsNavigation() {
           <button
             onClick={handlePrevious}
             aria-label="Previous collection"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-[#d4af37]/20 bg-[#fbf6ed]/80 text-[#d4af37] transition-all hover:border-[#d4af37]/40 hover:bg-[#fbf6ed] hover:shadow-md active:scale-95 dark:border-[#d4af37]/15 dark:bg-[#15100b]/60 dark:hover:border-[#d4af37]/30 dark:hover:bg-[#15100b]/80"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-line bg-surface/80 text-accent transition-all hover:border-line hover:bg-surface hover:shadow-soft active:scale-95    "
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -137,7 +137,7 @@ export default function CollectionsNavigation() {
           <button
             onClick={handleNext}
             aria-label="Next collection"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-[#d4af37]/20 bg-[#fbf6ed]/80 text-[#d4af37] transition-all hover:border-[#d4af37]/40 hover:bg-[#fbf6ed] hover:shadow-md active:scale-95 dark:border-[#d4af37]/15 dark:bg-[#15100b]/60 dark:hover:border-[#d4af37]/30 dark:hover:bg-[#15100b]/80"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-line bg-surface/80 text-accent transition-all hover:border-line hover:bg-surface hover:shadow-soft active:scale-95    "
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -160,7 +160,7 @@ export default function CollectionsNavigation() {
         >
           <Link
             href="/products"
-            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] dark:text-[#d4af37] dark:hover:text-[#f0c847]"
+            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-accent transition hover:gap-3 hover:text-accent  "
           >
             View All Products
             <ArrowRight className="h-4 w-4" />

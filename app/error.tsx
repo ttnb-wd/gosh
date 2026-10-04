@@ -15,17 +15,18 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Something went wrong!
+    <div className="min-h-screen flex items-center justify-center bg-canvas p-6 text-ink">
+      <div className="max-w-md w-full bg-surface border border-line shadow-soft rounded-xl p-8 text-center">
+        <p className="studio-eyebrow justify-center mb-3">GOSH · Perfume Studio</p>
+        <h2 className="studio-display text-ink mb-4">
+          A moment of interruption
         </h2>
-        <p className="text-gray-600 mb-6">
-          We apologize for the inconvenience. An error has occurred.
+        <p className="text-secondary mb-6">
+          The studio couldn’t load this page. Please try again.
         </p>
         <button
           onClick={reset}
-          className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+          className="studio-compact-button studio-compact-button--primary"
         >
           Try again
         </button>

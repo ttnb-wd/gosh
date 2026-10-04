@@ -1,4 +1,5 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import devLog from "@/lib/dev-log";
 
 import { useEffect, useMemo, useState } from "react";
@@ -112,9 +113,9 @@ const toBreakdown = <T,>(items: T[], getLabel: (item: T) => string | null | unde
 
 function DashboardPanel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-[#d4af37]/20 bg-white p-4 shadow-sm sm:p-6">
-      <div className="mb-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-black leading-none text-[#1f1a14]">{title}</h2>
+    <section className="studio-admin-panel">
+      <div className="studio-admin-panel-heading">
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
         {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
@@ -126,7 +127,7 @@ function BreakdownList({ items, emptyText }: { items: BreakdownItem[]; emptyText
   const maxValue = Math.max(...items.map((item) => item.value), 1);
 
   if (items.length === 0) {
-    return <p className="text-sm font-semibold text-[#7a6a55]">{emptyText}</p>;
+    return <p className="text-sm font-semibold text-muted">{emptyText}</p>;
   }
 
   return (
@@ -134,12 +135,12 @@ function BreakdownList({ items, emptyText }: { items: BreakdownItem[]; emptyText
       {items.slice(0, 6).map((item) => (
         <div key={item.label}>
           <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span className="truncate font-bold text-[#7a6a55]">{item.label}</span>
-            <span className="font-black text-[#1f1a14]">{item.value}</span>
+            <span className="truncate font-bold text-muted">{item.label}</span>
+            <span className="font-semibold text-ink">{item.value}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[#fff7e6]">
+          <div className="h-2 overflow-hidden rounded-full bg-surface">
             <div
-              className="h-full rounded-full bg-[linear-gradient(135deg,#d4af37,#f7d774)]"
+              className="h-full rounded-full bg-brand"
               style={{ width: `${Math.max((item.value / maxValue) * 100, 8)}%` }}
             />
           </div>
@@ -153,7 +154,7 @@ function ActionLink({ href, icon: Icon, label }: { href: string; icon: LucideIco
   return (
     <Link
       href={href}
-      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[#d4af37]/25 bg-white px-4 py-2 text-sm font-black text-[#1f1a14] transition hover:border-[#d4af37] hover:bg-[#fff7e6]"
+      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition hover:border-line hover:bg-surface"
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -177,36 +178,36 @@ function OperationalFlag({
   tone?: "neutral" | "warning" | "danger";
 }) {
   const styles = {
-    neutral: "border-[#d4af37]/15 bg-white hover:border-[#d4af37]/35 hover:bg-[#fff8df] hover:shadow-[0_14px_35px_rgba(212,175,55,0.12)] dark:border-[#d4af37]/20 dark:bg-[#080704] dark:text-[#f8f1d8] dark:hover:border-[#d4af37]/45 dark:hover:bg-[#0d0b07] dark:hover:shadow-[0_16px_40px_rgba(212,175,55,0.16)]",
-    warning: "border-[#d4af37]/30 bg-[#fff7e6]/70 hover:border-[#d4af37] hover:bg-[#fff8df] hover:shadow-[0_14px_35px_rgba(212,175,55,0.12)] dark:border-[#d4af37]/45 dark:bg-[#0d0b07] dark:text-[#f8f1d8] dark:shadow-[0_16px_40px_rgba(212,175,55,0.14)] dark:hover:border-[#d4af37]/45 dark:hover:bg-[#0d0b07] dark:hover:shadow-[0_16px_40px_rgba(212,175,55,0.16)]",
-    danger: "border-red-200 bg-red-50/40 hover:border-red-300 dark:border-red-400/35 dark:bg-[#120807] dark:text-[#f8f1d8] dark:hover:border-red-300/50 dark:hover:bg-[#180b09] dark:hover:shadow-[0_16px_40px_rgba(248,113,113,0.14)]",
+    neutral: "border-line bg-surface hover:border-line hover:bg-surface hover:shadow-panel      ",
+    warning: "border-line bg-surface/70 hover:border-line hover:bg-surface hover:shadow-panel       ",
+    danger: "border-destructive bg-destructive-soft/40 hover:border-destructive      ",
   };
 
   const iconStyles = {
-    neutral: "bg-[#fff7e6] text-[#7a6a55] group-hover:bg-[#fff7d6] dark:border dark:border-[#d4af37]/20 dark:bg-[#151207] dark:text-[#d4af37] dark:group-hover:bg-[#1b1609]",
-    warning: "bg-[#f7e7b3] text-[#6f1d1b] group-hover:bg-[#fff7d6] dark:border dark:border-[#d4af37]/20 dark:bg-[#151207] dark:text-[#d4af37] dark:group-hover:bg-[#1b1609]",
-    danger: "bg-red-100 text-red-700 dark:border dark:border-red-400/25 dark:bg-[#26100e] dark:text-red-300 dark:group-hover:bg-[#30120f]",
+    neutral: "bg-surface text-muted group-hover:bg-surface     ",
+    warning: "bg-accent-soft text-brand group-hover:bg-surface     ",
+    danger: "bg-destructive-soft text-destructive     ",
   };
   const highlightIcon = title === "Verify Payments" || title === "Confirm Orders";
 
   return (
     <Link
       href={href}
-      className={`admin-operational-flag admin-operational-flag-${tone} group flex min-w-0 flex-col items-start gap-4 rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between ${styles[tone]}`}
+      className={`admin-operational-flag admin-operational-flag-${tone} group flex min-w-0 flex-col items-start gap-4 rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-soft sm:flex-row sm:items-center sm:justify-between ${styles[tone]}`}
     >
       <div className="flex min-w-0 items-center gap-3">
         <div className={`admin-operational-flag-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyles[tone]}`}>
           <Icon className={`h-5 w-5 ${highlightIcon ? "admin-operational-flag-highlight-icon" : ""}`} strokeWidth={highlightIcon ? 2.75 : 2} />
         </div>
         <div className="min-w-0">
-          <p className="admin-operational-flag-title font-black text-[#1f1a14]">{title}</p>
-          <p className="admin-operational-flag-detail mt-1 text-xs font-semibold leading-snug text-[#7a6a55] sm:truncate">{detail}</p>
+          <p className="admin-operational-flag-title font-semibold text-ink">{title}</p>
+          <p className="admin-operational-flag-detail mt-1 text-xs font-semibold leading-snug text-muted sm:truncate">{detail}</p>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
-        <span className="admin-operational-flag-value text-xl font-black text-[#1f1a14] transition group-hover:text-[#8a6a18] dark:text-[#f8f1d8] dark:group-hover:text-[#d4af37]">{value}</span>
-        <ArrowRight className="admin-operational-flag-arrow h-4 w-4 text-[#7a6a55] transition group-hover:translate-x-1 group-hover:text-[#8a6a18] dark:text-[#f8f1d8] dark:group-hover:text-[#d4af37]" />
+        <span className="admin-operational-flag-value text-xl font-semibold text-ink transition group-hover:text-accent  ">{value}</span>
+        <ArrowRight className="admin-operational-flag-arrow h-4 w-4 text-muted transition group-hover:translate-x-1 group-hover:text-accent  " />
       </div>
     </Link>
   );
@@ -385,13 +386,13 @@ function AdminDashboardContent() {
         {loading ? "Loading dashboard data, please wait..." : "Dashboard data loaded"}
       </div>
 
-      <main role="main" className="overflow-hidden p-4 sm:p-6">
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#d4af37]/20 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <main role="main" className="studio-admin-content">
+        <div className="studio-admin-toolbar">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">Live Summary</p>
-            <h2 className="mt-1 text-xl font-black text-[#1f1a14]">Today&apos;s Store Snapshot</h2>
-            <p className="mt-1 text-sm text-[#7a6a55]">
-              Orders, payment work, product health, customers, and inbox items from Firebase.
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Live Summary</p>
+            <h2 className="mt-1 text-xl font-semibold text-ink">Today&apos;s Store Snapshot</h2>
+            <p className="mt-1 text-sm text-muted">
+              A considered view of orders, payments, inventory, and customer care.
             </p>
           </div>
 
@@ -399,7 +400,7 @@ function AdminDashboardContent() {
             type="button"
             onClick={loadDashboard}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-3 text-sm font-black text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.20)] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-brand px-5 py-3 text-sm font-semibold text-on-brand shadow-panel transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh Dashboard
@@ -407,19 +408,19 @@ function AdminDashboardContent() {
         </div>
 
         {error && (
-          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-            {error}
+          <div role="alert" className="mb-6 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive">
+            <StudioErrorText message={error} />
           </div>
         )}
 
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="studio-admin-stats">
           <StatCard title="Revenue Collected" value={formatMoney(dashboardData.stats.totalRevenue)} icon={DollarSign} trend={`${formatMoney(averageOrderValue)} avg order`} trendUp />
           <StatCard title="Orders Today" value={dashboardData.stats.todayOrders} icon={ShoppingBag} trend={`${dashboardData.stats.pendingOrders} pending`} trendUp={dashboardData.stats.pendingOrders === 0} />
           <StatCard title="Payments To Check" value={dashboardData.stats.verifyingPayments + dashboardData.stats.unpaidOrders} icon={Clock} trend={`${dashboardData.stats.verifyingPayments} verifying`} trendUp={false} />
           <StatCard title="Unread Messages" value={dashboardData.stats.unreadMessages} icon={Inbox} trend="From contact form" trendUp={dashboardData.stats.unreadMessages === 0} />
         </div>
 
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="studio-admin-stats mt-4">
           <StatCard title="Total Customers" value={dashboardData.stats.totalCustomers} icon={Users} />
           <StatCard title="Active Products" value={`${dashboardData.stats.activeProducts}/${dashboardData.stats.totalProducts}`} icon={Package} trend={`${activeProductRate}% active`} trendUp />
           <StatCard title="Low Stock Items" value={dashboardData.stats.lowStockProducts} icon={AlertTriangle} trend="5 or fewer left" trendUp={dashboardData.stats.lowStockProducts === 0} />
@@ -429,9 +430,9 @@ function AdminDashboardContent() {
         <div className="mt-6 grid gap-6">
           <DashboardPanel
             title="Quick Actions"
-            action={<BarChart3 className="h-5 w-5 text-[#d4af37]" />}
+            action={<BarChart3 className="h-5 w-5 text-accent" />}
           >
-            <div className="grid gap-3">
+            <div className="studio-admin-shortcuts">
               <ActionLink href="/admin/orders" icon={ShoppingBag} label="Manage Orders" />
               <ActionLink href="/admin/products" icon={Package} label="Update Products" />
               <ActionLink href="/admin/customers" icon={Users} label="Review Customers" />
@@ -440,7 +441,7 @@ function AdminDashboardContent() {
           </DashboardPanel>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="mt-5 grid gap-4 xl:grid-cols-3">
           <DashboardPanel title="Order Status">
             <BreakdownList items={dashboardData.statusBreakdown} emptyText="No order status data yet." />
           </DashboardPanel>
@@ -454,27 +455,27 @@ function AdminDashboardContent() {
           </DashboardPanel>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-5 grid gap-4 xl:grid-cols-2">
           <DashboardPanel
             title="Low Stock Watch"
             action={<ActionLink href="/admin/products" icon={Package} label="Open Products" />}
           >
             {dashboardData.lowStockList.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-700">
+              <div className="flex items-center gap-3 rounded-xl bg-success-soft p-4 text-success">
                 <CheckCircle2 className="h-5 w-5" />
-                <p className="text-sm font-black">All active products have healthy stock.</p>
+                <p className="text-sm font-semibold">All active products have healthy stock.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {dashboardData.lowStockList.map((product) => (
-                  <div key={product.id} className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border border-[#d4af37]/15 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={product.id} className="flex min-w-0 flex-col items-start gap-3 rounded-xl border border-line p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate font-black text-[#1f1a14]">{product.name}</p>
-                      <p className="text-sm font-semibold text-[#7a6a55]">
+                      <p className="truncate font-semibold text-ink">{product.name}</p>
+                      <p className="text-sm font-semibold text-muted">
                         {[product.brand, product.category].filter(Boolean).join(" · ") || "No category"}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-red-50 px-3 py-1 text-sm font-black text-red-700">
+                    <span className="shrink-0 rounded-full bg-destructive-soft px-3 py-1 text-sm font-semibold text-destructive">
                       {product.stock} left
                     </span>
                   </div>

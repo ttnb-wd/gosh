@@ -269,11 +269,11 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   };
 
   return (
-    <header role="banner" className="sticky top-0 z-30 border-b border-[#d4af37]/20 bg-white/90 backdrop-blur">
+    <header role="banner" className="studio-admin-header sticky top-0 z-30 border-b border-line bg-surface/90 ">
       <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
         <div className="min-w-0 flex-1 pl-14 lg:pl-0">
-          <h1 className="break-words text-2xl font-black leading-[0.98] text-[#1f1a14] sm:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-1.5 text-xs font-medium leading-5 text-[#7a6a55] sm:mt-2 sm:text-base sm:leading-6">{subtitle}</p>}
+          <h1 className="break-words text-2xl font-semibold leading-[0.98] text-ink sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-xs font-medium leading-5 text-muted sm:mt-2 sm:text-base sm:leading-6">{subtitle}</p>}
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-4">
@@ -281,8 +281,8 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white/80 text-[#8a6a18] shadow-sm transition-all duration-200 hover:border-[#d4af37]/50 hover:bg-[#fff8df] dark:border-[#d4af37]/25 dark:bg-[#0d0b07] dark:text-[#d4af37] dark:hover:bg-[#151207] sm:h-10 sm:w-10"
+            data-studio-tooltip={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/80 text-accent shadow-soft transition-all duration-200 hover:border-line hover:bg-surface     sm:h-10 sm:w-10"
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -292,16 +292,18 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           </button>
 
           {/* Notifications */}
-          <div className="relative" ref={notiRef}>
+          <div className="relative" ref={notiRef} onKeyDown={event => { if (event.key === "Escape") { setNotiOpen(false); notiRef.current?.querySelector('button')?.focus(); } }}>
             <button
               type="button"
               onClick={() => setNotiOpen((prev) => !prev)}
-              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[#d4af37]/25 bg-white text-[#1f1a14] shadow-sm transition duration-300 hover:scale-105 hover:bg-[#fff7e6] sm:h-11 sm:w-11"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-soft transition duration-300 hover:scale-105 hover:bg-surface sm:h-11 sm:w-11"
               aria-label="Admin notifications"
+              aria-expanded={notiOpen}
+              aria-controls="studio-admin-notifications"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-[#d4af37] px-1 text-[10px] font-black text-[#1f1a14] shadow">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-on-brand shadow">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -310,24 +312,25 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
             <AnimatePresence>
               {notiOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                  id="studio-admin-notifications"
+                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-[24px] border border-[#d4af37]/25 bg-[#fffaf0]/95 shadow-[0_24px_70px_rgba(31,26,20,0.16),0_0_30px_rgba(212,175,55,0.12)] backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
+                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-xl border border-line bg-surface/95 shadow-panel  sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
                 >
-                  <div className="flex items-center justify-between border-b border-[#d4af37]/20 bg-white px-4 py-3">
+                  <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6f1d1b]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
                         Notifications
                       </p>
-                      <h3 className="text-base font-black text-[#1f1a14]">Admin Alerts</h3>
+                      <h3 className="text-base font-semibold text-ink">Admin Alerts</h3>
                     </div>
                     {unreadCount > 0 && (
                       <button
                         type="button"
                         onClick={markAllNotificationsRead}
-                        className="text-xs font-black text-[#6f1d1b] hover:text-[#1f1a14]"
+                        className="text-xs font-semibold text-brand hover:text-ink"
                       >
                         Mark all read
                       </button>
@@ -335,9 +338,9 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   </div>
 
                   <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-2 sm:max-h-[360px]">
-                    {!loadingNotifications && notifications.length === 0 ? (
+                    {loadingNotifications ? <div role="status" className="flex items-center gap-3 p-6 text-sm text-muted"><span className="studio-spinner" aria-hidden="true" />Loading notifications…</div> : notifications.length === 0 ? (
                       <div className="p-6 text-center">
-                        <p className="text-sm font-bold text-[#7a6a55]">No notifications yet.</p>
+                        <p className="text-sm font-bold text-muted">No notifications yet.</p>
                       </div>
                     ) : (
                       notifications.map((notification, index) => (
@@ -363,22 +366,22 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                               router.push("/admin/orders");
                             }
                           }}
-                          className={`mb-2 w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${
+                          className={`mb-2 w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${
                             notification.is_read
-                              ? "border-[#d4af37]/15 bg-white"
-                              : "border-[#6f1d1b]/20 bg-[#f8eeee]"
+                              ? "border-line bg-surface"
+                              : "border-brand/20 bg-brand-soft"
                           }`}
                         >
                           <div className="flex gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff7e6] text-[#d4af37]">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-accent">
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-black text-[#1f1a14]">{notification.title}</p>
-                              <p className="mt-1 line-clamp-2 text-xs font-medium text-[#7a6a55]">
+                              <p className="text-sm font-semibold text-ink">{notification.title}</p>
+                              <p className="mt-1 line-clamp-2 text-xs font-medium text-muted">
                                 {notification.message}
                               </p>
-                              <p className="mt-2 text-[11px] font-bold text-[#7a6a55]/70">
+                              <p className="mt-2 text-[11px] font-bold text-muted/70">
                                 {new Date(notification.created_at).toLocaleString()}
                               </p>
                             </div>
@@ -388,7 +391,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     )}
                   </div>
 
-                  <div className="border-t border-[#d4af37]/20 bg-white p-3">
+                  <div className="border-t border-line bg-surface p-3">
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -396,7 +399,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           router.push("/admin/orders");
                           setNotiOpen(false);
                         }}
-                        className="rounded-full bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-4 py-3 text-sm font-black text-[#1f1a14] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
+                        className="rounded-full bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition hover:bg-brand"
                       >
                         Orders
                       </button>
@@ -406,7 +409,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                           router.push("/admin/messages");
                           setNotiOpen(false);
                         }}
-                        className="rounded-full border border-[#d4af37]/25 bg-white px-4 py-3 text-sm font-black text-[#1f1a14] transition hover:bg-[#fff7e6]"
+                        className="rounded-full border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:bg-surface"
                       >
                         Messages
                       </button>
@@ -418,10 +421,14 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           </div>
 
           {/* User Profile */}
-          <div className="relative">
+          <div className="relative" onKeyDown={event => { if (event.key === "Escape") { setShowUserMenu(false); event.currentTarget.querySelector('button')?.focus(); } }}>
             <button
+              type="button"
+              aria-label="Admin account menu"
+              aria-expanded={showUserMenu}
+              aria-controls="studio-admin-account"
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-2.5 py-2 text-sm font-medium text-[#7a6a55] transition hover:border-[#d4af37] hover:bg-[#fff7e6] hover:text-[#1f1a14] sm:px-3"
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-2 text-sm font-medium text-muted transition hover:border-line hover:bg-surface hover:text-ink sm:px-3"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user?.email?.split("@")[0] || "Admin"}</span>
@@ -434,19 +441,19 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-[#d4af37]/20 bg-white shadow-xl">
-                  <div className="border-b border-[#d4af37]/15 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[#7a6a55]">
+                <div id="studio-admin-account" className="studio-dropdown absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden">
+                  <div className="border-b border-line p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted">
                       Signed in as
                     </p>
-                    <p className="mt-1 truncate text-sm font-semibold text-[#1f1a14]">
+                    <p className="mt-1 truncate text-sm font-semibold text-ink">
                       {user?.email}
                     </p>
                   </div>
                   <button
                     onClick={handleLogout}
                     disabled={loggingOut}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-destructive transition hover:bg-destructive-soft disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <LogOut className="h-4 w-4" />
                     {loggingOut ? "Signing out..." : "Sign Out"}

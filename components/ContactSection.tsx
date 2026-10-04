@@ -1,4 +1,5 @@
 "use client";
+import StudioSelect from "@/components/ui/StudioSelect";
 import devLog from "@/lib/dev-log";
 
 import { useCallback, useState } from "react";
@@ -215,7 +216,7 @@ function ContactSectionContent() {
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    hidden: { opacity: 0, y: 30, scale: 0.98 },
     visible: { opacity: 1, y: 0, scale: 1 }
   };
 
@@ -229,8 +230,8 @@ function ContactSectionContent() {
   };
 
   return (
-    <section role="region" aria-label="Contact form" className="relative overflow-hidden bg-[var(--site-bg)] py-8 lg:py-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_50%)]" />
+    <section role="region" aria-label="Contact form" className="studio-contact-section relative overflow-hidden bg-[var(--site-bg)] py-8 lg:py-12">
+      <div className="absolute inset-0 bg-surface-muted" />
       
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -240,14 +241,14 @@ function ContactSectionContent() {
           transition={{ duration: 0.8 }}
           className="text-center mb-10"
         >
-          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
+          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-brand">
             Get In Touch
           </p>
-          <h1 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-5xl lg:text-6xl">
+          <h1 className="mb-6 text-3xl font-semibold text-ink sm:text-5xl lg:text-6xl">
             Contact
-            <span className="block text-[#b88705]">Our Team</span>
+            <span className="block text-accent">Our Team</span>
           </h1>
-          <p className="mx-auto max-w-2xl text-lg text-[#7a6a55]">
+          <p className="mx-auto max-w-2xl text-lg text-muted">
             Experience luxury perfumes crafted with passion. Reach out to discover your perfect scent or learn more about our exclusive collections.
           </p>
         </motion.div>
@@ -265,58 +266,58 @@ function ContactSectionContent() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
-            <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_20px_80px_rgba(0,0,0,0.08)] sm:p-8">
+            <div className="rounded-xl border border-line bg-surface p-5 shadow-panel sm:p-8">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-black">Visit Our Boutique</h2>
-                <p className="mt-2 text-sm font-medium text-yellow-600">{storeTagline}</p>
+                <h2 className="studio-display studio-gradient text-2xl font-bold text-ink">Visit Our Boutique</h2>
+                <p className="mt-2 text-sm font-medium text-accent">{storeTagline}</p>
               </div>
               
               <div className="space-y-6">
                 <a
                   href={`tel:${phone}`}
-                  className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50 sm:gap-4"
+                  className="flex min-w-0 items-start gap-3 rounded-xl border border-transparent p-3 transition hover:border-line hover:bg-accent-soft/50 sm:gap-4"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                     <Phone className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-black">Phone</p>
-                    <p className="text-zinc-600">{phone}</p>
+                    <p className="font-semibold text-ink">Phone</p>
+                    <p className="text-secondary">{phone}</p>
                   </div>
                 </a>
 
                 <a
                   href={`mailto:${email}`}
-                  className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 transition hover:border-yellow-200 hover:bg-yellow-50/50 sm:gap-4"
+                  className="flex min-w-0 items-start gap-3 rounded-xl border border-transparent p-3 transition hover:border-line hover:bg-accent-soft/50 sm:gap-4"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                     <Mail className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-black">Email</p>
-                    <p className="break-all text-zinc-600">{email}</p>
+                    <p className="font-semibold text-ink">Email</p>
+                    <p className="break-all text-secondary">{email}</p>
                   </div>
                 </a>
 
-                <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 sm:gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
+                <div className="flex min-w-0 items-start gap-3 rounded-xl border border-transparent p-3 sm:gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-black">Address</p>
-                    <p className="text-zinc-600" style={{ whiteSpace: "pre-line" }}>
+                    <p className="font-semibold text-ink">Address</p>
+                    <p className="text-secondary" style={{ whiteSpace: "pre-line" }}>
                       {address.split(", ").join("\n")}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-transparent p-3 sm:gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-400/30 bg-yellow-100 text-yellow-600">
+                <div className="flex min-w-0 items-start gap-3 rounded-xl border border-transparent p-3 sm:gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                     <Clock className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-black">Working Hours</p>
-                    <p className="whitespace-pre-line text-zinc-600">
+                    <p className="font-semibold text-ink">Working Hours</p>
+                    <p className="whitespace-pre-line text-secondary">
                       {openingHours}
                     </p>
                   </div>
@@ -327,24 +328,24 @@ function ContactSectionContent() {
             <motion.div 
               variants={cardVariants}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="rounded-3xl border border-yellow-400/30 bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 dark:border-yellow-400/25 dark:bg-[#15100b] dark:bg-none dark:text-[#fff7e6]"
+              className="rounded-xl border border-line bg-surface-muted p-6    "
             >
-              <h3 className="text-xl font-bold text-black mb-4 dark:!text-[#fff7e6]">Why Choose {storeName}?</h3>
-              <ul className="space-y-3 text-zinc-700 dark:!text-[#fff7e6]/75">
+              <h3 className="text-xl font-bold text-ink mb-4 ">Why Choose {storeName}?</h3>
+              <ul className="space-y-3 text-secondary ">
                 <li className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                  <div className="h-2 w-2 rounded-full bg-brand"></div>
                   Premium luxury fragrances
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                  <div className="h-2 w-2 rounded-full bg-brand"></div>
                   Expert fragrance consultation
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                  <div className="h-2 w-2 rounded-full bg-brand"></div>
                   Exclusive limited editions
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                  <div className="h-2 w-2 rounded-full bg-brand"></div>
                   Personalized scent matching
                 </li>
               </ul>
@@ -353,15 +354,15 @@ function ContactSectionContent() {
             <motion.div
               variants={cardVariants}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="rounded-3xl border border-yellow-200 bg-[#fffdf6] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]"
+              className="rounded-xl border border-line bg-surface p-5 shadow-panel"
             >
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-yellow-300 bg-yellow-100 text-yellow-700">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-neutral-950">Shop Policies</h2>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  <h2 className="studio-display studio-gradient text-lg font-semibold text-ink">Shop Policies</h2>
+                  <p className="mt-1 text-sm leading-6 text-secondary">
                     Review our Myanmar shop policies for privacy, orders, refunds, and delivery.
                   </p>
                 </div>
@@ -371,7 +372,7 @@ function ContactSectionContent() {
                   <Link
                     key={policy.href}
                     href={policy.href}
-                    className="rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-sm font-bold text-neutral-800 transition hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700"
+                    className="rounded-xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition hover:border-line hover:bg-accent-soft hover:text-accent"
                   >
                     {policy.title}
                   </Link>
@@ -385,17 +386,17 @@ function ContactSectionContent() {
             variants={cardVariants}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_20px_80px_rgba(0,0,0,0.08)] sm:p-8">
-              <h2 className="text-2xl font-bold text-black mb-6">Send us a Message</h2>
+            <div className="rounded-xl border border-line bg-surface p-5 shadow-panel sm:p-8">
+              <h2 className="studio-display studio-gradient text-2xl font-bold text-ink mb-6">Send us a Message</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 {formStatus && (
                   <div
                     role="alert"
-                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
                       formStatus.type === "success"
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-red-200 bg-red-50 text-red-700"
+                        ? "border-success bg-success-soft text-success"
+                        : "border-destructive bg-destructive-soft text-destructive"
                     }`}
                   >
                     {formStatus.text}
@@ -403,7 +404,7 @@ function ContactSectionContent() {
                 )}
 
                 <div>
-                  <label htmlFor="fullName" className="block text-sm font-semibold text-black mb-2">
+                  <label htmlFor="fullName" className="block text-sm font-semibold text-ink mb-2">
                     Full Name *
                   </label>
                   <input
@@ -413,18 +414,18 @@ function ContactSectionContent() {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     required
-                    className={`w-full rounded-2xl border ${errors.fullName ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
+                    className={`w-full rounded-2xl border ${errors.fullName ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-line focus:border-focus focus:ring-focus/20'} bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:outline-none focus:ring-2`}
                     placeholder="Enter your full name"
                     aria-invalid={!!errors.fullName}
                     aria-describedby={errors.fullName ? "fullName-error" : undefined}
                   />
                   {errors.fullName && (
-                    <p id="fullName-error" className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                    <p id="fullName-error" className="mt-1 text-sm text-destructive">{errors.fullName}</p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-black mb-2">
+                  <label htmlFor="email" className="block text-sm font-semibold text-ink mb-2">
                     Email Address *
                   </label>
                   <input
@@ -434,18 +435,18 @@ function ContactSectionContent() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className={`w-full rounded-2xl border ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
+                    className={`w-full rounded-2xl border ${errors.email ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-line focus:border-focus focus:ring-focus/20'} bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:outline-none focus:ring-2`}
                     placeholder="Enter your email address"
                     aria-invalid={!!errors.email}
                     aria-describedby={errors.email ? "email-error" : undefined}
                   />
                   {errors.email && (
-                    <p id="email-error" className="mt-1 text-sm text-red-600">{errors.email}</p>
+                    <p id="email-error" className="mt-1 text-sm text-destructive">{errors.email}</p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-semibold text-black mb-2">
+                  <label htmlFor="subject" className="block text-sm font-semibold text-ink mb-2">
                     Subject *
                   </label>
                   <input
@@ -455,18 +456,18 @@ function ContactSectionContent() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
-                    className={`w-full rounded-2xl border ${errors.subject ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2`}
+                    className={`w-full rounded-2xl border ${errors.subject ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-line focus:border-focus focus:ring-focus/20'} bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:outline-none focus:ring-2`}
                     placeholder="What can we help you with?"
                     aria-invalid={!!errors.subject}
                     aria-describedby={errors.subject ? "subject-error" : undefined}
                   />
                   {errors.subject && (
-                    <p id="subject-error" className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                    <p id="subject-error" className="mt-1 text-sm text-destructive">{errors.subject}</p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-semibold text-black mb-2">
+                  <label htmlFor="message" className="block text-sm font-semibold text-ink mb-2">
                     Message *
                   </label>
                   <textarea
@@ -476,13 +477,13 @@ function ContactSectionContent() {
                     onChange={handleInputChange}
                     required
                     rows={5}
-                    className={`w-full rounded-2xl border ${errors.message ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' : 'border-zinc-200 focus:border-yellow-400 focus:ring-yellow-400/20'} bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:outline-none focus:ring-2 resize-none`}
+                    className={`w-full rounded-2xl border ${errors.message ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-line focus:border-focus focus:ring-focus/20'} bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:outline-none focus:ring-2 resize-none`}
                     placeholder="Tell us more about your inquiry..."
                     aria-invalid={!!errors.message}
                     aria-describedby={errors.message ? "message-error" : undefined}
                   />
                   {errors.message && (
-                    <p id="message-error" className="mt-1 text-sm text-red-600">{errors.message}</p>
+                    <p id="message-error" className="mt-1 text-sm text-destructive">{errors.message}</p>
                   )}
                 </div>
 
@@ -498,7 +499,7 @@ function ContactSectionContent() {
                   disabled={submitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-8 py-4 font-semibold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-8 py-4 font-semibold text-on-brand transition hover:bg-brand focus:outline-none focus:ring-2 focus:ring-focus/50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Send className="h-5 w-5 transition group-hover:translate-x-1" />
                   {submitting ? "Sending..." : "Send Message"}
@@ -506,20 +507,20 @@ function ContactSectionContent() {
               </form>
             </div>
 
-            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-5 shadow-[0_14px_50px_rgba(0,0,0,0.06)]">
+            <div className="mt-6 rounded-xl border border-line bg-surface p-5 shadow-panel">
               <div className="mb-4">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-600">Share Your Experience</p>
-                <h2 className="mt-1 text-xl font-bold text-black">Leave a Comment</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">Share Your Experience</p>
+                <h2 className="studio-display studio-gradient mt-1 text-xl font-bold text-ink">Leave a Comment</h2>
               </div>
 
               <form onSubmit={handleCommentSubmit} className="space-y-4">
                 {commentStatus && (
                   <div
                     role="alert"
-                    className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
+                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${
                       commentStatus.type === "success"
-                        ? "border-yellow-200 bg-yellow-50 text-black"
-                        : "border-red-200 bg-red-50 text-red-700"
+                        ? "border-line bg-accent-soft text-ink"
+                        : "border-destructive bg-destructive-soft text-destructive"
                     }`}
                   >
                     {commentStatus.type === "success" ? (
@@ -533,7 +534,7 @@ function ContactSectionContent() {
 
                 <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
                   <div>
-                    <label htmlFor="testimonial-name" className="mb-2 block text-sm font-semibold text-black">
+                    <label htmlFor="testimonial-name" className="mb-2 block text-sm font-semibold text-ink">
                       Name *
                     </label>
                     <input
@@ -542,33 +543,21 @@ function ContactSectionContent() {
                       value={commentForm.name}
                       onChange={handleCommentInputChange}
                       required
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                      className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
                       placeholder="Enter your name"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="testimonial-rating" className="mb-2 block text-sm font-semibold text-black">
+                    <label htmlFor="testimonial-rating" className="mb-2 block text-sm font-semibold text-ink">
                       Rating
                     </label>
-                    <select
-                      id="testimonial-rating"
-                      name="rating"
-                      value={commentForm.rating}
-                      onChange={handleCommentInputChange}
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
-                    >
-                      {[5, 4, 3, 2, 1].map((value) => (
-                        <option key={value} value={value}>
-                          {value} star{value === 1 ? "" : "s"}
-                        </option>
-                      ))}
-                    </select>
+                    <StudioSelect id="testimonial-rating" ariaLabel="Rating" value={String(commentForm.rating)} options={[5,4,3,2,1].map(value => ({ value: String(value), label: value + (value === 1 ? " star" : " stars") }))} onChange={value => { setCommentForm(prev => ({ ...prev, rating: Number(value) })); setCommentStatus(null); }} />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="testimonial-comment" className="mb-2 block text-sm font-semibold text-black">
+                  <label htmlFor="testimonial-comment" className="mb-2 block text-sm font-semibold text-ink">
                     Comment *
                   </label>
                   <textarea
@@ -578,7 +567,7 @@ function ContactSectionContent() {
                     onChange={handleCommentInputChange}
                     required
                     rows={3}
-                    className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-black placeholder-zinc-400 transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+                    className="w-full resize-none rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder:text-faint transition focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
                     placeholder="Tell us about your GOSH PERFUME experience"
                   />
                 </div>
@@ -588,7 +577,7 @@ function ContactSectionContent() {
                   disabled={commentSubmitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 font-semibold text-on-brand transition hover:bg-brand focus:outline-none focus:ring-2 focus:ring-focus/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   <Star className="h-4 w-4 transition group-hover:scale-110" />
                   {commentSubmitting ? "Submitting..." : "Submit Comment"}

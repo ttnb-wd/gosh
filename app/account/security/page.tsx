@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { useState } from "react";
 import Link from "next/link";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
@@ -46,8 +47,8 @@ export default function AccountSecurityPage() {
         <input id="confirm-new-password" type="password" autoComplete="new-password" required className={authInputClass} value={confirm} onChange={(event) => setConfirm(event.target.value)} />
         <button className={authButtonClass} disabled={busy}>{busy ? "Updating..." : "Update password"}</button>
       </form>}
-    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-    <Link href="/login?redirect=%2Faccount%2Fsecurity" className="block text-sm text-yellow-700">Sign in again</Link>
-    <Link href="/account" className="block text-sm text-yellow-700">Back to account</Link>
+    {error && <p role="alert" className="text-sm text-destructive"><StudioErrorText message={error} /></p>}
+    <Link href="/login?redirect=%2Faccount%2Fsecurity" className="block text-sm text-accent">Sign in again</Link>
+    <Link href="/account" className="block text-sm text-accent">Back to account</Link>
   </AuthShell>;
 }

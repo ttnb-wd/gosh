@@ -80,7 +80,7 @@ export default function AboutPage() {
   return (
     <motion.main 
       role="main"
-      className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14]"
+      className="studio-page studio-about min-h-screen bg-[var(--site-bg)] text-ink"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -97,14 +97,14 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#6f1d1b] sm:text-sm sm:tracking-[0.35em]">
+            <p className="mb-4 text-xs uppercase tracking-[0.24em] text-brand sm:text-sm sm:tracking-[0.35em]">
               Our Story
             </p>
-            <h1 className="mb-6 text-4xl font-black leading-tight text-[#1f1a14] sm:text-6xl lg:text-7xl">
+            <h1 className="studio-gradient mb-6 text-4xl font-semibold leading-tight text-ink sm:text-6xl lg:text-7xl">
               About
-              <span className="block text-[#b88705]">GOSH PERFUME STUDIO</span>
+              <span className="block text-accent">GOSH PERFUME STUDIO</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-base leading-relaxed text-[#7a6a55] sm:text-xl">
+            <p className="mx-auto max-w-3xl text-base leading-relaxed text-muted sm:text-xl">
               {aboutText}
             </p>
           </motion.div>
@@ -122,11 +122,11 @@ export default function AboutPage() {
               variants={fadeInUp}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
+              <h2 className="mb-6 text-3xl font-semibold text-ink sm:text-4xl">
                 Our Promise
-                <span className="block text-[#b88705]">Authentic Fragrances</span>
+                <span className="block text-accent">Authentic Fragrances</span>
               </h2>
-              <div className="space-y-4 leading-relaxed text-[#7a6a55]">
+              <div className="space-y-4 leading-relaxed text-muted">
                 <p>
                   GOSH PERFUME STUDIO is an independent perfume reseller and curated fragrance
                   shop. We carefully source and resell perfumes from trusted suppliers, selected
@@ -154,16 +154,16 @@ export default function AboutPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="absolute -inset-4 rounded-3xl bg-[#f7e7b3]/45 blur-2xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/25 bg-white p-4 shadow-[0_20px_80px_rgba(31,26,20,0.08)] sm:p-8">
+              <div className="absolute -inset-4 rounded-xl bg-accent-soft/45 hidden" />
+              <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-4 shadow-panel sm:p-8">
                 <img
                   src="https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=1400&auto=format&fit=crop"
                   alt="Luxury perfume craftsmanship"
                   className="h-64 w-full rounded-2xl object-cover sm:h-80"
                 />
                 <div className="mt-6 text-center">
-                  <p className="text-sm font-medium text-[#6f1d1b]">Carefully Sourced</p>
-                  <p className="mt-2 text-[#7a6a55]">Quality checked before every product is listed</p>
+                  <p className="text-sm font-medium text-brand">Carefully Sourced</p>
+                  <p className="mt-2 text-muted">Quality checked before every product is listed</p>
                 </div>
               </div>
             </motion.div>
@@ -182,11 +182,11 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-10"
           >
-            <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
+            <h2 className="mb-6 text-3xl font-semibold text-ink sm:text-4xl">
               Why Choose
-              <span className="block text-[#b88705]">{websiteName}</span>
+              <span className="block text-accent">{websiteName}</span>
             </h2>
-            <p className="mx-auto max-w-2xl text-lg text-[#7a6a55]">
+            <p className="mx-auto max-w-2xl text-lg text-muted">
               We aim to make premium perfume shopping clear, trustworthy, and enjoyable for every customer.
             </p>
           </motion.div>
@@ -203,13 +203,13 @@ export default function AboutPage() {
                 key={index}
                 variants={fadeInUp}
                 transition={{ duration: 0.6 }}
-                className="rounded-3xl border border-[#d4af37]/25 bg-white p-5 text-center shadow-[0_18px_45px_rgba(212,175,55,0.12),0_6px_18px_rgba(111,29,27,0.06)] sm:p-6"
+                className="rounded-xl border border-line bg-surface p-5 text-center shadow-panel sm:p-6"
               >
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d4af37]/30 bg-[#fff7e6] text-[#d4af37]">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-line bg-surface text-accent">
                   {value.icon}
                 </div>
-                <h3 className="mb-3 text-lg font-bold text-[#1f1a14]">{value.title}</h3>
-                <p className="text-sm leading-relaxed text-[#7a6a55]">{value.description}</p>
+                <h3 className="mb-3 text-lg font-bold text-ink">{value.title}</h3>
+                <p className="text-sm leading-relaxed text-muted">{value.description}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -227,11 +227,11 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h2 className="mb-6 text-3xl font-black text-[#1f1a14] sm:text-4xl">
+            <h2 className="mb-6 text-3xl font-semibold text-ink sm:text-4xl">
               Ready to Discover
-              <span className="block text-[#b88705]">Your Signature Scent?</span>
+              <span className="block text-accent">Your Signature Scent?</span>
             </h2>
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-[#7a6a55]">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted">
               Explore our carefully sourced fragrance collection and choose the scent that suits
               your style, mood, and daily life.
             </p>
@@ -240,8 +240,8 @@ export default function AboutPage() {
               <Link href="/products">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="group inline-flex items-center gap-2 rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-8 py-4 font-semibold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.22)] transition hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)]"
+                  whileTap={{ scale: 0.98 }}
+                  className="group inline-flex items-center gap-2 rounded-full border border-line bg-brand px-8 py-4 font-semibold text-on-brand shadow-panel transition hover:bg-brand"
                 >
                   Explore Collection
                   <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
@@ -251,8 +251,8 @@ export default function AboutPage() {
               <Link href="/contact">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-white px-8 py-4 font-semibold text-[#1f1a14] transition hover:border-[#6f1d1b]/25 hover:bg-[#fff7e6]"
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-8 py-4 font-semibold text-ink transition hover:border-brand/25 hover:bg-surface"
                 >
                   Book Consultation
                 </motion.button>

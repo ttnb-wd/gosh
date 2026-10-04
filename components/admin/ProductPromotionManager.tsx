@@ -1,4 +1,6 @@
 "use client";
+import StudioRowActions from "@/components/ui/StudioRowActions";
+import { notify, confirmAction } from "@/components/ui/StudioFeedback";
 
 import { useEffect, useState, useRef } from "react";
 import { Plus, Edit2, Trash2, Power, PowerOff, Tag, Package, Percent, ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -203,8 +205,8 @@ export default function ProductPromotionManager() {
       });
 
       if (!response.ok) {
-        const result = await response.json();
-        alert(result.error || `Failed to save promotion: ${response.statusText}`);
+        await response.json();
+        notify("Unable to save your changes. Please try again.", "error");
         return;
       }
 
@@ -214,18 +216,18 @@ export default function ProductPromotionManager() {
         await fetchPromotions();
         resetForm();
       } else {
-        alert(result.error || "Failed to save promotion");
+        notify("Unable to save your changes. Please try again.", "error");
       }
     } catch (error) {
       console.error("Submit error:", error);
-      alert("Failed to save promotion");
+      notify("Unable to save your changes. Please try again.", "error");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this promotion?")) {
+    if (!(await confirmAction("Are you sure you want to delete this promotion?"))) {
       return;
     }
 
@@ -241,8 +243,8 @@ export default function ProductPromotionManager() {
       });
 
       if (!response.ok) {
-        const result = await response.json();
-        alert(result.error || `Failed to delete promotion: ${response.statusText}`);
+        await response.json();
+        notify("Unable to delete this item. Please try again.", "error");
         return;
       }
 
@@ -251,11 +253,11 @@ export default function ProductPromotionManager() {
       if (result.success) {
         await fetchPromotions();
       } else {
-        alert(result.error || "Failed to delete promotion");
+        notify("Unable to delete this item. Please try again.", "error");
       }
     } catch (error) {
       console.error("Delete error:", error);
-      alert("Failed to delete promotion");
+      notify("Unable to delete this item. Please try again.", "error");
     }
   }
 
@@ -272,8 +274,8 @@ export default function ProductPromotionManager() {
       });
 
       if (!response.ok) {
-        const result = await response.json();
-        alert(result.error || `Failed to toggle promotion: ${response.statusText}`);
+        await response.json();
+        notify("Unable to update this item. Please try again.", "error");
         return;
       }
 
@@ -282,11 +284,11 @@ export default function ProductPromotionManager() {
       if (result.success) {
         await fetchPromotions();
       } else {
-        alert(result.error || "Failed to toggle promotion");
+        notify("Unable to update this item. Please try again.", "error");
       }
     } catch (error) {
       console.error("Toggle error:", error);
-      alert("Failed to toggle promotion");
+      notify("Unable to update this item. Please try again.", "error");
     }
   }
 
@@ -356,7 +358,7 @@ export default function ProductPromotionManager() {
 
   function getPromotionStatus(promotion: EnrichedProductPromotion): { label: string; color: string } {
     if (!promotion.is_active) {
-      return { label: "Inactive", color: "text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-800" };
+      return { label: "Inactive", color: "text-muted bg-surface-muted  " };
     }
 
     const now = new Date();
@@ -368,14 +370,14 @@ export default function ProductPromotionManager() {
       : new Date(promotion.end_at as string);
 
     if (now < startDate) {
-      return { label: "Scheduled", color: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30" };
+      return { label: "Scheduled", color: "text-info bg-info-soft  " };
     }
 
     if (now > endDate) {
-      return { label: "Expired", color: "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30" };
+      return { label: "Expired", color: "text-destructive bg-destructive-soft  " };
     }
 
-    return { label: "Active", color: "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30" };
+    return { label: "Active", color: "text-success bg-success-soft  " };
   }
 
   function scrollProducts(direction: 'left' | 'right') {
@@ -391,7 +393,7 @@ export default function ProductPromotionManager() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#d4af37] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-line border-t-transparent" />
       </div>
     );
   }
@@ -414,8 +416,8 @@ export default function ProductPromotionManager() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-[#1f1a14] dark:text-[#fff8e7]">Product Promotions</h2>
-          <p className="mt-1 text-sm text-[#7a6a55] dark:text-[#b8a892]">Manage promotional pricing for products</p>
+          <h2 className="text-2xl font-semibold text-ink ">Product Promotions</h2>
+          <p className="mt-1 text-sm text-muted ">Manage promotional pricing for products</p>
         </div>
         <button
           type="button"
@@ -443,7 +445,7 @@ export default function ProductPromotionManager() {
             }
           }}
           style={{ pointerEvents: 'auto' }}
-          className="relative z-[9999] flex shrink-0 items-center gap-2 rounded-full border-2 border-[#d4af37] bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-5 py-3 text-sm font-bold text-[#1f1a14] shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          className="relative z-[9999] flex shrink-0 items-center gap-2 rounded-full border-2 border-line bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-soft active:translate-y-0 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           Add Promotion
@@ -458,16 +460,16 @@ export default function ProductPromotionManager() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleSubmit}
-            className="overflow-hidden rounded-[24px] border border-[#d4af37]/20 bg-white p-6 shadow-sm dark:border-[#d4af37]/10 dark:bg-[#2a2419]"
+            className="overflow-hidden rounded-xl border border-line bg-surface p-6 shadow-soft  "
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-black text-[#1f1a14] dark:text-[#fff8e7]">
+              <h3 className="text-lg font-semibold text-ink ">
                 {editingId ? "Edit Promotion" : "Create New Promotion"}
               </h3>
               <button
                 type="button"
                 onClick={resetForm}
-                className="text-sm font-bold text-[#7a6a55] hover:text-[#1f1a14] dark:text-[#b8a892] dark:hover:text-[#fff8e7]"
+                className="text-sm font-bold text-muted hover:text-ink  "
               >
                 Cancel
               </button>
@@ -476,8 +478,8 @@ export default function ProductPromotionManager() {
             <div className="space-y-4">
               {/* Product Selection */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">
-                  Select Product <span className="text-red-500">*</span>
+                <label className="mb-2 block text-sm font-bold text-ink ">
+                  Select Product <span className="text-destructive">*</span>
                 </label>
                 
                 {!selectedProduct ? (
@@ -485,12 +487,12 @@ export default function ProductPromotionManager() {
                     type="button"
                     onClick={() => setShowProductSelector(!showProductSelector)}
                     disabled={editingId !== null}
-                    className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-left text-sm font-semibold text-neutral-500 transition hover:border-[#d4af37]/50 focus:border-[#d4af37] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#d4af37]/20 dark:bg-[#1f1a14] dark:text-[#b8a892]"
+                    className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-left text-sm font-semibold text-muted transition hover:border-line focus:border-focus focus:outline-none disabled:cursor-not-allowed disabled:opacity-50   "
                   >
                     Choose a product...
                   </button>
                 ) : (
-                  <div className="rounded-xl border-2 border-[#d4af37]/40 bg-gradient-to-br from-yellow-50/50 to-white p-4 dark:from-[#d4af37]/5 dark:to-[#2a2419]">
+                  <div className="rounded-xl border-2 border-line bg-accent-soft p-4  ">
                     <div className="flex items-center gap-4">
                       <img 
                         src={getSafeProductImage(selectedProduct.images)} 
@@ -498,13 +500,13 @@ export default function ProductPromotionManager() {
                         className="h-16 w-16 rounded-lg object-cover"
                       />
                       <div className="flex-1">
-                        <p className="text-xs font-bold uppercase text-[#d4af37]">Selected Product</p>
-                        <p className="mt-1 font-black text-[#1f1a14] dark:text-[#fff8e7]">{selectedProduct.name}</p>
-                        <p className="text-sm text-[#7a6a55] dark:text-[#b8a892]">{selectedProduct.brand}</p>
+                        <p className="text-xs font-bold uppercase text-accent">Selected Product</p>
+                        <p className="mt-1 font-semibold text-ink ">{selectedProduct.name}</p>
+                        <p className="text-sm text-muted ">{selectedProduct.brand}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-bold uppercase text-[#7a6a55] dark:text-[#b8a892]">Original Price</p>
-                        <p className="text-xl font-black text-[#d4af37]">{formatPrice(selectedProduct.price)}</p>
+                        <p className="text-xs font-bold uppercase text-muted ">Original Price</p>
+                        <p className="text-xl font-semibold text-accent">{formatPrice(selectedProduct.price)}</p>
                       </div>
                       {!editingId && (
                         <button
@@ -513,7 +515,7 @@ export default function ProductPromotionManager() {
                             setSelectedProduct(null);
                             setFormData(prev => ({ ...prev, product_id: "", discount_percent: "", promotion_price: "" }));
                           }}
-                          className="text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          className="text-sm font-bold text-destructive hover:text-destructive  "
                         >
                           Change
                         </button>
@@ -523,9 +525,9 @@ export default function ProductPromotionManager() {
                 )}
                 
                 {selectedProduct && (
-                  <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-900/20">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Note:</strong> Creating a promotion will NOT change this product's badge. The product badge (like "New" or "Best Seller") is independent and must be managed in the product settings.
+                  <div className="mt-2 rounded-lg border border-info bg-info-soft p-3  ">
+                    <p className="text-sm text-info ">
+                      <strong>Note:</strong> Creating a promotion does not change the product badge. Badges such as &quot;New&quot; and &quot;Best Seller&quot; are managed in the product settings.
                     </p>
                   </div>
                 )}
@@ -533,16 +535,16 @@ export default function ProductPromotionManager() {
 
               {/* Product Selector */}
               {showProductSelector && !editingId && (
-                <div className="rounded-2xl border border-[#d4af37]/20 bg-white p-4 dark:border-[#d4af37]/10 dark:bg-[#1f1a14]">
+                <div className="rounded-xl border border-line bg-surface p-4  ">
                   {/* Search */}
                   <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a6a55]" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       type="text"
                       placeholder="Search by product name or brand..."
                       value={productSearchQuery}
                       onChange={(e) => setProductSearchQuery(e.target.value)}
-                      className="w-full rounded-xl border border-[#d4af37]/30 bg-white pl-10 pr-4 py-2.5 text-sm font-semibold text-[#1f1a14] placeholder:text-neutral-400 outline-none transition focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/20 dark:border-[#d4af37]/20 dark:bg-[#2a2419] dark:text-[#fff8e7]"
+                      className="w-full rounded-xl border border-line bg-surface pl-10 pr-4 py-2.5 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/20   "
                     />
                   </div>
 
@@ -553,7 +555,7 @@ export default function ProductPromotionManager() {
                       <button
                         type="button"
                         onClick={() => scrollProducts('left')}
-                        className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#d4af37]/50 bg-white text-[#d4af37] shadow-lg transition hover:border-[#d4af37] hover:bg-yellow-50 dark:border-[#d4af37]/30 dark:bg-[#1f1a14] dark:hover:bg-[#2a2419]"
+                        className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-line bg-surface text-accent shadow-soft transition hover:border-line hover:bg-accent-soft   "
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
@@ -562,7 +564,7 @@ export default function ProductPromotionManager() {
                     {/* Products */}
                     <div 
                       ref={scrollContainerRef}
-                      className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#d4af37]/30"
+                      className="flex gap-4 overflow-x-auto pb-2"
                       onScroll={(e) => {
                         const target = e.target as HTMLDivElement;
                         setSelectorScrollPosition(target.scrollLeft);
@@ -572,10 +574,10 @@ export default function ProductPromotionManager() {
                         <div 
                           key={product.id}
                           onClick={() => handleProductSelect(product)}
-                          className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border-2 border-[#d4af37]/20 bg-white transition-all hover:border-[#d4af37] hover:shadow-lg dark:border-[#d4af37]/10 dark:bg-[#2a2419] dark:hover:border-[#d4af37]/50"
+                          className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-line bg-surface transition-all hover:border-line hover:shadow-soft   "
                         >
                           {/* Product Image */}
-                          <div className="relative h-[140px] w-full overflow-hidden bg-gradient-to-br from-[#fff7e6] via-white to-[#f8eeee] dark:from-[#d4af37]/5 dark:via-[#2a2419] dark:to-[#1f1a14]">
+                          <div className="relative h-[140px] w-full overflow-hidden bg-surface-muted   ">
                             <img 
                               src={getSafeProductImage(product.images)} 
                               alt={product.name}
@@ -585,13 +587,13 @@ export default function ProductPromotionManager() {
 
                           {/* Product Info */}
                           <div className="p-3">
-                            <p className="truncate text-[10px] font-black uppercase tracking-wider text-[#d4af37]">
+                            <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-accent">
                               {product.brand}
                             </p>
-                            <h4 className="mt-1 line-clamp-2 min-h-[32px] text-sm font-black text-[#1f1a14] dark:text-[#fff8e7]">
+                            <h4 className="mt-1 line-clamp-2 min-h-[32px] text-sm font-semibold text-ink ">
                               {product.name}
                             </h4>
-                            <p className="mt-2 text-base font-black text-[#d4af37]">
+                            <p className="mt-2 text-base font-semibold text-accent">
                               {formatPrice(product.price)}
                             </p>
                           </div>
@@ -603,7 +605,7 @@ export default function ProductPromotionManager() {
                     <button
                       type="button"
                       onClick={() => scrollProducts('right')}
-                      className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#d4af37]/50 bg-white text-[#d4af37] shadow-lg transition hover:border-[#d4af37] hover:bg-yellow-50 dark:border-[#d4af37]/30 dark:bg-[#1f1a14] dark:hover:bg-[#2a2419]"
+                      className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-line bg-surface text-accent shadow-soft transition hover:border-line hover:bg-accent-soft   "
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
@@ -616,27 +618,27 @@ export default function ProductPromotionManager() {
                 <>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">
-                        Discount Percentage <span className="text-red-500">*</span>
+                      <label htmlFor="studio-components-admin-ProductPromotionManager-1" className="mb-2 block text-sm font-bold text-ink ">
+                        Discount Percentage <span className="text-destructive">*</span>
                       </label>
-                      <input
+                      <input id="studio-components-admin-ProductPromotionManager-1"
                         type="number"
                         min="1"
                         max="99"
                         step="1"
                         value={formData.discount_percent}
                         onChange={(e) => handleDiscountChange(e.target.value)}
-                        className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-semibold text-[#1f1a14] placeholder:text-neutral-400 outline-none transition focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/20 dark:border-[#d4af37]/20 dark:bg-[#1f1a14] dark:text-[#fff8e7]"
+                        className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink placeholder:text-muted outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/20   "
                         placeholder="25"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">
+                      <label className="mb-2 block text-sm font-bold text-ink ">
                         Promotion Price (MMK)
                       </label>
-                      <div className="w-full rounded-2xl border border-[#d4af37]/20 bg-gray-50 px-4 py-3 text-sm font-semibold text-[#7a6a55] dark:border-[#d4af37]/10 dark:bg-[#2a2419] dark:text-[#b8a892]">
+                      <div className="w-full rounded-xl border border-line bg-surface-muted px-4 py-3 text-sm font-semibold text-muted   ">
                         {formData.promotion_price ? formatPrice(parseFloat(formData.promotion_price)) : '---'}
                       </div>
                     </div>
@@ -644,13 +646,13 @@ export default function ProductPromotionManager() {
 
                   {/* Savings Display */}
                   {formData.discount_percent && formData.promotion_price && promotionPrice > 0 && promotionPrice < originalPrice && (
-                    <div className="flex items-center gap-3 rounded-2xl bg-green-50 px-4 py-3 border border-green-200 dark:bg-green-900/20 dark:border-green-900/30">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white font-black text-lg">
+                    <div className="flex items-center gap-3 rounded-xl bg-success-soft px-4 py-3 border border-success  ">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success text-on-brand font-semibold text-lg">
                         %
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-bold uppercase text-green-700 dark:text-green-300">You Save</p>
-                        <p className="text-lg font-black text-green-600 dark:text-green-400">
+                        <p className="text-xs font-bold uppercase text-success ">You Save</p>
+                        <p className="text-lg font-semibold text-success ">
                           {formData.discount_percent}% OFF • {formatPrice(savedAmount)} Saved
                         </p>
                       </div>
@@ -673,7 +675,7 @@ export default function ProductPromotionManager() {
                     required
                     minDate={new Date()}
                     placeholderText="Select start date and time"
-                    className="rounded-2xl py-3 text-sm font-semibold"
+                    className="rounded-xl py-3 text-sm font-semibold"
                   />
 
                   <DateTimePicker
@@ -687,7 +689,7 @@ export default function ProductPromotionManager() {
                     required
                     minDate={formData.start_at ? new Date(formData.start_at) : new Date()}
                     placeholderText="Select end date and time"
-                    className="rounded-2xl py-3 text-sm font-semibold"
+                    className="rounded-xl py-3 text-sm font-semibold"
                     showValidationError={
                       !!(formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at))
                     }
@@ -699,16 +701,16 @@ export default function ProductPromotionManager() {
               {/* Active Toggle */}
               {selectedProduct && (
                 <div>
-                  <label className="flex items-center gap-2">
+                  <label className="flex flex-wrap items-center gap-2">
                     <input
                       type="checkbox"
                       checked={formData.is_active}
                       onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="h-4 w-4 rounded border-[#d4af37]/30 text-[#d4af37] focus:ring-[#d4af37] dark:border-[#d4af37]/20 dark:bg-[#1f1a14]"
+                      className="h-4 w-4 rounded border-line text-accent focus:ring-focus  "
                     />
-                    <span className="text-sm font-bold text-[#1f1a14] dark:text-[#fff8e7]">Promotion Active</span>
+                    <span className="text-sm font-bold text-ink ">Promotion Active</span>
                   </label>
-                  <p className="ml-6 mt-1 text-xs text-[#7a6a55] dark:text-[#b8a892]">
+                  <p className="ml-6 mt-1 text-xs text-muted ">
                     Inactive promotions won&apos;t be visible to customers
                   </p>
                 </div>
@@ -721,14 +723,14 @@ export default function ProductPromotionManager() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-full bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-6 py-3 text-sm font-bold text-[#1f1a14] transition-all hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-full bg-brand px-6 py-3 text-sm font-bold text-on-brand transition-all hover:-translate-y-0.5 hover:shadow-soft disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? "Saving..." : editingId ? "Update Promotion" : "Create Promotion"}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-full border border-[#d4af37]/30 bg-white px-6 py-3 text-sm font-bold text-[#1f1a14] transition hover:bg-gray-50 dark:border-[#d4af37]/20 dark:bg-[#1f1a14] dark:text-[#fff8e7] dark:hover:bg-[#2a2419]"
+                  className="rounded-full border border-line bg-surface px-6 py-3 text-sm font-bold text-ink transition hover:bg-surface-muted    "
                 >
                   Cancel
                 </button>
@@ -741,10 +743,10 @@ export default function ProductPromotionManager() {
       {/* Promotions List */}
       <div className="space-y-4">
         {promotions.length === 0 ? (
-          <div className="rounded-2xl border border-[#d4af37]/20 bg-white p-12 text-center dark:border-[#d4af37]/10 dark:bg-[#2a2419]">
-            <Tag className="mx-auto h-12 w-12 text-[#d4af37]/30" />
-            <p className="mt-4 text-sm font-bold text-[#7a6a55] dark:text-[#b8a892]">No product promotions yet</p>
-            <p className="mt-1 text-xs text-[#7a6a55] dark:text-[#b8a892]">Create your first promotion to get started</p>
+          <div className="rounded-xl border border-line bg-surface p-12 text-center  ">
+            <Tag className="mx-auto h-12 w-12 text-accent/30" />
+            <p className="mt-4 text-sm font-bold text-muted ">No product promotions yet</p>
+            <p className="mt-1 text-xs text-muted ">Create your first promotion to get started</p>
           </div>
         ) : (
           promotions.map((promotion) => {
@@ -757,12 +759,12 @@ export default function ProductPromotionManager() {
                 key={promotion.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-[#d4af37]/20 bg-white p-6 shadow-sm dark:border-[#d4af37]/10 dark:bg-[#2a2419]"
+                className="rounded-xl border border-line bg-surface p-6 shadow-soft  "
               >
                 <div className="flex items-start gap-4">
                   {/* Product Image */}
                   {product?.images && product.images.length > 0 && (
-                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-surface-muted ">
                       <img
                         src={getSafeProductImage(product.images)}
                         alt={product.name}
@@ -775,9 +777,9 @@ export default function ProductPromotionManager() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-[#d4af37]" />
-                          <h3 className="text-lg font-black text-[#1f1a14] dark:text-[#fff8e7]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Package className="h-4 w-4 text-accent" />
+                          <h3 className="text-lg font-semibold text-ink ">
                             {product?.name || "Unknown Product"}
                           </h3>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${status.color}`}>
@@ -788,21 +790,21 @@ export default function ProductPromotionManager() {
                         {product && (
                           <div className="mt-2 flex flex-wrap items-center gap-4">
                             <div>
-                              <p className="text-xs text-[#7a6a55] dark:text-[#b8a892]">Original Price</p>
-                              <p className="text-lg font-bold text-gray-400 line-through">{formatPrice(product.price)}</p>
+                              <p className="text-xs text-muted ">Original Price</p>
+                              <p className="text-lg font-bold text-muted line-through">{formatPrice(product.price)}</p>
                             </div>
                             <div>
-                              <p className="text-xs text-[#7a6a55] dark:text-[#b8a892]">Promotion Price</p>
-                              <p className="text-xl font-black text-[#d4af37]">{formatPrice(promotion.promotion_price)}</p>
+                              <p className="text-xs text-muted ">Promotion Price</p>
+                              <p className="text-xl font-semibold text-accent">{formatPrice(promotion.promotion_price)}</p>
                             </div>
-                            <div className="flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 dark:bg-green-900/30">
-                              <Percent className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                              <span className="text-sm font-black text-green-600 dark:text-green-400">{discount}% OFF</span>
+                            <div className="flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 ">
+                              <Percent className="h-3.5 w-3.5 text-success " />
+                              <span className="text-sm font-semibold text-success ">{discount}% OFF</span>
                             </div>
                           </div>
                         )}
 
-                        <div className="mt-2 flex items-center gap-3 text-xs text-[#7a6a55] dark:text-[#b8a892]">
+                        <div className="mt-2 flex items-center gap-3 text-xs text-muted ">
                           <span>
                             {promotion.start_at instanceof Timestamp 
                               ? new Date(promotion.start_at.toDate()).toLocaleDateString()
@@ -816,40 +818,42 @@ export default function ProductPromotionManager() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2">
-                        <button
+                      <StudioRowActions>
+<button aria-label={promotion.is_active ? "Deactivate" : "Activate"}
                           type="button"
                           onClick={() => handleToggle(promotion.id)}
                           className={`rounded-lg p-2 transition-colors ${
                             promotion.is_active
-                              ? "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
-                              : "bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700"
+                              ? "bg-success-soft text-success hover:bg-success-soft   "
+                              : "bg-surface-muted text-muted hover:bg-surface-muted   "
                           }`}
-                          title={promotion.is_active ? "Deactivate" : "Activate"}
+                          data-studio-tooltip={promotion.is_active ? "Deactivate" : "Activate"}
                         >
                           {promotion.is_active ? (
                             <Power className="h-4 w-4" />
                           ) : (
                             <PowerOff className="h-4 w-4" />
                           )}
-                        </button>
-                        <button
+                        <span className="text-xs">{promotion.is_active ? "Deactivate" : "Activate"}</span></button>
+
+<button aria-label="Edit"
                           type="button"
                           onClick={() => handleEdit(promotion)}
-                          className="rounded-lg bg-blue-100 p-2 text-blue-600 transition-colors hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                          title="Edit"
+                          className="rounded-lg bg-info-soft p-2 text-info transition-colors hover:bg-info-soft   "
+                          data-studio-tooltip="Edit"
                         >
                           <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
+                        <span className="text-xs">Edit</span></button>
+
+<button aria-label="Delete"
                           type="button"
                           onClick={() => handleDelete(promotion.id)}
-                          className="rounded-lg bg-red-100 p-2 text-red-600 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-                          title="Delete"
+                          className="rounded-lg bg-destructive-soft p-2 text-destructive transition-colors hover:bg-destructive-soft   "
+                          data-studio-tooltip="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                        <span className="text-xs">Delete</span></button>
+</StudioRowActions>
                     </div>
                   </div>
                 </div>

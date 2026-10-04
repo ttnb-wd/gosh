@@ -44,10 +44,10 @@ export default function MobileBottomNav() {
     <nav
       role="navigation"
       aria-label="Mobile bottom navigation"
-      className="fixed bottom-0 left-0 right-0 z-[999] md:hidden"
+      className="studio-bottom-nav fixed bottom-0 left-0 right-0 z-[999] md:hidden"
     >
       <div className="mx-auto max-w-md px-4 pb-4">
-        <div className="overflow-hidden rounded-3xl border border-[#d4af37]/30 bg-[#fffef9]/95 shadow-[0_-8px_32px_rgba(212,175,55,0.15)] backdrop-blur-xl">
+        <div className="overflow-hidden rounded-xl border border-line bg-surface/95 shadow-panel ">
           <div className="flex items-center justify-around px-1 py-3">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -55,25 +55,26 @@ export default function MobileBottomNav() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={item.isActive ? "page" : undefined}
                   className={`group flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-300 ${
                     item.isActive
-                      ? "bg-[#d4af37]/10"
-                      : "hover:bg-[#d4af37]/5"
+                      ? "bg-brand-soft"
+                      : "hover:bg-brand/5"
                   }`}
                 >
                   <Icon
                     className={`h-5 w-5 transition-all duration-300 ${
                       item.isActive
-                        ? "scale-110 text-[#b88700]"
-                        : "text-[#7a6a55] group-hover:scale-105 group-hover:text-[#b88700]"
+                        ? "scale-110 text-accent"
+                        : "text-muted group-hover:scale-105 group-hover:text-accent"
                     }`}
                     strokeWidth={item.isActive ? 2.5 : 2}
                   />
                   <span
                     className={`whitespace-nowrap text-[10px] font-bold uppercase tracking-normal transition-all duration-300 ${
                       item.isActive
-                        ? "text-[#b88700]"
-                        : "text-[#7a6a55] group-hover:text-[#b88700]"
+                        ? "text-accent"
+                        : "text-muted group-hover:text-accent"
                     }`}
                   >
                     {item.label}

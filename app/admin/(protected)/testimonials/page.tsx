@@ -1,4 +1,7 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
+import StudioSelect from "@/components/ui/StudioSelect";
+import { confirmAction } from "@/components/ui/StudioFeedback";
 import devLog from "@/lib/dev-log";
 
 import { useEffect, useMemo, useState } from "react";
@@ -174,7 +177,7 @@ export default function AdminTestimonialsPage() {
   };
 
   const deleteTestimonial = async (testimonialId: string) => {
-    if (!window.confirm("Delete this testimonial?")) return;
+    if (!(await confirmAction("Delete this testimonial?"))) return;
 
     setUpdatingId(testimonialId);
     setError(null);
@@ -223,17 +226,17 @@ export default function AdminTestimonialsPage() {
       <AdminHeader title="Testimonials" subtitle="Manage customer comments" />
 
       <main role="main" className="p-4 sm:p-6">
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-line bg-surface p-4 shadow-soft xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => setFilter(item.key)}
-                className={`rounded-full px-4 py-2 text-sm font-black transition ${
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   filter === item.key
-                    ? "bg-yellow-400 text-black"
-                    : "border border-zinc-200 bg-white text-zinc-700 hover:bg-yellow-50"
+                    ? "bg-brand text-on-brand"
+                    : "border border-line bg-surface text-secondary hover:bg-accent-soft"
                 }`}
               >
                 {item.label} ({counts[item.key]})
@@ -243,11 +246,11 @@ export default function AdminTestimonialsPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm font-bold text-black outline-none transition focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60 sm:w-72"
+                className="w-full rounded-full border border-line bg-surface py-2 pl-9 pr-4 text-sm font-bold text-ink outline-none transition focus:border-focus focus:ring-4 focus:ring-focus/15 sm:w-72"
                 placeholder="Search name or comment..."
               />
             </div>
@@ -256,7 +259,7 @@ export default function AdminTestimonialsPage() {
               type="button"
               onClick={loadTestimonials}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-black transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
@@ -265,21 +268,21 @@ export default function AdminTestimonialsPage() {
         </div>
 
         {error && (
-          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-            {error}
+          <div role="alert" className="mb-6 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-sm font-bold text-destructive">
+            <StudioErrorText message={error} />
           </div>
         )}
 
         {loading ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-yellow-600" />
-            <p className="mt-3 text-sm font-bold text-zinc-500">Loading testimonials...</p>
+          <div className="rounded-xl border border-line bg-surface p-10 text-center shadow-soft">
+            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-accent" />
+            <p className="mt-3 text-sm font-bold text-muted">Loading testimonials...</p>
           </div>
         ) : filteredTestimonials.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-            <Star className="mx-auto h-10 w-10 text-zinc-300" />
-            <p className="mt-3 text-base font-black text-black">No testimonials found</p>
-            <p className="mt-1 text-sm text-zinc-500">Customer comments will appear here after submission.</p>
+          <div className="rounded-xl border border-line bg-surface p-10 text-center shadow-soft">
+            <Star className="mx-auto h-10 w-10 text-faint" />
+            <p className="mt-3 text-base font-semibold text-ink">No testimonials found</p>
+            <p className="mt-1 text-sm text-muted">Customer comments will appear here after submission.</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -287,18 +290,18 @@ export default function AdminTestimonialsPage() {
               const isEditing = editingId === testimonial.id;
 
               return (
-                <article key={testimonial.id} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <article key={testimonial.id} className="rounded-xl border border-line bg-surface p-5 shadow-soft">
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="mb-3 flex flex-wrap items-center gap-2">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${
-                            testimonial.is_active ? "bg-zinc-100 text-zinc-700" : "bg-red-50 text-red-700"
+                          className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${
+                            testimonial.is_active ? "bg-surface-muted text-secondary" : "bg-destructive-soft text-destructive"
                           }`}
                         >
                           {testimonial.is_active ? "Active" : "Inactive"}
                         </span>
-                        <p className="text-xs font-bold text-zinc-400">
+                        <p className="text-xs font-bold text-muted">
                           {new Date(testimonial.created_at).toLocaleString()}
                         </p>
                       </div>
@@ -309,32 +312,22 @@ export default function AdminTestimonialsPage() {
                             <input
                               value={draft.name}
                               onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
-                              className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-black outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                              className="rounded-xl border border-line px-4 py-3 text-sm font-bold text-ink outline-none focus:border-focus focus:ring-4 focus:ring-focus/15"
                               placeholder="Name"
                             />
                             <input
                               value={draft.role}
                               onChange={(event) => setDraft((prev) => ({ ...prev, role: event.target.value }))}
-                              className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-black outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                              className="rounded-xl border border-line px-4 py-3 text-sm font-bold text-ink outline-none focus:border-focus focus:ring-4 focus:ring-focus/15"
                               placeholder="Role"
                             />
                           </div>
                           <div className="grid gap-3 md:grid-cols-[140px_1fr]">
-                            <select
-                              value={draft.rating}
-                              onChange={(event) => setDraft((prev) => ({ ...prev, rating: Number(event.target.value) }))}
-                              className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-black outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
-                            >
-                              {[5, 4, 3, 2, 1].map((value) => (
-                                <option key={value} value={value}>
-                                  {value} stars
-                                </option>
-                              ))}
-                            </select>
+                            <StudioSelect ariaLabel="Testimonial rating" value={String(draft.rating)} options={[5,4,3,2,1].map(value => ({ value: String(value), label: value + " stars" }))} onChange={value => setDraft(prev => ({ ...prev, rating: Number(value) }))} />
                             <input
                               value={draft.avatar_url}
                               onChange={(event) => setDraft((prev) => ({ ...prev, avatar_url: event.target.value }))}
-                              className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-black outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                              className="rounded-xl border border-line px-4 py-3 text-sm font-bold text-ink outline-none focus:border-focus focus:ring-4 focus:ring-focus/15"
                               placeholder="Avatar URL"
                             />
                           </div>
@@ -342,7 +335,7 @@ export default function AdminTestimonialsPage() {
                             value={draft.comment}
                             onChange={(event) => setDraft((prev) => ({ ...prev, comment: event.target.value }))}
                             rows={4}
-                            className="resize-none rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-black outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200/60"
+                            className="resize-none rounded-xl border border-line px-4 py-3 text-sm font-bold text-ink outline-none focus:border-focus focus:ring-4 focus:ring-focus/15"
                             placeholder="Comment"
                           />
                         </div>
@@ -350,12 +343,12 @@ export default function AdminTestimonialsPage() {
                         <>
                           <div className="mb-2 flex gap-1">
                             {[...Array(testimonial.rating)].map((_, index) => (
-                              <Star key={index} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <Star key={index} className="h-4 w-4 fill-accent text-accent" />
                             ))}
                           </div>
-                          <h2 className="text-lg font-black text-black">{testimonial.name}</h2>
-                          {testimonial.role && <p className="mt-1 text-sm font-bold text-zinc-500">{testimonial.role}</p>}
-                          <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{testimonial.comment}</p>
+                          <h2 className="text-lg font-semibold text-ink">{testimonial.name}</h2>
+                          {testimonial.role && <p className="mt-1 text-sm font-bold text-muted">{testimonial.role}</p>}
+                          <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-secondary">{testimonial.comment}</p>
                         </>
                       )}
                     </div>
@@ -367,7 +360,7 @@ export default function AdminTestimonialsPage() {
                             type="button"
                             onClick={() => saveEdit(testimonial.id)}
                             disabled={updatingId === testimonial.id}
-                            className="inline-flex items-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <CheckCircle2 className="h-4 w-4" />
                             Save
@@ -375,7 +368,7 @@ export default function AdminTestimonialsPage() {
                           <button
                             type="button"
                             onClick={() => setEditingId(null)}
-                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-zinc-700 transition hover:bg-zinc-50"
+                            className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-surface-muted"
                           >
                             <X className="h-4 w-4" />
                             Cancel
@@ -387,7 +380,7 @@ export default function AdminTestimonialsPage() {
                             type="button"
                             onClick={() => updateTestimonial(testimonial.id, { is_active: !testimonial.is_active })}
                             disabled={updatingId === testimonial.id}
-                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {testimonial.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             {testimonial.is_active ? "Deactivate" : "Activate"}
@@ -395,7 +388,7 @@ export default function AdminTestimonialsPage() {
                           <button
                             type="button"
                             onClick={() => beginEdit(testimonial)}
-                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-zinc-700 transition hover:bg-zinc-50"
+                            className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-surface-muted"
                           >
                             <Pencil className="h-4 w-4" />
                             Edit
@@ -404,7 +397,7 @@ export default function AdminTestimonialsPage() {
                             type="button"
                             onClick={() => deleteTestimonial(testimonial.id)}
                             disabled={updatingId === testimonial.id}
-                            className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-full border border-destructive bg-destructive-soft px-4 py-2 text-sm font-semibold text-destructive transition hover:bg-destructive-soft disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Trash2 className="h-4 w-4" />
                             Delete

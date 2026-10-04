@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -101,13 +102,13 @@ function VerificationForm() {
       </p>
       {!user && !code && <p className="text-sm">Sign in to resend your verification email or check its status.</p>}
       {message && <p role="status" aria-live="polite" className="text-sm">{message}</p>}
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive"><StudioErrorText message={error} /></p>}
       {!verified && <>
         <button className={authButtonClass} disabled={busy || (!user && !code)} onClick={check}>{busy ? "Please wait..." : code ? "Verify email" : "I've verified my email"}</button>
         {user && <button className={authButtonClass} disabled={busy || cooldown > 0} onClick={resend}>{cooldown ? `Resend in ${cooldown}s` : "Resend verification email"}</button>}
       </>}
-      {user && <button type="button" disabled={busy} onClick={changeAccount} className="block w-full rounded-lg py-2 text-sm text-yellow-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-yellow-500 disabled:opacity-60">Change email / Sign out</button>}
-      <Link href={verified ? signInUrl : `/login?redirect=${encodeURIComponent(destination)}`} className="block text-sm text-yellow-700">{verified ? "Continue to Sign In" : "Back to Sign In"}</Link>
+      {user && <button type="button" disabled={busy} onClick={changeAccount} className="block w-full rounded-lg py-2 text-sm text-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-yellow-500 disabled:opacity-60">Change email / Sign out</button>}
+      <Link href={verified ? signInUrl : `/login?redirect=${encodeURIComponent(destination)}`} className="block text-sm text-accent">{verified ? "Continue to Sign In" : "Back to Sign In"}</Link>
     </>}
   </AuthShell>;
 }

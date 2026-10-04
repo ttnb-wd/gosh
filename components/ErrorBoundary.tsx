@@ -40,11 +40,11 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h3 className="text-red-800 font-semibold mb-2">
+        <div className="p-4 bg-destructive-soft border border-destructive rounded-lg">
+          <h3 className="text-destructive font-semibold mb-2">
             Something went wrong
           </h3>
-          <p className="text-red-600 text-sm">
+          <p className="text-destructive text-sm">
             Please try refreshing the page or contact support if the problem persists.
           </p>
         </div>

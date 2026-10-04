@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ShoppingBag,
   LogIn,
@@ -9,8 +9,13 @@ import {
   LayoutDashboard,
   Moon,
   Sun,
+  Menu,
+  X,
+  ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import MarqueeBanner from "./MarqueeBanner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAuthErrorMessage } from "@/lib/auth/errors";
 import { signOutUser } from "@/lib/firebase/auth";
@@ -31,6 +36,28 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   const [logoutError, setLogoutError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const accountTrigger = useRef<HTMLButtonElement>(null);
+  const links = [{ href: "/", label: "Home" }, { href: "/products", label: "Products" }, { href: "/promotions", label: "Promotions" }, { href: "/about", label: "About" }, { href: "/contact", label: "Contact" }];
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 48);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const el = dialog.current;
+    el?.showModal();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { el?.close(); document.body.style.overflow = overflow; menuTrigger.current?.focus(); };
+  }, [mobileOpen]);
 
   // ------------------------------------------------------------
   // Firebase Auth + Firestore Profile
@@ -74,377 +101,34 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
     } finally { setLoggingOut(false); }
   };
 
-  return (
-    <>
-      <header
-        role="banner"
-        className="fixed inset-x-0 top-0 z-[1000] bg-white/90 backdrop-blur-xl dark:border-b dark:border-[#d4af37]/20 dark:bg-[#0f0b07]/95"
-      >
-        {logoutError && <p role="alert" className="px-4 py-2 text-center text-sm text-red-700">{logoutError}</p>}
-        <style jsx>{`
-          @keyframes navbar-drop {
-            0% {
-              opacity: 0;
-              transform: translateY(-40px);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes gosh-logo-drop-bounce {
-            0% {
-              opacity: 0;
-              transform: translateY(-120px) scale(0.92);
-            }
-            18% {
-              opacity: 1;
-              transform: translateY(8px) scale(1.04, 0.96);
-            }
-            30% {
-              transform: translateY(-44px) scale(0.98, 1.03);
-            }
-            43% {
-              transform: translateY(5px) scale(1.025, 0.98);
-            }
-            54% {
-              transform: translateY(-22px) scale(0.99, 1.015);
-            }
-            66% {
-              transform: translateY(3px) scale(1.012, 0.99);
-            }
-            76% {
-              transform: translateY(-9px) scale(0.996, 1.006);
-            }
-            86% {
-              transform: translateY(1px) scale(1.004, 0.996);
-            }
-            94% {
-              transform: translateY(-3px) scale(1);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-
-          .gosh-logo-drop-bounce {
-            animation: gosh-logo-drop-bounce
-              5s cubic-bezier(0.24, 0.72, 0.24, 1) both;
-            transform-origin: center bottom;
-            will-change: transform, opacity;
-          }
-
-          .gosh-logo-3d {
-            filter: drop-shadow(0 8px 10px rgba(92, 54, 5, 0.22))
-              drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
-            transform: rotateX(8deg) translateZ(0);
-            transform-style: preserve-3d;
-            backface-visibility: hidden;
-          }
-        `}</style>
-
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
-          <Link
-            href="/"
-            className="group flex min-w-0 flex-1 flex-col leading-none transition hover:opacity-80 sm:flex-none"
-          >
-            <span className="text-base font-black tracking-[0.12em] text-black dark:text-[#fff7e6] sm:text-lg md:text-2xl">
-              GOSH PERFUME
-            </span>
-
-            <span className="mt-1 text-base font-black tracking-[0.38em] text-yellow-600 dark:text-[#d4af37] sm:text-lg md:text-2xl">
-              STUDIO
-            </span>
-          </Link>
-
-          <nav
-            role="navigation"
-            aria-label="Main navigation"
-            className="hidden items-center gap-8 md:flex"
-          >
-            <Link
-              href="/"
-              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/products"
-              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
-            >
-              Products
-            </Link>
-
-            <Link
-              href="/promotions"
-              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
-            >
-              Promotions
-            </Link>
-
-            <Link
-              href="/about"
-              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
-            >
-              About
-            </Link>
-
-            <Link
-              href="/contact"
-              className="text-sm font-medium text-zinc-700 transition hover:!text-[#b88700] dark:text-[#fff7e6]/75 dark:hover:!text-[#d4af37]"
-            >
-              Contact
-            </Link>
-          </nav>
-
-          <div className="hidden items-center gap-3 md:flex">
-            {/* Theme */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              title={
-                theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
-            >
-              <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
-
-              {theme === "dark" ? (
-                <Sun className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110" />
-              ) : (
-                <Moon className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110" />
-              )}
-
-              <div className="absolute -inset-1 rounded-2xl bg-yellow-400/20 opacity-0 blur-sm transition-all duration-300 group-hover:opacity-100" />
-            </button>
-
-            {/* Admin */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                aria-label="Admin Dashboard"
-                title="Admin Dashboard"
-                className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
-              >
-                <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
-
-                <LayoutDashboard className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-600" />
-
-                <div className="absolute -inset-1 rounded-2xl bg-yellow-400/20 opacity-0 blur-sm transition-all duration-300 group-hover:opacity-100" />
-              </Link>
-            )}
-
-            {/* Premium Auth Button */}
-            {status === "loading" ? <span role="status" className="text-sm">Loading...</span> : !user ? (
-              <Link
-                href="/login"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_16px_35px_rgba(234,179,8,0.26)] dark:border-[#d4af37]/40 dark:bg-[#1c160f]/90 dark:text-[#fff7e6] dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
-              >
-                <LogIn className="h-4 w-4 text-yellow-600 transition-transform duration-300 group-hover:scale-110" />
-
-                <span className="hidden sm:inline">
-                  Login / Sign Up
-                </span>
-
-                <span className="sm:hidden">Login</span>
-              </Link>
-            ) : (
-              <div className="relative" data-account-menu>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowAccountMenu((prev) => !prev)
-                  }
-                  aria-label="Open account menu"
-                  aria-expanded={showAccountMenu}
-                  aria-haspopup="true"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 dark:border-[#d4af37]/40 dark:bg-[#1c160f]/90 dark:text-[#fff7e6] dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
-                >
-                  <CircleUserRound
-                    className="h-4 w-4 text-yellow-600"
-                    aria-hidden="true"
-                  />
-
-                  <span className="hidden max-w-[120px] truncate sm:inline">
-                    {profileName || "Account"}
-                  </span>
-                </button>
-
-                {showAccountMenu && (
-                  <div
-                    className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 overflow-hidden rounded-2xl border border-yellow-200 bg-white/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18),0_0_30px_rgba(234,179,8,0.18)] backdrop-blur dark:border-[#d4af37]/30 dark:bg-[#1c160f]/95"
-                    role="menu"
-                    aria-label="Account menu"
-                  >
-                    <div className="px-3 py-2">
-                      <p className="truncate text-sm font-bold text-neutral-900 dark:text-[#fff7e6]">
-                        {profileName || "Account"}
-                      </p>
-
-                      <p className="truncate text-xs font-semibold text-neutral-500 dark:text-[#fff7e6]/60">
-                        {user.email}
-                      </p>
-                    </div>
-
-                    <Link href="/account" className="block px-4 py-3 text-sm font-semibold text-yellow-700" onClick={() => setShowAccountMenu(false)}>
-                      Your account
-                    </Link>
-                    <Link
-                      href="/orders"
-                      onClick={() => setShowAccountMenu(false)}
-                      role="menuitem"
-                      className="block rounded-xl px-3 py-2 text-sm font-bold text-neutral-800 transition hover:bg-yellow-50 hover:text-yellow-700 dark:text-[#fff7e6]/80 dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
-                    >
-                      My Orders
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      disabled={loggingOut}
-                      role="menuitem"
-                      aria-label="Logout from account"
-                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
-                    >
-                      <LogOut
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      />
-
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Shopping Bag */}
-            <button
-              type="button"
-              onClick={onCartOpen}
-              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/30 bg-white text-yellow-500 shadow-sm transition-all duration-300 hover:scale-110 hover:border-yellow-400/50 hover:bg-yellow-50 hover:shadow-lg hover:shadow-yellow-400/20 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37] dark:hover:bg-[#231b12]"
-              aria-label="Open shopping bag"
-              title="Open shopping bag"
-            >
-              <div className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition-all duration-300 group-hover:bg-yellow-400/5" />
-
-              <ShoppingBag className="relative h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-600" />
-
-              <div className="absolute -inset-1 rounded-2xl bg-yellow-400/20 opacity-0 blur-sm transition-all duration-300 group-hover:opacity-100" />
-
-              {cartCount > 0 && (
-                <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-xs font-bold text-black shadow-sm">
-                  {cartCount}
-                </div>
-              )}
-            </button>
+  return <>
+    <header role="banner" className={`studio-navbar ${scrolled ? "studio-navbar--scrolled" : ""}`}>
+      <MarqueeBanner />
+      {logoutError && <p role="alert" className="px-4 py-2 text-center text-sm text-destructive">{logoutError}</p>}
+      <div className="studio-nav-inner">
+        <Link href="/" className="studio-wordmark" aria-label="GOSH Perfume Studio home">GOSH<span>PERFUME STUDIO</span></Link>
+        <nav role="navigation" aria-label="Main navigation" className="studio-nav-links">{links.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} className={pathname === link.href ? "is-active" : ""}>{link.label}</Link>)}</nav>
+        <div className="studio-nav-tools">
+          <button type="button" onClick={toggleTheme} className="studio-icon-button studio-theme-toggle" aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}</button>
+          {isAdmin && <Link href="/admin" className="studio-icon-button studio-desktop-tool" aria-label="Admin Dashboard"><LayoutDashboard size={18} /></Link>}
+          <div className="studio-desktop-account">
+            {status === "loading" ? <span role="status" className="text-xs">Loading...</span> : !user ? <Link href="/login" className="studio-account-link"><CircleUserRound size={18} /><span>Sign in</span></Link> : <div className="relative" data-account-menu onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setShowAccountMenu(false); }} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); setShowAccountMenu(false); accountTrigger.current?.focus(); } }}>
+              <button ref={accountTrigger} type="button" onClick={() => setShowAccountMenu(prev => !prev)} aria-label="Open account menu" aria-expanded={showAccountMenu} aria-controls={showAccountMenu ? "studio-account-menu" : undefined} aria-haspopup="true" className="studio-account-link"><CircleUserRound size={18} /><span className="max-w-24 truncate">{profileName}</span></button>
+              {showAccountMenu && <div id="studio-account-menu" className="studio-account-menu" aria-label="Account menu"><p>{profileName}<small>{user.email}</small></p><Link href="/account" onClick={() => setShowAccountMenu(false)}>Your account</Link><Link href="/orders" onClick={() => setShowAccountMenu(false)}>My Orders</Link><button type="button" onClick={handleLogout} disabled={loggingOut}><LogOut size={16} />{loggingOut ? "Logging out..." : "Logout"}</button></div>}
+            </div>}
           </div>
-
-          {/* Mobile */}
-          <div className="flex shrink-0 items-center gap-1.5 md:hidden">
-            {/* Theme */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              title={
-                theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
-            >
-              <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
-
-              {theme === "dark" ? (
-                <Sun className="relative h-[18px] w-[18px]" />
-              ) : (
-                <Moon className="relative h-[18px] w-[18px]" />
-              )}
-            </button>
-
-            {/* Mobile Admin */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                aria-label="Admin Dashboard"
-                title="Admin Dashboard"
-                className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
-              >
-                <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
-
-                <LayoutDashboard className="relative h-[18px] w-[18px]" />
-              </Link>
-            )}
-
-            {/* Mobile Auth */}
-            {status === "loading" ? <span role="status" className="text-sm">Loading...</span> : !user ? (
-              <Link
-                href="/login"
-                className="group relative inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-yellow-400/40 bg-white px-3 text-xs font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#fff7e6]"
-              >
-                <LogIn
-                  className="h-[16px] w-[16px] text-yellow-600"
-                  aria-hidden="true"
-                />
-
-                Login
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={handleLogout}
-                      disabled={loggingOut}
-                className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
-                aria-label="Logout from account"
-                title="Logout"
-              >
-                <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
-
-                <LogOut className="relative h-[18px] w-[18px]" />
-              </button>
-            )}
-
-            {/* Mobile Shopping Bag */}
-            <button
-              type="button"
-              onClick={onCartOpen}
-              className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
-              aria-label="Open shopping bag"
-              title="Open shopping bag"
-            >
-              <span className="absolute inset-0 rounded-2xl bg-yellow-400/0 transition group-hover:bg-yellow-400/5" />
-
-              <ShoppingBag className="relative h-[18px] w-[18px]" />
-
-              {cartCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-400 px-1 text-[10px] font-black text-black shadow-sm">
-                  {cartCount > 9 ? "9+" : cartCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button type="button" onClick={onCartOpen} className="studio-icon-button studio-bag-button" aria-label="Open shopping bag"><ShoppingBag size={19} />{cartCount > 0 && <span className="studio-bag-count">{cartCount}</span>}</button>
+          <button type="button" ref={menuTrigger} onClick={() => setMobileOpen(true)} aria-expanded={mobileOpen} aria-controls="studio-mobile-menu" aria-label="Open navigation menu" className="studio-icon-button studio-menu-toggle"><Menu size={21} /></button>
         </div>
-      </header>
-
-      <div
-        aria-hidden="true"
-        className="h-[66px] bg-[#fef5e7] dark:bg-[#0f0b07] sm:h-[74px] md:h-[86px]"
-      />
-    </>
-  );
+      </div>
+    </header>
+    <div className="studio-nav-space" aria-hidden="true" />
+    <dialog ref={dialog} id="studio-mobile-menu" className="studio-mobile-menu" aria-label="Main navigation" onCancel={() => setMobileOpen(false)} onClose={() => setMobileOpen(false)}>
+      <div className="studio-mobile-top"><Link href="/" onClick={() => setMobileOpen(false)} className="studio-wordmark">GOSH<span>PERFUME STUDIO</span></Link><button type="button" className="studio-icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu"><X size={24} /></button></div>
+      <p className="studio-eyebrow">THE WORLD OF GOSH</p>
+      <nav role="navigation" aria-label="Mobile main navigation">{links.map((link, index) => <Link style={{ animationDelay: `${index * 65}ms` }} href={link.href} key={link.href} onClick={() => setMobileOpen(false)} aria-current={pathname === link.href ? "page" : undefined}><small>0{index + 1}</small>{link.label}<ArrowUpRight size={25} /></Link>)}</nav>
+      <div className="studio-mobile-account">{status === "loading" ? <span role="status">Loading...</span> : !user ? <Link href="/login" onClick={() => setMobileOpen(false)}><LogIn size={18} />Login / Sign Up</Link> : <><Link href="/account" onClick={() => setMobileOpen(false)}>Your account</Link><Link href="/orders" onClick={() => setMobileOpen(false)}>My Orders</Link><button type="button" disabled={loggingOut} onClick={handleLogout}><LogOut size={18} />Logout</button></>}{isAdmin && <Link href="/admin" onClick={() => setMobileOpen(false)}>Admin Dashboard</Link>}</div>
+      <p className="studio-mobile-signature studio-gradient">A scent. A feeling. Only yours.</p>
+    </dialog>
+  </>;
 }

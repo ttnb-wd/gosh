@@ -37,13 +37,13 @@ export default function WhyChooseUs() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#6f1d1b]">
+          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-brand">
             Trusted Shopping Experience
           </p>
-          <h2 className="whitespace-nowrap text-2xl font-black text-[#1f1a14] sm:text-4xl lg:text-5xl">
+          <h2 className="whitespace-nowrap text-2xl font-semibold text-ink sm:text-4xl lg:text-5xl">
             Shop with Confidence
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-[#7a6a55]">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
             We focus on carefully sourced perfumes, clear product details, and a smooth shopping experience.
           </p>
         </motion.div>
@@ -58,16 +58,16 @@ export default function WhyChooseUs() {
               transition={{ duration: 0.6, delay: index * 0.15 }}
               className="group relative"
             >
-              <div className="relative overflow-hidden rounded-3xl border border-[#d4af37]/20 bg-[#fbf6ed] p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-[#6f1d1b]/25 hover:shadow-[0_18px_45px_rgba(212,175,55,0.14),0_6px_18px_rgba(111,29,27,0.08)] dark:bg-[#080704] dark:hover:bg-[#0D0B07] dark:hover:border-[#d4af37]/45 dark:hover:shadow-[0_18px_45px_rgba(212,175,55,0.16)]">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/0 to-[#f7e7b3]/35 opacity-0 transition-opacity duration-500 group-hover:opacity-100 dark:group-hover:opacity-0" />
+              <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-8 shadow-soft transition-all duration-500 hover:-translate-y-2 hover:border-brand/25 hover:shadow-panel    ">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand/0 to-accent-soft/35 opacity-0 transition-opacity duration-500 group-hover:opacity-100 " />
                 
                 <div className="relative">
-                  <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff7e6] text-[#d4af37] transition-all duration-500 group-hover:scale-110 group-hover:bg-[#d4af37] group-hover:text-[#1f1a14] dark:bg-[#1c160f] dark:group-hover:bg-[#1c160f] dark:group-hover:text-[#d4af37]">
+                  <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-xl bg-surface text-accent transition-all duration-500 group-hover:scale-110 group-hover:bg-brand group-hover:text-on-brand   ">
                     {feature.icon}
                   </div>
                   
-                  <h3 className="mb-3 text-xl font-bold text-[#1f1a14]">{feature.title}</h3>
-                  <p className="text-sm leading-relaxed text-[#7a6a55]">{feature.description}</p>
+                  <h3 className="mb-3 text-xl font-bold text-ink">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted">{feature.description}</p>
                 </div>
               </div>
             </motion.div>

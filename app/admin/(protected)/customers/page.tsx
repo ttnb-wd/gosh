@@ -1,11 +1,14 @@
 "use client";
+import StudioErrorText from "@/components/ui/StudioErrorText";
+import StudioModal from "@/components/ui/StudioModal";
 import devLog from "@/lib/dev-log";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import StudioSelect from "@/components/ui/StudioSelect";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import { getFirebaseAuthorizationHeader } from "@/lib/firebase/client-auth";
-import { Check, ChevronDown, Search, User, Mail, Phone, ShoppingBag, DollarSign, X, Crown } from "lucide-react";
+import { Search, User, Mail, Phone, ShoppingBag, DollarSign, X, Crown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface Profile {
@@ -85,8 +88,6 @@ export default function AdminCustomersPage() {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [sortType, setSortType] = useState<SortType>("newest");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [sortOpen, setSortOpen] = useState(false);
-  const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const totalPages = Math.max(Math.ceil(totalCustomers / pageSize), 1);
 
   useEffect(() => {
@@ -101,22 +102,6 @@ export default function AdminCustomersPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filterType, sortType]);
-
-  useEffect(() => {
-    if (!sortOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        sortMenuRef.current &&
-        !sortMenuRef.current.contains(event.target as Node)
-      ) {
-        setSortOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [sortOpen]);
 
   const fetchCustomers = async () => {
     try {
@@ -247,13 +232,13 @@ export default function AdminCustomersPage() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      confirmed: "bg-blue-100 text-blue-700 border-blue-200",
-      processing: "bg-purple-100 text-purple-700 border-purple-200",
-      delivered: "bg-green-100 text-green-700 border-green-200",
-      cancelled: "bg-red-100 text-red-700 border-red-200",
+      pending: "bg-accent-soft text-accent border-line",
+      confirmed: "bg-info-soft text-info border-info",
+      processing: "bg-info-soft text-info border-info",
+      delivered: "bg-success-soft text-success border-success",
+      cancelled: "bg-destructive-soft text-destructive border-destructive",
     };
-    return styles[status.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200";
+    return styles[status.toLowerCase()] || "bg-surface-muted text-secondary border-line";
   };
 
   if (loading) {
@@ -261,9 +246,9 @@ export default function AdminCustomersPage() {
       <div className="min-h-screen">
         <AdminHeader title="Customers" subtitle="Manage customer information" />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-[28px] border border-zinc-200 bg-white p-12 text-center shadow-sm">
-            <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-yellow-100"></div>
-            <p className="mt-4 text-sm font-medium text-zinc-600">Loading customers...</p>
+          <div className="rounded-xl border border-line bg-surface p-12 text-center shadow-soft">
+            <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-accent-soft"></div>
+            <p className="mt-4 text-sm font-medium text-secondary">Loading customers...</p>
           </div>
         </main>
       </div>
@@ -275,11 +260,11 @@ export default function AdminCustomersPage() {
       <div className="min-h-screen">
         <AdminHeader title="Customers" subtitle="Manage customer information" />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-[28px] border border-red-200 bg-red-50 p-12 text-center shadow-sm">
-            <p className="text-sm font-medium text-red-700">{error}</p>
+          <div className="rounded-xl border border-destructive bg-destructive-soft p-12 text-center shadow-soft">
+            <p className="text-sm font-medium text-destructive"><StudioErrorText message={error} /></p>
             <button
               onClick={fetchCustomers}
-              className="mt-4 rounded-xl bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className="mt-4 rounded-xl bg-destructive px-6 py-2 text-sm font-semibold text-on-brand hover:bg-destructive"
             >
               Retry
             </button>
@@ -308,7 +293,7 @@ export default function AdminCustomersPage() {
         <div className="mb-6 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
               id="admin-customer-search"
               name="admin_customer_search"
@@ -316,7 +301,7 @@ export default function AdminCustomersPage() {
               placeholder="Search by name, email, or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-12 pr-4 text-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20"
+              className="w-full rounded-xl border border-line bg-surface py-3 pl-12 pr-4 text-sm focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
             />
           </div>
 
@@ -326,8 +311,8 @@ export default function AdminCustomersPage() {
               onClick={() => setFilterType("all")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 filterType === "all"
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface text-secondary hover:bg-surface-muted border border-line"
               }`}
             >
               All
@@ -336,8 +321,8 @@ export default function AdminCustomersPage() {
               onClick={() => setFilterType("customers")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 filterType === "customers"
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface text-secondary hover:bg-surface-muted border border-line"
               }`}
             >
               Customers
@@ -346,8 +331,8 @@ export default function AdminCustomersPage() {
               onClick={() => setFilterType("admins")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 filterType === "admins"
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface text-secondary hover:bg-surface-muted border border-line"
               }`}
             >
               Admins
@@ -356,8 +341,8 @@ export default function AdminCustomersPage() {
               onClick={() => setFilterType("has_orders")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 filterType === "has_orders"
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface text-secondary hover:bg-surface-muted border border-line"
               }`}
             >
               Has Orders
@@ -366,89 +351,39 @@ export default function AdminCustomersPage() {
               onClick={() => setFilterType("no_orders")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 filterType === "no_orders"
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface text-secondary hover:bg-surface-muted border border-line"
               }`}
             >
               No Orders
             </button>
 
-            <div ref={sortMenuRef} className="relative z-30 w-full sm:ml-auto sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setSortOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between gap-4 rounded-2xl border border-yellow-300/80 bg-[#fffdf6] px-5 py-3 text-sm font-black text-neutral-900 shadow-[0_16px_38px_rgba(234,179,8,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-white focus:outline-none focus:ring-4 focus:ring-yellow-200/70 sm:min-w-[210px]"
-                aria-haspopup="listbox"
-                aria-expanded={sortOpen}
-                aria-label="Sort customers"
-              >
-                <span>{sortOptions.find((option) => option.value === sortType)?.label}</span>
-                <ChevronDown
-                  className={`h-4 w-4 text-yellow-600 transition-transform duration-300 ${
-                    sortOpen ? "rotate-180" : ""
-                  }`}
-                  aria-hidden="true"
-                />
-              </button>
-
-              {sortOpen && (
-                <div
-                  role="listbox"
-                  aria-label="Sort options"
-                  className="absolute right-0 top-[calc(100%+10px)] z-50 w-full min-w-[230px] overflow-hidden rounded-[22px] border border-yellow-200 bg-[#fffdf6]/98 p-2 shadow-[0_24px_70px_rgba(0,0,0,0.18),0_0_32px_rgba(234,179,8,0.16)] backdrop-blur-xl"
-                >
-                  {sortOptions.map((option) => {
-                    const active = sortType === option.value;
-
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        role="option"
-                        aria-selected={active}
-                        onClick={() => {
-                          setSortType(option.value);
-                          setSortOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 ${
-                          active
-                            ? "bg-yellow-400 text-black shadow-[0_10px_24px_rgba(234,179,8,0.24)]"
-                            : "text-neutral-700 hover:bg-yellow-50 hover:text-yellow-700"
-                        }`}
-                      >
-                        <span>{option.label}</span>
-                        {active && <Check className="h-4 w-4 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <div className="w-full sm:ml-auto sm:w-56"><StudioSelect value={sortType} options={sortOptions} ariaLabel="Sort customers" onChange={value => setSortType(value as SortType)} /></div>
           </div>
         </div>
 
         {/* Customer Count */}
         <div className="mb-4">
-          <p className="text-sm text-zinc-600">
-            Showing <span className="font-bold text-black">{filteredCustomers.length}</span> of{" "}
-            <span className="font-bold text-black">{totalCustomers}</span> customers
+          <p className="text-sm text-secondary">
+            Showing <span className="font-bold text-ink">{filteredCustomers.length}</span> of{" "}
+            <span className="font-bold text-ink">{totalCustomers}</span> customers
           </p>
         </div>
 
         {/* Customers List */}
         {filteredCustomers.length === 0 ? (
-          <div className="rounded-[28px] border border-zinc-200 bg-white p-12 text-center shadow-sm">
-            <User className="mx-auto h-12 w-12 text-zinc-300" />
-            <h3 className="mt-4 text-lg font-bold text-black">No customers found</h3>
-            <p className="mt-2 text-sm text-zinc-600">
+          <div className="rounded-xl border border-line bg-surface p-12 text-center shadow-soft">
+            <User className="mx-auto h-12 w-12 text-faint" />
+            <h3 className="mt-4 text-lg font-bold text-ink">No customers found</h3>
+            <p className="mt-2 text-sm text-secondary">
               {searchQuery || filterType !== "all"
                 ? "Try adjusting your search or filters"
                 : "No customers found yet."}
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[24px] border border-yellow-200/70 bg-white shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-            <div className="hidden grid-cols-[1.4fr_1fr_0.7fr_0.9fr_1fr_120px] gap-4 border-b border-yellow-100 bg-[#fffdf6] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 lg:grid">
+          <div className="studio-table">
+            <div className="studio-table-heading hidden grid-cols-[1.4fr_1fr_0.7fr_0.9fr_1fr_120px] gap-4 px-5 py-3 lg:grid">
               <span>Customer</span>
               <span>Contact</span>
               <span>Role</span>
@@ -464,55 +399,55 @@ export default function AdminCustomersPage() {
               return (
                 <div
                   key={customer.id}
-                  className="grid gap-4 border-b border-zinc-100 px-4 py-4 transition hover:bg-yellow-50/40 last:border-b-0 sm:px-5 lg:grid-cols-[1.4fr_1fr_0.7fr_0.9fr_1fr_120px] lg:items-center"
+                  className="studio-table-row grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[1.4fr_1fr_0.7fr_0.9fr_1fr_120px] lg:items-center"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-sm font-black text-yellow-700 ring-4 ring-yellow-50">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-sm font-medium text-accent">
                       {displayName?.[0]?.toUpperCase() || "C"}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate text-base font-black text-black">{displayName}</h3>
-                      <p className="mt-0.5 text-xs font-semibold text-zinc-500">
+                      <h3 className="truncate text-base font-semibold text-ink">{displayName}</h3>
+                      <p className="mt-0.5 text-xs font-semibold text-muted">
                         Joined {new Date(customer.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid min-w-0 gap-1 text-sm text-zinc-700">
+                  <div className="grid min-w-0 gap-1 text-sm text-secondary">
                     <div className="flex min-w-0 items-center gap-2">
-                      <Mail className="h-4 w-4 shrink-0 text-yellow-600" />
+                      <Mail className="h-4 w-4 shrink-0 text-accent" />
                       <span className="truncate">{customer.email}</span>
                     </div>
                     <div className="flex min-w-0 items-center gap-2">
-                      <Phone className="h-4 w-4 shrink-0 text-yellow-600" />
+                      <Phone className="h-4 w-4 shrink-0 text-accent" />
                       <span className="truncate">{displayPhone}</span>
                     </div>
                   </div>
 
                   <div>
                     {customer.role === "admin" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-yellow-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
                         <Crown className="h-3 w-3" />
                         Admin
                       </span>
                     ) : (
-                      <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
+                      <span className="inline-flex rounded-full bg-surface-muted px-3 py-1 text-xs font-bold text-secondary">
                         Customer
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 rounded-2xl bg-zinc-50 px-3 py-2 lg:block lg:bg-transparent lg:p-0">
+                  <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface-muted px-3 py-2 lg:block lg:bg-transparent lg:p-0">
                     <div>
-                      <p className="text-xs font-bold text-zinc-500 lg:hidden">Orders</p>
-                      <p className="flex items-center gap-2 text-sm font-black text-black">
-                        <ShoppingBag className="h-4 w-4 text-blue-600" />
+                      <p className="text-xs font-bold text-muted lg:hidden">Orders</p>
+                      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                        <ShoppingBag className="h-4 w-4 text-info" />
                         {customer.totalOrders}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-zinc-500 lg:hidden">Spent</p>
-                      <p className="flex items-center gap-2 text-sm font-black text-green-700 lg:mt-1">
+                      <p className="text-xs font-bold text-muted lg:hidden">Spent</p>
+                      <p className="flex items-center gap-2 text-sm font-semibold text-success lg:mt-1">
                         <DollarSign className="h-4 w-4" />
                         {customer.totalSpent.toLocaleString()} MMK
                       </p>
@@ -522,12 +457,12 @@ export default function AdminCustomersPage() {
                   <div className="min-w-0">
                     {customer.lastOrderDate ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-bold text-zinc-700">
+                        <p className="text-sm font-bold text-secondary">
                           {new Date(customer.lastOrderDate).toLocaleDateString()}
                         </p>
                         {customer.latestStatus && (
                           <span
-                            className={`rounded-full border px-3 py-1 text-xs font-black capitalize ${getStatusBadge(
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadge(
                               customer.latestStatus
                             )}`}
                           >
@@ -536,7 +471,7 @@ export default function AdminCustomersPage() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm font-semibold text-zinc-400">No orders yet</p>
+                      <p className="text-sm font-semibold text-muted">No orders yet</p>
                     )}
                   </div>
 
@@ -544,7 +479,7 @@ export default function AdminCustomersPage() {
                     type="button"
                     onClick={() => openCustomerDetail(customer)}
                     aria-label={`View details for ${getCustomerDisplayName(customer)}`}
-                    className="w-full rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-[0_10px_24px_rgba(234,179,8,0.20)] transition hover:bg-yellow-300 lg:w-auto"
+                    className="studio-compact-button w-full lg:w-auto"
                   >
                     Details
                   </button>
@@ -555,10 +490,10 @@ export default function AdminCustomersPage() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-[22px] border border-yellow-200/70 bg-white px-4 py-3 shadow-sm sm:flex-row">
-            <p className="text-sm font-semibold text-zinc-600">
-              Page <span className="font-black text-black">{currentPage}</span> of{" "}
-              <span className="font-black text-black">{totalPages}</span>
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 shadow-soft sm:flex-row">
+            <p className="text-sm font-semibold text-secondary">
+              Page <span className="font-semibold text-ink">{currentPage}</span> of{" "}
+              <span className="font-semibold text-ink">{totalPages}</span>
             </p>
             <div className="flex w-full gap-3 sm:w-auto">
               <button
@@ -566,7 +501,7 @@ export default function AdminCustomersPage() {
                 onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                 disabled={currentPage === 1 || loading}
                 aria-label="Go to previous page"
-                className="flex-1 rounded-full border border-yellow-200 bg-[#fffdf6] px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                className="flex-1 rounded-full border border-line bg-surface px-5 py-3 text-sm font-semibold text-ink transition hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
                 Previous
               </button>
@@ -575,7 +510,7 @@ export default function AdminCustomersPage() {
                 onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                 disabled={currentPage === totalPages || loading}
                 aria-label="Go to next page"
-                className="flex-1 rounded-full bg-yellow-400 px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                className="flex-1 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-on-brand transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
                 Next
               </button>
@@ -588,28 +523,28 @@ export default function AdminCustomersPage() {
       <AnimatePresence>
         {selectedCustomer && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4 "
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
-          <motion.div
-            className="w-full max-w-2xl rounded-[28px] border border-zinc-200 bg-white shadow-2xl"
-            initial={{ opacity: 0, y: 26, scale: 0.96 }}
+          <StudioModal label="Customer details" onDismiss={closeModal} lockScroll={true}
+            className="w-full max-w-2xl rounded-xl border border-line bg-surface shadow-soft"
+            initial={{ opacity: 0, y: 26, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.97 }}
             transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-line px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-black">Customer Details</h2>
-                <p className="text-sm text-zinc-600">{selectedCustomer.email}</p>
+                <h2 className="text-xl font-bold text-ink">Customer Details</h2>
+                <p className="text-sm text-secondary">{selectedCustomer.email}</p>
               </div>
               <button
                 onClick={closeModal}
-                className="rounded-xl p-2 hover:bg-zinc-100"
+                className="rounded-xl p-2 hover:bg-surface-muted"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -618,13 +553,13 @@ export default function AdminCustomersPage() {
             {/* Body */}
             <div className="p-6">
               <div className="mb-6 flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 text-2xl font-bold text-yellow-700">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-2xl font-bold text-accent">
                   {selectedCustomer.full_name?.[0]?.toUpperCase() || selectedCustomer.email?.[0]?.toUpperCase() || "?"}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-black">{selectedCustomer.full_name || "N/A"}</h3>
+                  <h3 className="text-lg font-bold text-ink">{selectedCustomer.full_name || "N/A"}</h3>
                   {selectedCustomer.role === "admin" && (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-yellow-100 px-2 py-1 text-xs font-bold text-yellow-700">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-accent-soft px-2 py-1 text-xs font-bold text-accent">
                       <Crown className="h-3 w-3" />
                       Admin
                     </span>
@@ -633,41 +568,41 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center gap-3 rounded-xl bg-zinc-50 p-4">
-                  <Mail className="h-5 w-5 text-zinc-400" />
+                <div className="flex items-center gap-3 rounded-xl bg-surface-muted p-4">
+                  <Mail className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-xs text-zinc-600">Email</p>
-                    <p className="font-semibold text-black">{selectedCustomer.email}</p>
+                    <p className="text-xs text-secondary">Email</p>
+                    <p className="font-semibold text-ink">{selectedCustomer.email}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-xl bg-zinc-50 p-4">
-                  <Phone className="h-5 w-5 text-zinc-400" />
+                <div className="flex items-center gap-3 rounded-xl bg-surface-muted p-4">
+                  <Phone className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-xs text-zinc-600">Phone</p>
-                    <p className="font-semibold text-black">{selectedCustomer.phone || "N/A"}</p>
+                    <p className="text-xs text-secondary">Phone</p>
+                    <p className="font-semibold text-ink">{selectedCustomer.phone || "N/A"}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-xl bg-zinc-50 p-4">
-                  <User className="h-5 w-5 text-zinc-400" />
+                <div className="flex items-center gap-3 rounded-xl bg-surface-muted p-4">
+                  <User className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-xs text-zinc-600">Role</p>
-                    <p className="font-semibold capitalize text-black">{selectedCustomer.role || "customer"}</p>
+                    <p className="text-xs text-secondary">Role</p>
+                    <p className="font-semibold capitalize text-ink">{selectedCustomer.role || "customer"}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl bg-blue-50 p-4 text-center">
-                    <ShoppingBag className="mx-auto mb-2 h-6 w-6 text-blue-600" />
-                    <p className="text-xs text-blue-600">Total Orders</p>
-                    <p className="mt-1 text-2xl font-bold text-blue-700">{selectedCustomer.totalOrders}</p>
+                  <div className="rounded-xl bg-info-soft p-4 text-center">
+                    <ShoppingBag className="mx-auto mb-2 h-6 w-6 text-info" />
+                    <p className="text-xs text-info">Total Orders</p>
+                    <p className="mt-1 text-2xl font-bold text-info">{selectedCustomer.totalOrders}</p>
                   </div>
 
-                  <div className="rounded-xl bg-green-50 p-4 text-center">
-                    <DollarSign className="mx-auto mb-2 h-6 w-6 text-green-600" />
-                    <p className="text-xs text-green-600">Total Spent</p>
-                    <p className="mt-1 text-2xl font-bold text-green-700">
+                  <div className="rounded-xl bg-success-soft p-4 text-center">
+                    <DollarSign className="mx-auto mb-2 h-6 w-6 text-success" />
+                    <p className="text-xs text-success">Total Spent</p>
+                    <p className="mt-1 text-2xl font-bold text-success">
                       {selectedCustomer.totalSpent.toLocaleString()} MMK
                     </p>
                   </div>
@@ -676,15 +611,15 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-zinc-200 px-6 py-4">
+            <div className="border-t border-line px-6 py-4">
               <button
                 onClick={closeModal}
-                className="w-full rounded-xl bg-yellow-400 py-3 text-sm font-bold text-black hover:bg-yellow-500"
+                className="w-full rounded-xl bg-brand py-3 text-sm font-bold text-on-brand hover:bg-brand"
               >
                 Close
               </button>
             </div>
-          </motion.div>
+          </StudioModal>
         </motion.div>
         )}
       </AnimatePresence>

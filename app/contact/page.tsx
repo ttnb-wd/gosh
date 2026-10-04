@@ -37,7 +37,7 @@ export default function ContactPage() {
   return (
     <main
       role="main"
-      className="min-h-screen bg-[var(--site-bg)] text-[#1f1a14] [&>section:first-of-type]:!pt-0 [&>section:first-of-type]:pb-8 lg:[&>section:first-of-type]:pb-12"
+      className="studio-page studio-contact min-h-screen bg-[var(--site-bg)] text-ink [&>section:first-of-type]:!pt-0 [&>section:first-of-type]:pb-8 lg:[&>section:first-of-type]:pb-12"
     >
       <Navbar cartCount={0} onCartOpen={() => setCartOpen(true)} />
       <ContactSection />

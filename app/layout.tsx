@@ -2,11 +2,17 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./globals-datepicker.css";
+import "./studio.css";
+import "./ambient-background.css";
+import GlobalAmbientBackground from "@/components/GlobalAmbientBackground";
+import { StudioMotion } from "@/components/ui/StudioMotion";
+import StudioFeedback from "@/components/ui/StudioFeedback";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import LoadingProvider from "@/components/LoadingProvider";
 import AuthProvider from "@/components/auth/AuthProvider";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ThemeInit from "@/components/ThemeInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -83,24 +89,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script
-          id="theme-init"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  // Always start in Light Mode on first open.
-                  // Dark Mode is ONLY applied when the user manually clicks
-                  // the theme toggle. Never restore a previously saved theme.
-                  document.documentElement.classList.remove("dark");
-                  document.documentElement.style.colorScheme = "light";
-                } catch (_) {}
-              })();
-            `,
-          }}
-        />
+        <ThemeInit />
       </head>
-      <body className="relative isolate flex min-h-full w-full flex-col overflow-x-hidden bg-[var(--background)] dark:bg-[#0f0b07]" suppressHydrationWarning>
+      <body className="relative isolate flex min-h-full w-full flex-col overflow-x-hidden bg-[var(--background)] " suppressHydrationWarning>
+        <GlobalAmbientBackground />
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe 
@@ -115,12 +107,16 @@ export default function RootLayout({
         <GoogleAnalytics />
         <AuthProvider>
         <ThemeProvider>
+          <StudioMotion>
+          <StudioFeedback>
           <LoadingProvider>
-            <div className="site-page-wrapper relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[var(--background)] pb-20 dark:bg-[#0f0b07] md:pb-0">
+            <div className="site-page-wrapper relative flex min-h-screen w-full flex-col overflow-x-hidden pb-20 md:pb-0">
               {children}
             </div>
             <MobileBottomNav />
           </LoadingProvider>
+          </StudioFeedback>
+          </StudioMotion>
         </ThemeProvider>
         </AuthProvider>
       </body>

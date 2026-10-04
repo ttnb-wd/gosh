@@ -1,199 +1,27 @@
 "use client";
-
-import { ArrowRight, Diamond, Gem, Sparkles } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { GradientText } from "./ui/StudioMotion";
+import { StudioLink } from "./ui/StudioButton";
 
 export default function Hero() {
-  return (
-    <section
-      role="region"
-      aria-label="Hero banner"
-      id="home"
-      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_78%_28%,rgba(247,231,179,0.78),transparent_30%),radial-gradient(circle_at_8%_12%,rgba(255,255,255,0.96),transparent_36%),linear-gradient(135deg,#fffaf0_0%,#fff7e6_48%,#f3dfb2_100%)] px-0 pb-6 pt-0 dark:bg-[#0f0b07] sm:px-6 sm:pb-8 lg:px-8 lg:pb-10"
-    >
-      <div
-        className="pointer-events-none absolute inset-0 z-0 opacity-80"
-        aria-hidden="true"
-      >
-      </div>
-
-      {/* Hero Image - Absolute positioned to blend into background - Hidden on mobile, visible on tablet+ */}
-      <div className="pointer-events-none absolute top-0 bottom-0 right-0 z-[1] hidden w-[65%] overflow-hidden sm:block lg:block">
-        <Image
-          src="/images/hero/perfumebottle (2).png"
-          alt="GOSH Perfume Studio golden perfume bottle with jasmine flowers and gold ribbon"
-          fill
-          priority
-          sizes="65vw"
-          className="object-contain opacity-100"
-          style={{
-            objectFit: 'contain',
-            objectPosition: 'right top',
-            // Feather the opaque rectangle edges of the source asset so the image
-            // blends seamlessly into the Hero background without a visible box edge.
-            // The two gradients intersect to fade a soft band around the perimeter;
-            // the center (perfume bottle) stays fully opaque and unchanged.
-            WebkitMaskImage:
-              'linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent)',
-            maskImage:
-              'linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent)',
-            WebkitMaskComposite: 'source-in',
-            maskComposite: 'intersect',
-          }}
-          fetchPriority="high"
-        />
-        {/* Left fade overlay - minimal blend on edge only */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-48 bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/40 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/75" />
-        {/* Top fade overlay - minimal blend on edge only */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#fffaf0] via-[#fffaf0]/30 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/50" />
-        {/* Bottom fade overlay - constrained to image area only, stops before feature card */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-[#fbf6ed] via-[#fbf6ed]/60 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/70 sm:h-40 lg:h-48" />
-      </div>
-
-      {/* Dark mode soft gradient overlay - blends dark area into image */}
-      <div className="absolute inset-0 z-[1] hidden dark:block pointer-events-none bg-[linear-gradient(90deg,#0f0b07_0%,rgba(15,11,7,0.95)_18%,rgba(15,11,7,0.70)_30%,rgba(15,11,7,0.35)_42%,rgba(15,11,7,0.10)_52%,transparent_62%)]" />
-
-      {/* Gradient overlay for text readability - Hidden on mobile, visible on tablet+ */}
-      <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-[4] hidden w-[58%] bg-gradient-to-r from-[#fffaf0] via-[#fffaf0]/80 to-transparent dark:from-[#0f0b07] dark:via-[#0f0b07]/95 dark:to-transparent sm:block lg:block" />
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] hidden w-[52%] bg-[linear-gradient(90deg,#0f0b07_0%,#0f0b07_64%,rgba(15,11,7,0.72)_82%,transparent_100%)] opacity-0 dark:opacity-100 sm:block" />
-
-      <div className="relative z-10 dark:bg-[#0f0b07] sm:dark:bg-transparent">
-        <div className="mx-auto max-w-7xl dark:bg-[#0f0b07] sm:dark:bg-transparent">
-          <div className="grid items-center px-0 pb-0 pt-0 dark:bg-[#0f0b07] sm:bg-transparent sm:px-6 sm:pb-12 sm:pt-6 sm:dark:bg-transparent lg:grid-cols-[40%_60%] lg:px-8 lg:pb-16 lg:pt-8">
-            {/* Mobile: Content area with background image | Desktop: Normal content */}
-            <div className="relative w-full mx-0 px-0 py-4 pb-4 mb-0 sm:static sm:max-w-2xl sm:mx-auto sm:px-0 sm:py-0 sm:pb-0 sm:mb-0 text-center sm:text-left">
-              
-              {/* Mobile-only background inside content area only - Hidden */}
-              <div className="hidden absolute inset-0 z-0 pointer-events-none overflow-hidden sm:hidden">
-                <Image
-                  src="/images/hero/perfumebottle (2).png"
-                  alt="Perfume bottle background"
-                  fill
-                  priority
-                  className="object-cover object-center opacity-65 dark:opacity-32"
-                />
-                <div className="absolute inset-0 bg-white/10 dark:bg-[#0f0b07]/25" />
-              </div>
-
-              {/* Mobile readability overlay - Hidden */}
-              <div className="hidden absolute inset-0 z-[1] bg-white/20 pointer-events-none dark:bg-[#0f0b07]/20 sm:hidden" />
-
-              {/* Content - Above background */}
-              <div className="relative z-10 px-5 sm:px-0">
-                <h1 className="max-w-4xl pb-2 font-serif text-[clamp(2.5rem,9vw,3.6rem)] leading-[1.08] tracking-tight text-[#15120f] drop-shadow-[0_2px_8px_rgba(255,255,255,0.65)] dark:text-[#fff7e6] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.75)] sm:text-[3.35rem] sm:drop-shadow-none sm:dark:drop-shadow-none md:text-[4rem] lg:max-w-[650px] lg:text-[4.75rem] xl:text-[5.35rem]">
-                  <span className="block whitespace-nowrap">Curated Authentic</span>
-                  <span className="block pb-1 bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] bg-clip-text text-transparent drop-shadow-[0_1px_4px_rgba(255,247,230,0.5)] dark:bg-[linear-gradient(135deg,#d4af37,#f7d774,#b88700)] dark:drop-shadow-[0_3px_10px_rgba(0,0,0,0.7)] sm:dark:bg-[linear-gradient(135deg,#b88700,#d4af37,#8d5f00)] sm:drop-shadow-none sm:dark:drop-shadow-none">
-                    Fragrances
-                  </span>
-                </h1>
-
-                <div className="mx-auto mt-7 flex max-w-sm items-center justify-center gap-3 sm:mx-0 sm:justify-start">
-                  <span className="h-px flex-1 bg-[#d4af37]/60" />
-                  <span className="h-2.5 w-2.5 rotate-45 bg-[#d4af37]" />
-                  <span className="h-px flex-1 bg-[#d4af37]/60" />
-                </div>
-
-                <p className="mx-auto mt-7 max-w-[360px] text-[15.5px] font-medium leading-7 text-black/85 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)] dark:text-[#fff7e6] dark:drop-shadow-[0_2px_10px_rgba(0,0,0,0.78)] sm:mx-0 sm:max-w-xl sm:text-base sm:leading-8 sm:text-[#4f4234] sm:drop-shadow-none sm:dark:text-[#fff7e6] sm:dark:drop-shadow-none lg:text-lg">
-                  Discover carefully sourced perfumes selected for elegance, quality, and
-                  confidence. Shop every fragrance with peace of mind.
-                </p>
-
-                <div className="mt-8 flex flex-row items-center justify-center gap-2 px-2 sm:justify-start sm:gap-4 sm:px-0">
-                  <Link href="/products">
-                    <button className="group inline-flex h-11 min-w-[110px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#d4af37]/45 bg-[linear-gradient(135deg,#d4af37,#f7d774)] px-3 text-xs font-bold text-[#1f1a14] shadow-[0_12px_30px_rgba(212,175,55,0.22)] transition hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#c99a1e,#f3d98b)] hover:shadow-[0_16px_40px_rgba(212,175,55,0.32)] active:scale-95 sm:h-auto sm:min-w-0 sm:gap-3 sm:px-8 sm:py-4 sm:text-base sm:text-lg">
-                      Shop Now
-                      <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1 sm:h-5 sm:w-5" />
-                    </button>
-                  </Link>
-
-                  <Link href="/products">
-                    <button className="h-11 min-w-[140px] whitespace-nowrap rounded-full bg-[#1f1a14] px-3 text-xs font-bold text-white shadow-[0_12px_28px_rgba(31,26,20,0.18)] transition hover:-translate-y-0.5 hover:bg-[#2a2018] dark:bg-[#17120b] dark:text-[#fff7e6] dark:hover:bg-[#1f1a14] sm:dark:bg-[#fff7e6] sm:dark:text-[#1f1a14] sm:dark:hover:bg-[#f7e7b3] sm:h-auto sm:min-w-0 sm:px-8 sm:py-4 sm:text-base sm:text-lg">
-                      Explore Collection
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-            </div>
-
-            {/* Mobile Image - Hidden */}
-            <div className="relative hidden">
-              <Image
-                src="/images/hero/perfumebottle (2).png"
-                alt="GOSH Perfume Studio golden perfume bottle with jasmine flowers and gold ribbon"
-                fill
-                sizes="(max-width: 768px) 100vw, 500px"
-                className="object-contain object-center"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Premium Feature Card - Overlapping Hero - Above all gradients */}
-        <div className="relative z-30 mx-0 mt-0 w-full max-w-full px-0 dark:bg-[#0f0b07] sm:mt-7 sm:bg-transparent sm:dark:bg-transparent lg:mt-8">
-          <div className="w-full overflow-hidden rounded-3xl border-y border-[#d4af37]/30 bg-[#fffef9] shadow-[0_8px_32px_rgba(212,175,55,0.08)] dark:bg-[#15100b] dark:shadow-[0_16px_52px_rgba(0,0,0,0.34)]">
-            <div className="grid gap-0 divide-y divide-[#d4af37]/15 dark:divide-[#d4af37]/25 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-            {/* Column 1: Authentic product focus */}
-            <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
-                <Diamond className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
-                  AUTHENTIC FOCUS
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  Honest fragrance details for confident shopping.
-                </p>
-              </div>
-            </div>
-
-            {/* Column 2: Carefully sourced */}
-            <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
-                <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
-                  CAREFULLY SOURCED
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  Selected with care from trusted fragrance sources.
-                </p>
-              </div>
-            </div>
-
-            {/* Column 3: Quality checked */}
-            <div className="flex gap-5 p-7 sm:gap-6 sm:p-8 lg:gap-7 lg:p-10">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#d4af37]/40 bg-[#fffaf0] dark:bg-[#1a1410] text-[#b88700] sm:h-12 sm:w-12">
-                <Gem className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#b88700] sm:text-sm">
-                  Quality Checked
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#4f4234] dark:text-[#fff7e6]/70 sm:mt-2.5 sm:text-base sm:leading-relaxed">
-                  Products are reviewed before listing.
-                </p>
-                <Link
-                  href="/products"
-                  className="mt-3 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#b88700] transition hover:gap-3 hover:text-[#8d5f00] sm:mt-3.5 sm:text-base"
-                >
-                  Explore More
-                  <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom section fade - only affects area below feature card */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-[-1px] z-[5] h-24 bg-[linear-gradient(to_bottom,rgba(251,246,237,0)_0%,rgba(251,246,237,0.3)_50%,rgba(251,246,237,1)_100%)] dark:bg-[linear-gradient(to_bottom,rgba(15,11,7,0)_0%,rgba(15,11,7,0.72)_45%,#0f0b07_100%)]"
-        aria-hidden="true"
-      />
-    </section>
-  );
+  const reduced = useReducedMotion();
+  const entrance = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
+  return <section id="home" aria-label="GOSH fragrance studio" className="studio-hero">
+    <div className="studio-hero-halo" aria-hidden="true" /><div className="studio-hero-grid" aria-hidden="true" />
+    <motion.div className="studio-hero-content" initial={reduced ? false : "hidden"} animate="visible" transition={{ staggerChildren: 0.13, delayChildren: 0.1 }}>
+      <motion.p variants={entrance} className="studio-eyebrow"><span className="studio-dot" /> GOSH PERFUME STUDIO <span className="studio-hero-edition">THE FRAGRANCE EDIT</span></motion.p>
+      <motion.h1 variants={entrance} className="studio-hero-title">A scent.<br /><span className="studio-hero-title-second">A <GradientText>feeling.</GradientText></span><br /><span className="studio-hero-title-third">Only yours.</span></motion.h1>
+      <motion.div variants={entrance} className="studio-hero-bottom"><p>Fragrance is personal. Discover a considered collection of authentic perfumes, chosen to become a part of your story.</p><div className="studio-hero-actions"><StudioLink href="/products">Discover the collection <ArrowUpRight size={18} /></StudioLink><StudioLink href="/products" variant="secondary">Explore your scent <ArrowUpRight size={18} /></StudioLink></div></motion.div>
+    </motion.div>
+    <div className="studio-fragrance-art" aria-hidden="true">
+      <span className="studio-art-caption">AN EXPRESSION OF YOU</span>
+      <div className="studio-orbit studio-orbit-one" /><div className="studio-orbit studio-orbit-two" />
+      <div className="studio-sphere studio-sphere-amber" /><div className="studio-sphere studio-sphere-rose" /><div className="studio-sphere studio-sphere-pearl" />
+      <div className="studio-glass-sculpture"><span className="studio-sculpture-rim" /><span className="studio-sculpture-core" /><span className="studio-sculpture-label">GOSH<small>ESSENCE OF INDIVIDUALITY</small></span></div>
+      <span className="studio-fragment studio-fragment-one" /><span className="studio-fragment studio-fragment-two" /><span className="studio-fragment studio-fragment-three" />
+      <span className="studio-art-note studio-art-note-one">01 / A little mystery</span><span className="studio-art-note studio-art-note-two">02 / An unforgettable impression</span>
+    </div>
+    <div className="studio-hero-foot"><a href="#studio-introduction">SCROLL TO DISCOVER <ArrowDown size={14} /></a><span>CAREFULLY SOURCED. BEAUTIFULLY PERSONAL.</span><span className="studio-hero-index">01 — GOSH</span></div>
+  </section>;
 }

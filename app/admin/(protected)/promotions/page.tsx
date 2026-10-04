@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ProductPromotionManager from "@/components/admin/ProductPromotionManager";
+import AdminHeader from "@/components/admin/AdminHeader";
 
 export const metadata: Metadata = {
   title: "Promotions | Admin",
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function PromotionsPage() {
-  return <ProductPromotionManager />;
+  return <><AdminHeader title="Promotions" subtitle="Considered offers, thoughtfully timed" /><main><ProductPromotionManager /></main></>;
 }

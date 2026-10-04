@@ -1,5 +1,6 @@
 "use client";
 
+import StudioErrorText from "@/components/ui/StudioErrorText";
 import { useState } from "react";
 import Link from "next/link";
 import { getAuthErrorMessage } from "@/lib/auth/errors";
@@ -34,9 +35,9 @@ export default function ForgotPasswordPage() {
       <form onSubmit={submit} noValidate aria-busy={busy} className="space-y-5">
         <label htmlFor="reset-email" className="block text-sm font-bold">Email</label>
         <input id="reset-email" type="email" autoComplete="email" required maxLength={254} aria-invalid={!!error} aria-describedby={error ? "reset-email-error" : undefined} className={authInputClass} value={email} onChange={(event) => setEmail(event.target.value)} />
-        {error && <p id="reset-email-error" role="alert" className="text-sm text-red-700">{error}</p>}
+        {error && <p id="reset-email-error" role="alert" className="text-sm text-destructive"><StudioErrorText message={error} /></p>}
         <button disabled={busy} className={authButtonClass}>{busy ? "Sending..." : "Send reset link"}</button>
       </form>}
-    <Link href="/login" className="block text-sm text-yellow-700">Back to login</Link>
+    <Link href="/login" className="block text-sm text-accent">Back to login</Link>
   </AuthShell>;
 }
