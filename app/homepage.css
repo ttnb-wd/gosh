@@ -61,7 +61,11 @@
 /* The gradient's own paint box needs padding for italic glyph overhang. */
 .homepage-luxury .home-headline-signature > .home-gradient { display: inline-block; vertical-align: top; width: max-content; padding: .12em .16em .18em .025em; margin: -.12em 0 -.18em -.025em; overflow: visible; }
 .homepage-luxury .home-headline-bottom { font-size: .86em; font-weight: 300; letter-spacing: .01em; color: var(--ink); }
-.homepage-luxury .home-headline-star { display: inline-block; vertical-align: top; margin: .12em 0 0 .62em; font-size: .52em; font-weight: 200; color: var(--hero-gold); }
+.homepage-luxury .home-headline-star { display: inline-block; vertical-align: top; width: 1em; height: 1em; margin: .12em 0 0 .62em; font-size: .52em; line-height: 1; color: var(--hero-gold); pointer-events: none; }
+.homepage-luxury .home-headline-star svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--hero-gold) 22%, transparent)); }
+.homepage-luxury .home-headline-sparkle-light { stop-color: var(--champagne); }
+.homepage-luxury .home-headline-sparkle-gold { stop-color: var(--hero-gold); }
+.homepage-luxury .home-headline-sparkle-bronze { stop-color: var(--hero-bronze); }
 .homepage-luxury .home-hero-description { color: var(--home-muted); font: 15px/1.55 var(--studio-body); }
 .homepage-luxury .home-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
 .homepage-luxury .home-cta { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 20px; min-height: 49px; padding: 14px 21px; border: 1px solid var(--line); border-radius: 8px; color: var(--on-cta); font-size: 11px; font-weight: 500; background: linear-gradient(110deg, var(--cta-start), var(--cta-middle) 54%, var(--cta-end)); box-shadow: 0 7px 18px color-mix(in srgb, var(--shadow-ink) 13.3%, transparent), inset 0 1px 0 color-mix(in srgb, var(--ambient-gold) 36.9%, transparent); overflow: hidden; transition: transform .35s var(--home-ease), box-shadow .35s; text-decoration: none; }

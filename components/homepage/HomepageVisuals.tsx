@@ -131,7 +131,19 @@ export function HomepageHero() {
         <h1 id="home-headline" className="home-headline">
           <span className="home-headline-top home-hero-enter" style={{ "--enter-delay": "360ms" } as CSSProperties}>FIND YOUR</span>
           <span className="home-headline-signature home-hero-enter" style={{ "--enter-delay": "480ms" } as CSSProperties}><span className="home-gradient">signature</span></span>
-          <span className="home-headline-bottom home-hero-enter" style={{ "--enter-delay": "600ms" } as CSSProperties}>SCENT<span className="home-headline-star" aria-hidden="true">✳</span></span>
+          <span className="home-headline-bottom home-hero-enter" style={{ "--enter-delay": "600ms" } as CSSProperties}>SCENT<span className="home-headline-star" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" focusable="false">
+              <defs>
+                <linearGradient id="home-headline-sparkle" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop className="home-headline-sparkle-light" />
+                  <stop offset=".48" className="home-headline-sparkle-gold" />
+                  <stop offset="1" className="home-headline-sparkle-bronze" />
+                </linearGradient>
+              </defs>
+              <path d="M16 3C17.2 12.5 19.5 14.8 29 16C19.5 17.2 17.2 19.5 16 29C14.8 19.5 12.5 17.2 3 16C12.5 14.8 14.8 12.5 16 3Z" fill="url(#home-headline-sparkle)" />
+              <path d="M7 7L10 10M22 22L25 25M25 7L22 10M10 22L7 25" stroke="currentColor" strokeWidth=".7" strokeLinecap="round" opacity=".55" />
+            </svg>
+          </span></span>
         </h1>
         <p className="home-hero-description home-hero-enter" style={{ "--enter-delay": "720ms" } as CSSProperties}>Some scents are worn.<br /> Others become a part of you.</p>
         <div className="home-hero-actions home-hero-enter" style={{ "--enter-delay": "820ms" } as CSSProperties}><HomeLink href="/products">Discover the collection</HomeLink><HomeLink href="#scent-story" secondary>Find your mood</HomeLink></div>
