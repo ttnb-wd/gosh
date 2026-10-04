@@ -5,8 +5,8 @@
 
 import { NextRequest } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { canAccessProtectedPages, isSameOrigin, readSessionCookie, SESSION_COOKIE_NAME } from "./session";
 
-const SESSION_COOKIE_NAME = "firebase-session";
 
 function getBearerToken(request: NextRequest | Request): string | null {
   const authHeader = request.headers.get("authorization");
@@ -16,29 +16,6 @@ function getBearerToken(request: NextRequest | Request): string | null {
   }
 
   return authHeader.substring(7).trim() || null;
-}
-
-function getSessionCookieToken(
-  request: NextRequest | Request
-): string | null {
-  const cookieHeader = request.headers.get("cookie");
-
-  if (!cookieHeader) {
-    return null;
-  }
-
-  const cookies = cookieHeader.split(";");
-
-  for (const cookie of cookies) {
-    const [name, ...rest] = cookie.trim().split("=");
-
-    if (name === SESSION_COOKIE_NAME) {
-      const value = rest.join("=");
-      return value ? decodeURIComponent(value) : null;
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -53,7 +30,7 @@ export async function getAuthenticatedUser(
   request: NextRequest | Request
 ) {
   const bearerToken = getBearerToken(request);
-  const sessionToken = getSessionCookieToken(request);
+  const sessionToken = readSessionCookie(request);
 
   const token = bearerToken || sessionToken;
 
@@ -63,14 +40,19 @@ export async function getAuthenticatedUser(
 
   try {
     // Prefer ID-token verification (tokens from the client SDK).
+    // checkRevoked=true rejects tokens after the user's refresh tokens were
+    // revoked (e.g. after logout), so a revoked session cannot authenticate.
     if (bearerToken) {
-      return await adminAuth.verifyIdToken(bearerToken);
+      const user = await adminAuth.verifyIdToken(bearerToken, true);
+      return await canAccessProtectedPages(user) ? user : null;
     }
 
     // Fall back to the httpOnly session cookie created by POST /api/auth/session.
-    return await adminAuth.verifySessionCookie(sessionToken!, true);
-  } catch (error) {
-    console.error("Firebase token verification failed:", error);
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method) && !isSameOrigin(request)) return null;
+    const user = await adminAuth.verifySessionCookie(sessionToken!, true);
+    return await canAccessProtectedPages(user) ? user : null;
+  } catch {
+
     return null;
   }
 }
@@ -111,11 +93,8 @@ export async function checkAdminApiAuth(
       user,
       profile,
     };
-  } catch (error) {
-    console.error(
-      "Firebase admin profile check failed:",
-      error
-    );
+  } catch {
+
 
     return {
       isAdmin: false,

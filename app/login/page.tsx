@@ -4,13 +4,13 @@ import { useCallback, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
 signInWithEmail,
-signOutUser,
+createServerSession,
+syncUserProfile,
 signUpWithEmail,
 } from "@/lib/firebase/auth";
-import {
-ensureUserProfile,
-getUserProfile,
-} from "@/lib/firebase/users";
+import { auth } from "@/lib/firebase/config";
+import { verificationPath } from "@/lib/auth/config";
+import { getAuthErrorMessage, safeAuthRedirect } from "@/lib/auth/errors";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import {
@@ -23,71 +23,23 @@ Diamond,
 Gem,
 } from "lucide-react";
 
-function getFirebaseErrorMessage(
-error: unknown,
-fallback = "Something went wrong. Please try again."
-): string {
-if (!error || typeof error !== "object") {
-return fallback;
-}
-
-const firebaseError = error as {
-code?: string;
-message?: string;
-};
-
-switch (firebaseError.code) {
-case "auth/invalid-email":
-return "Please enter a valid email address.";
-
-case "auth/user-disabled":
-  return "This account has been disabled.";
-
-case "auth/user-not-found":
-  return "No account found with this email.";
-
-case "auth/wrong-password":
-  return "Invalid email or password.";
-
-case "auth/invalid-credential":
-  return "Invalid email or password.";
-
-case "auth/email-already-in-use":
-  return "An account with this email already exists.";
-
-case "auth/weak-password":
-  return "Password is too weak.";
-
-case "auth/network-request-failed":
-  return "Network error. Please check your internet connection.";
-
-case "auth/too-many-requests":
-  return "Too many attempts. Please try again later.";
-
-case "auth/operation-not-allowed":
-  return "Email/password authentication is not enabled.";
-
-default:
-  return firebaseError.message || fallback;
-
-}
-}
-
 function LoginForm() {
 const router = useRouter();
 const searchParams = useSearchParams();
 
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
+const [fullName, setFullName] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
 
 const [mode, setMode] =
-useState<"login" | "signup">("login");
+useState<"login" | "signup">(searchParams.get("mode") === "signup" ? "signup" : "login");
 
 const [loading, setLoading] = useState(false);
 const [error, setError] = useState("");
 
 const [redirectTo, setRedirectTo] =
-useState<string>("/");
+useState<string>(safeAuthRedirect(searchParams.get("redirect")));
 
 const [turnstileToken, setTurnstileToken] =
 useState("");
@@ -131,7 +83,7 @@ searchParams.get("redirect");
 
 if (
   redirect &&
-  redirect.startsWith("/")
+  redirect.startsWith("/") && !redirect.startsWith("//")
 ) {
   setRedirectTo(redirect);
 }
@@ -168,8 +120,7 @@ if (!emailValidation.isValid) {
     "Invalid email";
 }
 
-const passwordValidation =
-  validatePassword(password);
+const passwordValidation = mode === "signup" ? validatePassword(password) : { isValid: !!password, error: "Password is required" };
 
 if (!passwordValidation.isValid) {
   newErrors.password =
@@ -177,58 +128,15 @@ if (!passwordValidation.isValid) {
     "Invalid password";
 }
 
+if (mode === "signup") {
+  if (fullName.trim().length < 2 || fullName.trim().length > 100) newErrors.fullName = "Enter your full name (2–100 characters).";
+  if (password !== confirmPassword) newErrors.confirmPassword = "Passwords must match.";
+}
 setFieldErrors(newErrors);
 
 return (
   Object.keys(newErrors).length === 0
 );
-
-};
-
-const createServerSession = async (
-firebaseUser: {
-getIdToken: (
-forceRefresh?: boolean
-) => Promise<string>;
-}
-) => {
-
-const idToken =
-  await firebaseUser.getIdToken(true);
-
-if (!idToken) {
-  throw new Error(
-    "Could not get Firebase authentication token."
-  );
-}
-
-const sessionResponse =
-  await fetch(
-    "/api/auth/session",
-    {
-      method: "POST",
-      headers: {
-        Authorization:
-          `Bearer ${idToken}`,
-      },
-      credentials: "include",
-    }
-  );
-
-const sessionResult =
-  (await sessionResponse.json()) as {
-    success?: boolean;
-    error?: string;
-  };
-
-if (!sessionResponse.ok) {
-  
-
-  throw new Error(
-    sessionResult.error ||
-      "Could not create secure session."
-  );
-}
 
 };
 
@@ -297,17 +205,13 @@ try {
         }
       );
 
-    const turnstileResult =
-      (await turnstileResponse.json()) as {
-        error?: string;
-      };
+    await turnstileResponse.json();
 
     if (
       !turnstileResponse.ok
     ) {
       setError(
-        turnstileResult.error ||
-          "Security check failed. Please try again."
+        "Please try the security check again."
       );
 
       resetTurnstile();
@@ -324,169 +228,23 @@ try {
    * SIGNUP
    */
   if (mode === "signup") {
-    
-
-    const credential =
-      await signUpWithEmail(
-        email.trim(),
-        password
-      );
-
-    const firebaseUser =
-      credential.user;
-
-    await ensureUserProfile(
-      firebaseUser.uid,
-      firebaseUser.email,
-      null
-    );
-
-    try {
-      await signOutUser();
-    } catch {
-        // Best-effort sign-out after account creation.
-      }
-
-    router.replace(
-      "/login?created=1"
-    );
-
+    await signUpWithEmail(email.trim(), password, fullName, safeAuthRedirect(redirectTo, "/account"));
+    router.replace(verificationPath(redirectTo, "sent"));
     return;
   }
-
-  /*
-   * STEP 4
-   * Firebase Login
-   */
-  
-
-  const credential =
-    await signInWithEmail(
-      email.trim(),
-      password
-    );
-
-  const firebaseUser =
-    credential.user;
-
-  if (!firebaseUser) {
-    throw new Error(
-      "Could not verify logged in user."
-    );
+  const credential = await signInWithEmail(email.trim(), password);
+  await syncUserProfile(credential.user);
+  try {
+    await createServerSession(credential.user);
+  } catch (sessionError) {
+    if ((sessionError as { code?: string }).code === "email-unverified") {
+      router.replace(verificationPath(redirectTo));
+      return;
+    }
+    throw sessionError;
   }
-
-  
-
-  /*
-   * STEP 5
-   * Load Firestore profile
-   */
-  
-
-  let profile =
-    await getUserProfile(
-      firebaseUser.uid
-    );
-
-  /*
-   * Create profile if missing
-   */
-  if (!profile) {
-    
-
-    profile =
-      await ensureUserProfile(
-        firebaseUser.uid,
-        firebaseUser.email,
-        null
-      );
-  }
-
-  if (!profile) {
-    await signOutUser();
-
-    throw new Error(
-      "Profile not found. Please contact admin."
-    );
-  }
-
-  
-
-  /*
-   * STEP 6
-   * Check account role
-   */
-  
-
-  
-
-  /*
-   * STEP 7
-   * Create Firebase server session
-   *
-   * IMPORTANT:
-   *
-   * Admin and customer both use
-   * the SAME login page.
-   *
-   * The server session is created
-   * for BOTH account types.
-   *
-   * Admin access is controlled later
-   * by requireAdmin().
-   */
-  
-
-  await createServerSession(
-    firebaseUser
-  );
-
-  
-
-  /*
-   * STEP 8
-   * Redirect
-   *
-   * Admin does NOT automatically go
-   * to /admin anymore.
-   *
-   * Everyone returns to the website.
-   *
-   * Admin dashboard button/icon will
-   * be displayed by the website UI
-   * based on profile.role.
-   */
-  
-
-  const safeRedirect =
-    redirectTo &&
-    redirectTo.startsWith("/")
-      ? redirectTo
-      : "/";
-
-  /*
-   * Never allow the normal login flow
-   * to redirect directly to /admin.
-   *
-   * Admin enters dashboard by clicking
-   * the Admin Dashboard button/icon.
-   */
-  if (
-    safeRedirect === "/admin" ||
-    safeRedirect.startsWith(
-      "/admin/"
-    )
-  ) {
-    router.replace("/");
-  } else {
-    router.replace(
-      safeRedirect
-    );
-  }
-
+  router.replace(safeAuthRedirect(redirectTo));
   router.refresh();
-
-  
 } catch (error) {
   
 
@@ -497,14 +255,15 @@ try {
   
 
   setError(
-    getFirebaseErrorMessage(
+    getAuthErrorMessage(
       error,
-      mode === "signup"
-        ? "Could not create account."
-        : "Invalid email or password."
+      "Something went wrong. Please try again."
     )
   );
 
+  if (mode === "signup" && auth.currentUser && !auth.currentUser.emailVerified) {
+    router.replace(verificationPath(redirectTo, "failed"));
+  }
   resetTurnstile();
 } finally {
   setLoading(false);
@@ -552,6 +311,7 @@ return ( <main
             </p>
           </div>
 
+          {searchParams.get("verified") === "1" && <p role="status" className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700">Your email is verified. Sign in to continue.</p>}
           {accountCreated && (
             <div
               role="alert"
@@ -563,9 +323,20 @@ return ( <main
 
           <form
             onSubmit={handleAuth}
+            noValidate
+            aria-busy={loading}
             className="space-y-5"
           >
 
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="full-name" className="mb-2 block text-sm font-bold">Full Name</label>
+                <input id="full-name" name="name" autoComplete="name" required minLength={2} maxLength={100} aria-invalid={!!fieldErrors.fullName} aria-describedby={fieldErrors.fullName ? "full-name-error" : undefined}
+                  value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-neutral-950 dark:bg-[#1c160f] dark:text-[#fff7e6]" />
+                {fieldErrors.fullName && <p id="full-name-error" role="alert" className="mt-1 text-sm text-red-600">{fieldErrors.fullName}</p>}
+              </div>
+            )}
             <div>
               <label
                 htmlFor="login-email"
@@ -578,6 +349,7 @@ return ( <main
                 id="login-email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => {
@@ -670,7 +442,8 @@ return ( <main
                     : "border-yellow-200 focus:border-yellow-400 focus:ring-yellow-200/60"
                 } bg-white px-4 py-3 text-sm font-semibold text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:ring-4 dark:border-[#d4af37]/30 dark:bg-[#1c160f] dark:!text-[#fff7e6] dark:placeholder:text-[#fff7e6]/45`}
                 placeholder="Enter your password"
-                minLength={8}
+                minLength={mode === "signup" ? 8 : undefined}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 aria-invalid={
                   !!fieldErrors.password
                 }
@@ -700,6 +473,16 @@ return ( <main
                 )}
             </div>
 
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="confirm-password" className="mb-2 block text-sm font-bold">Confirm Password</label>
+                <input id="confirm-password" type="password" autoComplete="new-password" required aria-invalid={!!fieldErrors.confirmPassword} aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
+                  value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-yellow-200 bg-white px-4 py-3 text-neutral-950 dark:bg-[#1c160f] dark:text-[#fff7e6]" />
+                {fieldErrors.confirmPassword && <p id="confirm-password-error" role="alert" className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>}
+              </div>
+            )}
+            {mode === "login" && <Link href="/forgot-password" className="block text-sm text-yellow-700">Forgot Password?</Link>}
             {error && (
               <div
                 role="alert"
@@ -745,6 +528,7 @@ return ( <main
 
           <button
             type="button"
+            disabled={loading}
             onClick={() => {
               setError("");
               resetTurnstile();

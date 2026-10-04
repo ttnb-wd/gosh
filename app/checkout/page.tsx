@@ -336,7 +336,7 @@ function CheckoutPageContent() {
 
   const uploadPaymentProof = async (
     authorizationHeader: Record<string, string>
-  ): Promise<{ url: string; fileId: string } | null> => {
+  ): Promise<{ fileId: string } | null> => {
     const selectedFile = selectedPayment
       ? paymentScreenshots[selectedPayment]
       : null;
@@ -356,16 +356,17 @@ function CheckoutPageContent() {
 
     const result = (await response.json()) as {
       success?: boolean;
-      url?: string;
       fileId?: string;
       error?: string;
     };
 
-    if (!response.ok || !result.success || !result.url || !result.fileId) {
+    if (!response.ok || !result.success || !result.fileId) {
       throw new Error(result.error || "Could not upload your payment proof.");
     }
 
-    return { url: result.url, fileId: result.fileId };
+    // Only the fileId is returned — the public ImageKit URL is never exposed.
+    // The receipt is served later through the authenticated proxy route.
+    return { fileId: result.fileId };
   };
 
   const deleteUploadedPaymentScreenshot = async (
@@ -473,11 +474,9 @@ function CheckoutPageContent() {
         return;
       }
 
-      let paymentScreenshotUrl: string | null = null;
       let paymentScreenshotFileId: string | null = null;
 
       const paymentUploadResult = await uploadPaymentProof(authorizationHeader);
-      paymentScreenshotUrl = paymentUploadResult?.url ?? null;
       paymentScreenshotFileId = paymentUploadResult?.fileId ?? null;
 
       const orderItemsPayload = cartItems.map((item) => ({
@@ -501,7 +500,7 @@ function CheckoutPageContent() {
           paymentAccountName: selectedPaymentInfo.payment_account_name,
           paymentPhone: selectedPaymentInfo.payment_phone,
           paymentAccountNumber: selectedPaymentInfo.payment_account_number,
-          paymentScreenshotUrl,
+          paymentScreenshotUrl: null,
           paymentScreenshotFileId,
           items: orderItemsPayload,
         }),

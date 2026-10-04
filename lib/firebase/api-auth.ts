@@ -56,8 +56,8 @@ export async function requireFirebaseAdmin(request: Request) {
       profile,
       error: null,
     };
-  } catch (error) {
-    console.error("Firebase admin verification error:", error);
+  } catch {
+
 
     return {
       user: null,

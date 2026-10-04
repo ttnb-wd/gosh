@@ -3,11 +3,11 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
-import { getUserProfile } from "@/lib/firebase/users";
+import { signInWithEmail, syncUserProfile, createServerSession } from "@/lib/firebase/auth";
+import { getAuthErrorMessage } from "@/lib/auth/errors";
 import {
   Lock,
   Mail,
@@ -19,7 +19,6 @@ import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import {
   validateEmail,
-  validatePassword,
 } from "@/lib/validation";
 
 export default function AdminLoginPage() {
@@ -90,8 +89,7 @@ export default function AdminLoginPage() {
         emailValidation.error || "Invalid email";
     }
 
-    const passwordValidation =
-      validatePassword(password);
+    const passwordValidation = { isValid: !!password, error: "Password is required" };
 
     if (!passwordValidation.isValid) {
       newErrors.password =
@@ -225,8 +223,7 @@ export default function AdminLoginPage() {
       
 
       const credential =
-        await signInWithEmailAndPassword(
-          auth,
+        await signInWithEmail(
           email.trim(),
           password
         );
@@ -243,12 +240,7 @@ export default function AdminLoginPage() {
        */
       
 
-      const profile =
-        await getUserProfile(
-          firebaseUser.uid
-        );
-
-      
+      const profile = await syncUserProfile(firebaseUser);
 
       /*
        * Profile does not exist
@@ -258,9 +250,8 @@ export default function AdminLoginPage() {
 
         await signOut(auth);
 
-        throw new Error(
-          "Profile not found. Please contact admin."
-        );
+        setError("Profile not found. Please contact the administrator.");
+        return;
       }
 
       /*
@@ -276,9 +267,8 @@ export default function AdminLoginPage() {
 
         await signOut(auth);
 
-        throw new Error(
-          `You do not have admin access. Current role: ${profile.role}`
-        );
+        setError("You do not have admin access.");
+        return;
       }
 
       
@@ -305,88 +295,7 @@ export default function AdminLoginPage() {
       /*
        * Get Firebase ID token
        */
-      const idToken =
-        await firebaseUser.getIdToken(true);
-
-      if (!idToken) {
-        
-
-        await signOut(auth);
-
-        throw new Error(
-          "Could not get Firebase authentication token."
-        );
-      }
-
-      
-
-      /*
-       * Send ID token to Next.js API
-       */
-      const sessionResponse =
-        await fetch(
-          "/api/auth/session",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
-
-      
-
-      const sessionResult =
-        (await sessionResponse.json()) as {
-          success?: boolean;
-          error?: string;
-        };
-
-      
-
-      /*
-       * Session creation failed
-       */
-      if (!sessionResponse.ok) {
-        
-
-        await signOut(auth);
-
-        throw new Error(
-          sessionResult.error ||
-            "Could not create secure admin session."
-        );
-      }
-
-      /*
-       * Make sure API explicitly reported success
-       */
-      if (sessionResult.success !== true) {
-        
-
-        await signOut(auth);
-
-        throw new Error(
-          "Could not confirm secure admin session."
-        );
-      }
-
-      
-
-      /*
-       * ========================================
-       * STEP 8
-       * Redirect to Admin Dashboard
-       * ========================================
-       */
-      
-
-      /*
-       * router.replace() prevents returning to
-       * login page with browser back button.
-       */
+      await createServerSession(firebaseUser);
       router.replace("/admin");
 
       /*
@@ -405,65 +314,7 @@ export default function AdminLoginPage() {
 
       
 
-      const firebaseError =
-        err as {
-          code?: string;
-          message?: string;
-        };
-
-      let message =
-        "Invalid email or password.";
-
-      switch (firebaseError.code) {
-        case "auth/invalid-credential":
-        case "auth/wrong-password":
-        case "auth/user-not-found":
-          message =
-            "Invalid email or password.";
-          break;
-
-        case "auth/invalid-email":
-          message =
-            "Please enter a valid email address.";
-          break;
-
-        case "auth/too-many-requests":
-          message =
-            "Too many login attempts. Please try again later.";
-          break;
-
-        case "auth/network-request-failed":
-          message =
-            "Network error. Please check your internet connection.";
-          break;
-
-        case "auth/user-disabled":
-          message =
-            "This account has been disabled.";
-          break;
-
-        default:
-          if (
-            firebaseError.message?.includes(
-              "offline"
-            )
-          ) {
-            message =
-              "Could not connect to Firebase. Please check your internet connection.";
-          } else if (
-            firebaseError.message
-          ) {
-            message =
-              firebaseError.message;
-          } else if (
-            err instanceof Error
-          ) {
-            message = err.message;
-          }
-      }
-
-      setError(message);
-
+      setError(getAuthErrorMessage(err, "Could not sign in to the admin dashboard. Please try again."));
       resetTurnstile();
     } finally {
       

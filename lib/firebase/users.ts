@@ -1,17 +1,17 @@
 import {
   doc,
   getDoc,
-  setDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 
 import { db } from "./config";
+import { auth } from "./config";
+import { syncUserProfile } from "./auth";
 
 export type FirebaseUserProfile = {
   id: string;
   email: string | null;
   full_name: string | null;
-  role: "admin" | "customer";
+  role: "admin" | "customer" | "user";
   created_at?: unknown;
   updated_at?: unknown;
 };
@@ -87,35 +87,13 @@ export async function getUserProfile(
   return promise;
 }
 
-/**
- * Ensure a user profile document exists for the given uid, creating it with a
- * "customer" role if it does not yet exist.
- */
-export async function ensureUserProfile(
-  uid: string,
-  email: string | null,
-  fullName?: string | null
-): Promise<FirebaseUserProfile> {
-  const userRef = doc(db, "users", uid);
-  const snapshot = await getDoc(userRef);
-
-  if (snapshot.exists()) {
-    return {
-      id: snapshot.id,
-      ...(snapshot.data() as Omit<FirebaseUserProfile, "id">),
-    };
-  }
-
-  const profile: FirebaseUserProfile = {
-    id: uid,
-    email,
-    full_name: fullName ?? null,
-    role: "customer",
-    created_at: serverTimestamp(),
-    updated_at: serverTimestamp(),
-  };
-
-  await setDoc(userRef, profile);
-
+/** Create profiles through the trusted server; preserve the legacy signature. */
+export async function ensureUserProfile(uid: string, _email: string | null, _fullName?: string | null): Promise<FirebaseUserProfile> {
+  void _email;
+  void _fullName;
+  const user = auth.currentUser;
+  if (!user || user.uid !== uid) throw new Error("Not authenticated");
+  const profile = await syncUserProfile(user);
+  PROFILE_CACHE.delete(uid);
   return profile;
 }

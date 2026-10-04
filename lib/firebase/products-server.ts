@@ -75,6 +75,23 @@ export async function getAllProducts(): Promise<Product[]> {
   }));
 }
 
+/**
+ * Get only ACTIVE products (public storefront).
+ *
+ * Used by public endpoints so inactive/unpublished products are never fetched
+ * (and therefore never serialized into a public response).
+ */
+export async function getActiveProducts(): Promise<Product[]> {
+  const snapshot = await productsCollection
+    .where("is_active", "==", true)
+    .get();
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Omit<Product, "id">),
+  }));
+}
+
 export async function createProduct(
   data: Omit<Product, "id" | "createdAt">
 ): Promise<Product> {

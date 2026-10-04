@@ -12,8 +12,20 @@ export const runtime = "nodejs";
  *
  * Authenticated customers upload a payment receipt image. The file is sent to
  * ImageKit on the SERVER so the ImageKit private key is never exposed to the
- * browser. Returns the public ImageKit URL + fileId, which are stored in
- * Firestore (orders + payments).
+ * browser.
+ *
+ * SECURITY:
+ *  - Files are uploaded to the `/gosh/payment-proofs` folder and marked PRIVATE
+ *    with `isPrivateFile: true`. Private files are only accessible via a signed
+ *    ImageKit URL, which is generated server-side (see lib/imagekit.ts) and only
+ *    used as the upstream fetch target inside the authenticated proxy route.
+ *    Existing files under the legacy `/gosh/payments` folder remain accessible
+ *    only through the authenticated proxy route (see /api/checkout/payment-proof).
+ *  - The public ImageKit URL is NOT returned to the client. Only the `fileId` is
+ *    returned; the receipt is served later through the authenticated, authorized
+ *    proxy route so the raw CDN URL is never exposed to the browser.
+ *  - Ownership is recorded server-side in `payment_uploads/{fileId}` so both the
+ *    proxy route and delete-payment-proof can verify the caller owns the file.
  */
 export async function POST(request: Request) {
   try {
@@ -28,10 +40,8 @@ export async function POST(request: Request) {
 
     /*
      * Rate limit per user to limit abuse (image spam / ImageKit storage DoS).
-     * In-memory limiting is best-effort on serverless, but consistent with the
-     * rest of the codebase and a real defense against casual abuse.
      */
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(user.uid, "payment-upload"),
       maxRequests: 10,
       windowSeconds: 600, // 10 per 10 minutes
@@ -89,8 +99,9 @@ export async function POST(request: Request) {
     const uploadResult = await imagekit.files.upload({
       file: buffer.toString("base64"),
       fileName: file.name,
-      folder: "/gosh/payments",
+      folder: "/gosh/payment-proofs",
       useUniqueFileName: true,
+      isPrivateFile: true,
     });
 
     if (!uploadResult.fileId) {
@@ -101,11 +112,12 @@ export async function POST(request: Request) {
     }
 
     /*
-     * Record upload ownership so DELETE /api/checkout/delete-payment-proof can
-     * verify the caller uploaded this file. This prevents a malicious client
-     * from guessing a fileId and deleting another user's payment proof (IDOR).
-     * The collection is server-managed (Firebase Admin SDK) and denied to all
-     * clients by the Firestore rules default-deny.
+     * Record upload ownership so the authenticated proxy route and
+     * DELETE /api/checkout/delete-payment-proof can verify the caller uploaded
+     * this file. This prevents a malicious client from guessing a fileId and
+     * accessing or deleting another user's payment proof (IDOR). The collection
+     * is server-managed (Firebase Admin SDK) and denied to all clients by the
+     * Firestore rules default-deny.
      */
     await adminDb.collection("payment_uploads").doc(uploadResult.fileId).set({
       user_id: user.uid,
@@ -113,9 +125,12 @@ export async function POST(request: Request) {
       created_at: FieldValue.serverTimestamp(),
     });
 
+    /*
+     * Return ONLY the fileId — never the public ImageKit URL. The receipt is
+     * served through the authenticated proxy route instead.
+     */
     return NextResponse.json({
       success: true,
-      url: uploadResult.url,
       fileId: uploadResult.fileId,
       name: uploadResult.name,
     });

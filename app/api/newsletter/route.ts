@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     // Rate limiting: 5 subscriptions per hour per IP
     const clientIp = getClientIp(request.headers);
     const rateLimitId = createRateLimitId(clientIp, 'newsletter');
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: rateLimitId,
       maxRequests: 5,
       windowSeconds: 3600, // 1 hour

@@ -18,16 +18,14 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow create: if isOwner(userId)
-        && request.resource.data.role == "customer";
+      // Profiles and roles are created only by the trusted server.
+      allow create: if false;
 
       allow read: if isOwner(userId) || isAdmin();
 
-      allow update: if isAdmin()
-        || (
-          isOwner(userId)
-          && request.resource.data.role == resource.data.role
-        );
+      allow update: if (isOwner(userId) || isAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['full_name', 'phone', 'updated_at']);
 
       allow delete: if isAdmin();
     }

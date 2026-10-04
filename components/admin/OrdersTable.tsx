@@ -41,6 +41,7 @@ interface Order {
   payment_phone: string | null;
   payment_account_number: string | null;
   payment_screenshot_url: string | null;
+  payment_screenshot_file_id: string | null;
   subtotal: number;
   delivery_fee: number;
   discount: number;
@@ -155,6 +156,7 @@ function OrdersTableContent() {
             payment_phone: (data.payment_phone as string) || null,
             payment_account_number: (data.payment_account_number as string) || null,
             payment_screenshot_url: (data.payment_screenshot_url as string) || null,
+            payment_screenshot_file_id: (data.payment_screenshot_file_id as string) || null,
             subtotal: Number(data.subtotal ?? 0) || 0,
             delivery_fee: Number(data.delivery_fee ?? 0) || 0,
             discount: Number(data.discount ?? 0) || 0,
@@ -245,11 +247,28 @@ function OrdersTableContent() {
     }
   }, [orderIdFromNotification, orders, openedNotificationOrderId]);
 
-  const getPaymentScreenshotUrl = async (pathOrUrl: string) => {
-    if (!pathOrUrl) return null;
+  const getPaymentScreenshotUrl = async (orderId: string) => {
+    if (!orderId) return null;
 
-    // Payment receipts are stored as full ImageKit URLs in Firestore.
-    return pathOrUrl;
+    try {
+      // Fetch the receipt through the authenticated, authorized proxy route so
+      // the raw ImageKit URL is never exposed to the browser. The admin's
+      // Firebase ID token authenticates the request.
+      const headers = await getFirebaseAuthorizationHeader();
+
+      const response = await fetch(
+        `/api/checkout/payment-proof?orderId=${encodeURIComponent(orderId)}`,
+        { headers }
+      );
+
+      if (!response.ok) return null;
+
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      devLog.error("Failed to load payment proof:", error);
+      return null;
+    }
   };
 
   const callOrderStatusAction = async (body: Record<string, unknown>) => {
@@ -329,6 +348,7 @@ function OrdersTableContent() {
       previousOrder &&
       newPaymentStatus === "Paid" &&
       prepaidPaymentMethods.has(previousOrder.payment_method) &&
+      !previousOrder.payment_screenshot_file_id &&
       !previousOrder.payment_screenshot_url
     ) {
       setActionMessage({
@@ -642,12 +662,12 @@ function OrdersTableContent() {
                     )}
                     
                     {/* Payment Screenshot */}
-                    {order.payment_screenshot_url ? (
+                    {(order.payment_screenshot_file_id || order.payment_screenshot_url) ? (
                       <button
                         type="button"
                         onClick={async () => {
                           setPaymentScreenshotError(false);
-                          const url = await getPaymentScreenshotUrl(order.payment_screenshot_url || "");
+                          const url = await getPaymentScreenshotUrl(order.id);
                           if (!url) {
                             setPaymentScreenshotError(true);
                             setPaymentScreenshotUrl("error");
@@ -666,7 +686,7 @@ function OrdersTableContent() {
                       </span>
                     )}
 
-                    {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
+                    {prepaidPaymentMethods.has(order.payment_method) && !order.payment_screenshot_file_id && !order.payment_screenshot_url && order.payment_status !== "Paid" && (
                       <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-400/30 dark:bg-red-950/30 dark:!text-red-200">
                         Prepaid order has no payment proof. Keep as Verifying/Failed until proof is confirmed.
                       </div>

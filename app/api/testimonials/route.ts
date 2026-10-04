@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     // Rate limiting: 3 testimonials per hour per IP
     const clientIp = getClientIp(request.headers);
     const rateLimitId = createRateLimitId(clientIp, 'testimonial');
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: rateLimitId,
       maxRequests: 3,
       windowSeconds: 3600, // 1 hour

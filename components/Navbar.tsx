@@ -1,5 +1,4 @@
 "use client";
-import devLog from "@/lib/dev-log";
 
 import { useState, useEffect } from "react";
 import {
@@ -12,9 +11,8 @@ import {
   Sun,
 } from "lucide-react";
 import Link from "next/link";
-import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
-import { getUserProfile } from "@/lib/firebase/users";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getAuthErrorMessage } from "@/lib/auth/errors";
 import { signOutUser } from "@/lib/firebase/auth";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -25,70 +23,18 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { status, sessionUser } = useAuth();
+  const user = status === "authenticated" ? sessionUser : null;
+  const isAdmin = user?.role === "admin";
+  const profileName = user?.full_name || user?.email?.split("@")[0] || "Account";
   const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [profileName, setProfileName] = useState("");
+  const [logoutError, setLogoutError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   // ------------------------------------------------------------
   // Firebase Auth + Firestore Profile
   // ------------------------------------------------------------
-  useEffect(() => {
-    let mounted = true;
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!mounted) return;
-
-      // Logged out
-      if (!currentUser) {
-        setUser(null);
-        setProfileName("");
-        setIsAdmin(false);
-        setShowAccountMenu(false);
-        return;
-      }
-
-      // Logged in
-      setUser(currentUser);
-
-      try {
-        const profile = await getUserProfile(currentUser.uid);
-
-        if (!mounted) return;
-
-        setIsAdmin(profile?.role === "admin");
-
-        const displayName =
-          profile?.full_name ||
-          currentUser.displayName ||
-          profile?.email?.split("@")[0] ||
-          currentUser.email?.split("@")[0] ||
-          "Account";
-
-        setProfileName(displayName);
-      } catch (error) {
-        devLog.error("Failed to load Firebase user profile:", error);
-
-        if (!mounted) return;
-
-        setIsAdmin(false);
-
-        const fallbackName =
-          currentUser.displayName ||
-          currentUser.email?.split("@")[0] ||
-          "Account";
-
-        setProfileName(fallbackName);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, []);
-
   // ------------------------------------------------------------
   // Close account menu when clicking outside
   // ------------------------------------------------------------
@@ -117,27 +63,15 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   // Firebase Logout
   // ------------------------------------------------------------
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true); setLogoutError("");
     try {
-      // Sign out of Firebase client-side auth.
       await signOutUser();
-
-      // Clear the server-side Firebase session cookie.
-      try {
-        await fetch("/api/auth/session", {
-          method: "DELETE",
-          credentials: "include",
-        });
-      } catch (sessionError) {
-        devLog.error("Session cookie cleanup error:", sessionError);
-      }
-    } catch (error) {
-      devLog.error("Firebase logout error:", error);
-    } finally {
-      setUser(null);
-      setIsAdmin(false);
-      setProfileName("");
       setShowAccountMenu(false);
-    }
+      window.location.assign("/login");
+    } catch (error) {
+      setLogoutError(getAuthErrorMessage(error));
+    } finally { setLoggingOut(false); }
   };
 
   return (
@@ -146,6 +80,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
         role="banner"
         className="fixed inset-x-0 top-0 z-[1000] bg-white/90 backdrop-blur-xl dark:border-b dark:border-[#d4af37]/20 dark:bg-[#0f0b07]/95"
       >
+        {logoutError && <p role="alert" className="px-4 py-2 text-center text-sm text-red-700">{logoutError}</p>}
         <style jsx>{`
           @keyframes navbar-drop {
             0% {
@@ -310,7 +245,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
             )}
 
             {/* Premium Auth Button */}
-            {!user ? (
+            {status === "loading" ? <span role="status" className="text-sm">Loading...</span> : !user ? (
               <Link
                 href="/login"
                 className="group inline-flex items-center justify-center gap-2 rounded-full border border-yellow-300/70 bg-white/90 px-4 py-2 text-sm font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:border-yellow-400 hover:bg-yellow-50 hover:text-yellow-700 hover:shadow-[0_16px_35px_rgba(234,179,8,0.26)] dark:border-[#d4af37]/40 dark:bg-[#1c160f]/90 dark:text-[#fff7e6] dark:hover:bg-[#231b12] dark:hover:text-[#d4af37]"
@@ -361,6 +296,9 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
                       </p>
                     </div>
 
+                    <Link href="/account" className="block px-4 py-3 text-sm font-semibold text-yellow-700" onClick={() => setShowAccountMenu(false)}>
+                      Your account
+                    </Link>
                     <Link
                       href="/orders"
                       onClick={() => setShowAccountMenu(false)}
@@ -373,6 +311,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
                     <button
                       type="button"
                       onClick={handleLogout}
+                      disabled={loggingOut}
                       role="menuitem"
                       aria-label="Logout from account"
                       className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
@@ -453,7 +392,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
             )}
 
             {/* Mobile Auth */}
-            {!user ? (
+            {status === "loading" ? <span role="status" className="text-sm">Loading...</span> : !user ? (
               <Link
                 href="/login"
                 className="group relative inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-yellow-400/40 bg-white px-3 text-xs font-bold text-neutral-900 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#fff7e6]"
@@ -469,6 +408,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
               <button
                 type="button"
                 onClick={handleLogout}
+                      disabled={loggingOut}
                 className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-yellow-400/40 bg-white text-yellow-600 shadow-[0_10px_28px_rgba(234,179,8,0.16)] transition-all duration-300 active:scale-95 dark:border-[#d4af37]/40 dark:bg-[#1c160f] dark:text-[#d4af37]"
                 aria-label="Logout from account"
                 title="Logout"

@@ -1,40 +1,17 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { getCurrentUser } from "./session";
+import { adminDb } from "@/lib/firebase/admin";
 
-const SESSION_COOKIE_NAME = "firebase-session";
+
 
 export async function checkAdminAuth() {
   try {
-    const cookieStore = await cookies();
-
-    const sessionCookie = cookieStore.get(
-      SESSION_COOKIE_NAME
-    )?.value;
-
-    if (!sessionCookie) {
-      console.log("[ADMIN AUTH] No session cookie found");
-      return {
-        isAdmin: false,
-        user: null,
-        profile: null,
-      };
-    }
-
-    console.log("[ADMIN AUTH] Session cookie found, verifying...");
-
-    /*
-     * Verify the Firebase server session cookie.
-     */
-    const decodedClaims =
-      await adminAuth.verifySessionCookie(
-        sessionCookie,
-        true
-      );
+    const decodedClaims = await getCurrentUser();
+    if (!decodedClaims) return { isAdmin: false, user: null, profile: null };
 
     const uid = decodedClaims.uid;
 
-    console.log("[ADMIN AUTH] Session cookie verified for user:", uid);
+
 
     /*
      * IMPORTANT:
@@ -52,10 +29,7 @@ export async function checkAdminAuth() {
       .get();
 
     if (!profileSnapshot.exists) {
-      console.warn(
-        "[ADMIN AUTH] User profile not found:",
-        uid
-      );
+
 
       return {
         isAdmin: false,
@@ -70,12 +44,7 @@ export async function checkAdminAuth() {
      * Admin access is controlled by the Firestore role.
      */
     if (profile?.role !== "admin") {
-      console.warn(
-        "[ADMIN AUTH] User is not an admin:",
-        uid,
-        "Role:",
-        profile?.role
-      );
+
 
       return {
         isAdmin: false,
@@ -87,10 +56,7 @@ export async function checkAdminAuth() {
     /*
      * Everything is valid.
      */
-    console.log(
-      "[ADMIN AUTH] Admin session verified:",
-      uid
-    );
+
 
     return {
       isAdmin: true,
@@ -100,15 +66,10 @@ export async function checkAdminAuth() {
       },
       profile,
     };
-  } catch (error) {
-    console.error(
-      "[ADMIN AUTH] Session verification failed:",
-      error
-    );
+  } catch {
 
-    if (error instanceof Error) {
-      console.error("[ADMIN AUTH] Error message:", error.message);
-    }
+
+
 
     return {
       isAdmin: false,

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getAllProducts, getProduct, type Product } from "./products-server";
+import { getAllProducts, getActiveProducts, getProduct, type Product } from "./products-server";
 import { getActiveProductPromotions, getProductPromotionByProductId } from "./product-promotions-server";
 import { enrichProductWithPromotion, enrichProductsWithPromotions, type EnrichedProduct } from "@/lib/promotions";
 
@@ -74,4 +74,78 @@ export async function getPromotedProducts(): Promise<EnrichedProduct[]> {
     console.error("[getPromotedProducts] Error:", error);
     throw error;
   }
+}
+
+/**
+ * Public (safe) product shape returned to unauthenticated storefront clients.
+ *
+ * Deliberately EXCLUDES internal fields such as `stock`, `imageFileId` /
+ * `image_file_id` and any other inventory/administrative data so a public
+ * endpoint can never leak them, regardless of what is stored server-side.
+ */
+export type PublicProduct = {
+  id: string | number;
+  name: string;
+  brand?: string | null;
+  price: number;
+  description?: string | null;
+  image?: string | null;
+  /** Legacy alias kept for frontend compatibility. */
+  image_url?: string | null;
+  badge?: string | null;
+  category?: string | null;
+  scent_collection?: string | null;
+  is_active: boolean;
+  decants?: { label: string; price: number }[];
+  notes?: Record<string, unknown> | null;
+  display_price: number;
+  has_promotion: boolean;
+  promotion?: EnrichedProduct["promotion"];
+  createdAt?: string | null;
+};
+
+/**
+ * Map a server-side (enriched) product to the safe public shape, stripping
+ * internal/administrative fields.
+ */
+function toPublicProduct(product: Record<string, any>): PublicProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    brand: product.brand ?? null,
+    price: product.price ?? 0,
+    description: product.description ?? null,
+    image: product.image || product.image_url || null,
+    image_url: product.image_url ?? null,
+    badge:
+      typeof product.badge === "string" && product.badge.trim()
+        ? product.badge
+        : null,
+    category: product.category ?? null,
+    scent_collection: product.scent_collection ?? null,
+    is_active: true, // Only active products are fetched for this public endpoint.
+    decants: Array.isArray(product.decants) ? product.decants : undefined,
+    notes: product.notes ?? null,
+    display_price: product.display_price,
+    has_promotion: !!product.has_promotion,
+    promotion: product.promotion ? { ...product.promotion } : undefined,
+  };
+}
+
+/**
+ * Public storefront list of ACTIVE products enriched with their promotions.
+ *
+ * Used by /api/products/with-promotions. Only `is_active === true` products are
+ * fetched from Firestore, and every product is mapped through `toPublicProduct`
+ * so internal inventory/stock fields are never serialized to the client.
+ */
+export async function getPublicProductsWithPromotions(): Promise<PublicProduct[]> {
+  const [products, promotions] = await Promise.all([
+    getActiveProducts(),
+    getActiveProductPromotions(),
+  ]);
+
+  const enriched = enrichProductsWithPromotions(products, promotions);
+
+  return enriched.map((p) => toPublicProduct(p as unknown as Record<string, any>));
 }

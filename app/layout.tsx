@@ -4,6 +4,7 @@ import "./globals.css";
 import "./globals-datepicker.css";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import LoadingProvider from "@/components/LoadingProvider";
+import AuthProvider from "@/components/auth/AuthProvider";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -112,6 +113,7 @@ export default function RootLayout({
         {/* End Google Tag Manager (noscript) */}
         
         <GoogleAnalytics />
+        <AuthProvider>
         <ThemeProvider>
           <LoadingProvider>
             <div className="site-page-wrapper relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[var(--background)] pb-20 dark:bg-[#0f0b07] md:pb-0">
@@ -120,6 +122,7 @@ export default function RootLayout({
             <MobileBottomNav />
           </LoadingProvider>
         </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

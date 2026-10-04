@@ -57,7 +57,7 @@ export async function POST(request: Request) {
      * rest of the codebase; the window is generous so legitimate customers are
      * unaffected.
      */
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(user.uid, "place-order"),
       maxRequests: 10,
       windowSeconds: 600, // 10 orders per 10 minutes

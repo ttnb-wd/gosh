@@ -26,7 +26,7 @@ export async function POST(request: Request) {
      * Rate limit per user to prevent a customer from repeatedly re-triggering
      * the admin/order emails (inbox flooding). Best-effort in-memory limiting.
      */
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(auth.user.uid, "order-email"),
       maxRequests: 30,
       windowSeconds: 600, // 30 per 10 minutes

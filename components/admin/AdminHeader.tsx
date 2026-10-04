@@ -259,20 +259,10 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       // Sign out of Firebase client-side auth.
       await signOutUser();
 
-      // Clear the server-side Firebase session cookie.
-      try {
-        await fetch("/api/auth/session", {
-          method: "DELETE",
-          credentials: "include",
-        });
-      } catch (sessionError) {
-        devLog.error("Session cookie cleanup error:", sessionError);
-      }
-
       router.push("/admin/login");
       router.refresh();
-    } catch (error) {
-      devLog.error("Logout error:", error);
+    } catch {
+      devLog.warn("Could not finish signing out.");
     } finally {
       setLoggingOut(false);
     }

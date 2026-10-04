@@ -1090,9 +1090,18 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     setBrandMenuPos({ top, left, width });
   };
 
-  // Keep the portal dropdown pinned to the trigger while open / scrolling / resizing.
+  // Keep the DESKTOP/TABLET portal dropdown pinned to the trigger while open / scrolling / resizing.
+  // On mobile (<640 px) the Brands dropdown uses a fixed full-screen overlay and does NOT need
+  // position tracking – skipping it also avoids the dropdown jumping when body is scroll-locked.
   useEffect(() => {
     if (!isBrandMenuOpen) return;
+
+    // Only update position for desktop/tablet; mobile uses a fixed overlay, not positional anchoring.
+    const isMobileViewport =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 639px)").matches;
+    if (isMobileViewport) return;
+
     updateBrandMenuPosition();
     const handleUpdate = () => requestAnimationFrame(updateBrandMenuPosition);
     window.addEventListener("scroll", handleUpdate, true);
@@ -1105,6 +1114,45 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     };
   }, [isBrandMenuOpen]);
   
+// Lock the background page ONLY while the MOBILE Brands dropdown is open.
+  //
+  // The mobile dropdown is a `fixed` overlay, so the page behind it must stay
+  // completely stationary while the dropdown's own list scrolls. We only lock on
+  // mobile viewports (< 640px, matching the `sm:hidden` mobile dropdown) to keep
+  // the desktop dropdown behavior (which repositions with the scroll) untouched.
+  // The previous body styles are captured and restored exactly on close, and the
+  // cleanup runs correctly under React Strict Mode.
+  useEffect(() => {
+    if (!isBrandMenuOpen) return;
+
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 639px)").matches;
+    if (!isMobile) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalWidth = document.body.style.width;
+    const originalTop = document.body.style.top;
+    const scrollY = window.scrollY;
+
+    // Lock the page behind the fixed dropdown: prevent further scrolling and
+    // pin the body in place so nothing moves behind the open dropdown.
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.top = `-${scrollY}px`;
+
+    return () => {
+      // Restore the body to its exact prior state so normal scrolling resumes.
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = originalWidth;
+      document.body.style.top = originalTop;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isBrandMenuOpen]);
+
   const handleQuickView = (product: typeof products[0]) => {
     setQuickViewProduct(product);
     setIsQuickViewOpen(true);
@@ -1586,65 +1634,76 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               </motion.div>
             )}
             {isBrandMenuOpen && onBrandSelect && brands.length > 1 && (
+              // Mobile-only: full-screen backdrop overlay so the dropdown stays
+              // perfectly stationary regardless of where the user tapped the button.
+              // Backdrop click dismisses the menu. Only the inner list scrolls.
               <motion.div
                 key="mobile-brand-overlay"
-                ref={brandDropdownRef}
-                className="fixed z-[100000] sm:hidden"
-                style={{ top: brandMenuPos.top, left: brandMenuPos.left, width: brandMenuPos.width }}
+                className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/35 px-4 pb-4 pt-20 backdrop-blur-[2px] sm:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                onClick={() => setIsBrandMenuOpen(false)}
               >
                 <motion.div
                   role="listbox"
                   aria-label="Choose brand"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden rounded-[24px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
+                  initial={{ opacity: 0, y: 34, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 28, scale: 0.97 }}
+                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="w-full max-w-[380px] overflow-hidden rounded-[30px] border border-yellow-200 bg-[#fffdf6]/98 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28),0_0_42px_rgba(234,179,8,0.18)] backdrop-blur-xl"
                 >
-                  <div className="mb-3 flex items-start justify-between gap-4">
+                  <div className="mb-4 flex items-start justify-between gap-4 px-1">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.26em] text-yellow-600">
                         Filter by brand
                       </p>
-                      <h3 className="mt-1 text-base font-black text-neutral-950">
+                      <h3 className="mt-1 text-xl font-black text-neutral-950">
                         Choose Brand
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsBrandMenuOpen(false)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-base font-black text-black shadow-[0_8px_18px_rgba(234,179,8,0.22)] transition active:scale-95"
-                      aria-label="Close brands menu"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black shadow-[0_12px_28px_rgba(234,179,8,0.28)] transition active:scale-95"
+                      aria-label="Close brands popup"
                     >
                       ×
                     </button>
                   </div>
 
-                  <div className="scrollbar-auto-hide grid max-h-[50vh] gap-2 overflow-y-auto pr-1">
+                  {/* List: scrollable; overscroll-behavior prevents scroll chaining to background */}
+                  <div
+                    className="scrollbar-auto-hide grid max-h-[62vh] gap-2 overflow-y-auto pr-1"
+                    style={{ overscrollBehaviorY: "contain" }}
+                  >
                     {brands.map((brand, index) => {
                       const active = selectedBrand === brand.id;
                       const label = brand.name || "Unbranded";
 
                       return (
                         <motion.button
-                          key={`mobile-dropdown-${brand.id}-${index}`}
+                          key={`mobile-brand-popup-${brand.id}-${index}`}
                           type="button"
                           role="option"
                           aria-selected={active}
-                          initial={{ opacity: 0, y: 6 }}
+                          initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
-                            duration: 0.22,
-                            delay: Math.min(index * 0.025, 0.15),
+                            duration: 0.24,
+                            delay: Math.min(index * 0.025, 0.18),
                             ease: [0.22, 1, 0.36, 1],
                           }}
                           onClick={() => {
                             onBrandSelect?.(brand.id);
                             setIsBrandMenuOpen(false);
                           }}
-                          className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-black transition-all duration-300 ${
+                          className={`flex min-h-12 w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black transition-all duration-300 ${
                             active
-                              ? "bg-yellow-400 text-black shadow-[0_8px_18px_rgba(234,179,8,0.18)]"
+                              ? "bg-yellow-400 text-black shadow-[0_12px_28px_rgba(234,179,8,0.22)]"
                               : "bg-white text-neutral-700 active:bg-yellow-50"
                           }`}
                         >
@@ -1657,6 +1716,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
                 </motion.div>
               </motion.div>
             )}
+
             {isCollectionMenuOpen && (
               <motion.div
                 key="mobile-collection-popup"

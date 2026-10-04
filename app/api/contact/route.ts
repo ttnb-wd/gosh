@@ -12,7 +12,7 @@ export async function POST(request: Request) {
      * Per-IP rate limit (10 per 10 minutes) as defense-in-depth on top of
      * Turnstile and the per-email Firestore dedupe below.
      */
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(getClientIp(request.headers), "contact"),
       maxRequests: 10,
       windowSeconds: 600,

@@ -6,7 +6,7 @@ export type FirebaseAdminUserProfile = {
   id: string;
   email: string | null;
   full_name: string | null;
-  role: "admin" | "customer";
+  role: "admin" | "customer" | "user";
   created_at?: unknown;
   updated_at?: unknown;
 };

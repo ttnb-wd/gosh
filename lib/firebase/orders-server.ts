@@ -326,19 +326,13 @@ export async function placeOrder(input: PlaceOrderInput) {
   });
 
   /*
-   * The payment screenshot is now referenced by the order/payment records, so
-   * the temporary upload-ownership record in payment_uploads/{fileId} is no
-   * longer needed. Best-effort cleanup keeps the collection from growing.
+   * The payment screenshot is referenced by the order/payment records via
+   * `payment_screenshot_file_id`. The temporary upload-ownership record in
+   * `payment_uploads/{fileId}` is intentionally KEPT so the authenticated
+   * proxy route (/api/checkout/payment-proof) and delete-payment-proof can
+   * continue to verify ownership. (Previously it was deleted here, which
+   * removed the only server-side ownership record for the uploaded receipt.)
    */
-  if (input.payment_screenshot_file_id) {
-    await adminDb
-      .collection("payment_uploads")
-      .doc(input.payment_screenshot_file_id)
-      .delete()
-      .catch(() => {
-        // Non-critical cleanup.
-      });
-  }
 
   return result;
 }
