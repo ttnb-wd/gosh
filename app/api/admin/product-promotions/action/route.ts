@@ -1,3 +1,6 @@
+import { recordAdminChange } from "@/lib/security/audit";
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
 import { Timestamp } from "firebase-admin/firestore";
@@ -38,20 +41,7 @@ export async function GET(request: NextRequest) {
       success: true,
       promotions: serializedPromotions,
     });
-  } catch (error) {
-    console.error("GET product promotions error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch product promotions",
-      },
-      { status: error instanceof Error && error.message === "Admin access required" ? 403 : 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }
 
 /**
@@ -60,9 +50,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    await requireAdminApiAuth(request);
+    const actor = await requireAdminApiAuth(request);
 
-    const body = await request.json();
+    const body = await readJson(request, "promotionAction");
     const { action, promotionId, data } = body;
 
     if (action === "create") {
@@ -126,6 +116,7 @@ export async function POST(request: NextRequest) {
       };
 
       const promotion = await createProductPromotion(promotionData);
+      await recordAdminChange(actor.uid, "product-promotion.create", promotion.id);
 
       return NextResponse.json({
         success: true,
@@ -157,8 +148,8 @@ export async function POST(request: NextRequest) {
 
       // If promotion price is being updated, validate against product price
       if (data.promotion_price) {
-        const product = await getProduct(existing.product_id);
-        if (product && data.promotion_price >= product.price) {
+        const product = await getProduct(data.product_id);
+        if (!product || data.promotion_price >= product.price) {
           return NextResponse.json(
             {
               success: false,
@@ -179,6 +170,7 @@ export async function POST(request: NextRequest) {
       }
 
       await updateProductPromotion(promotionId, updateData);
+      await recordAdminChange(actor.uid, "product-promotion." + action, promotionId);
 
       return NextResponse.json({
         success: true,
@@ -208,6 +200,7 @@ export async function POST(request: NextRequest) {
       }
 
       await deleteProductPromotion(promotionId);
+      await recordAdminChange(actor.uid, "product-promotion." + action, promotionId);
 
       return NextResponse.json({
         success: true,
@@ -252,18 +245,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 }
     );
-  } catch (error) {
-    console.error("POST product promotions action error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to process product promotion action",
-      },
-      { status: error instanceof Error && error.message === "Admin access required" ? 403 : 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

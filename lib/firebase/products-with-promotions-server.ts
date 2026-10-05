@@ -1,3 +1,4 @@
+import { publicPromotion } from "@/lib/security/public-data";
 import "server-only";
 
 import { getAllProducts, getActiveProducts, getProduct, type Product } from "./products-server";
@@ -6,7 +7,7 @@ import { enrichProductWithPromotion, enrichProductsWithPromotions, type Enriched
 
 /**
  * Server-side service for fetching products enriched with promotion data
- * 
+ *
  * This is the centralized way to fetch products with correct promotional pricing.
  * Use these functions instead of direct product queries when you need promotion info.
  */
@@ -22,10 +23,10 @@ export async function getProductWithPromotion(
     if (!product) return null;
 
     const promotion = await getProductPromotionByProductId(productId);
-    
+
     return enrichProductWithPromotion(product, promotion);
   } catch (error) {
-    console.error("[getProductWithPromotion] Error:", error);
+    console.error("Application operation failed.");
     throw error;
   }
 }
@@ -43,7 +44,7 @@ export async function getAllProductsWithPromotions(): Promise<EnrichedProduct[]>
 
     return enrichProductsWithPromotions(products, promotions);
   } catch (error) {
-    console.error("[getAllProductsWithPromotions] Error:", error);
+    console.error("Application operation failed.");
     throw error;
   }
 }
@@ -57,7 +58,7 @@ export async function getActiveProductsWithPromotions(): Promise<EnrichedProduct
     const allProductsWithPromotions = await getAllProductsWithPromotions();
     return allProductsWithPromotions.filter(p => p.is_active !== false);
   } catch (error) {
-    console.error("[getActiveProductsWithPromotions] Error:", error);
+    console.error("Application operation failed.");
     throw error;
   }
 }
@@ -71,7 +72,7 @@ export async function getPromotedProducts(): Promise<EnrichedProduct[]> {
     const allProductsWithPromotions = await getAllProductsWithPromotions();
     return allProductsWithPromotions.filter(p => p.has_promotion && p.is_active !== false);
   } catch (error) {
-    console.error("[getPromotedProducts] Error:", error);
+    console.error("Application operation failed.");
     throw error;
   }
 }
@@ -108,7 +109,7 @@ export type PublicProduct = {
  * Map a server-side (enriched) product to the safe public shape, stripping
  * internal/administrative fields.
  */
-function toPublicProduct(product: Record<string, any>): PublicProduct {
+function toPublicProduct(product: Product & EnrichedProduct): PublicProduct {
   return {
     id: product.id,
     name: product.name,
@@ -128,7 +129,7 @@ function toPublicProduct(product: Record<string, any>): PublicProduct {
     notes: product.notes ?? null,
     display_price: product.display_price,
     has_promotion: !!product.has_promotion,
-    promotion: product.promotion ? { ...product.promotion } : undefined,
+    promotion: product.promotion ? publicPromotion(product.promotion) as unknown as EnrichedProduct["promotion"] : undefined,
   };
 }
 
@@ -147,5 +148,5 @@ export async function getPublicProductsWithPromotions(): Promise<PublicProduct[]
 
   const enriched = enrichProductsWithPromotions(products, promotions);
 
-  return enriched.map((p) => toPublicProduct(p as unknown as Record<string, any>));
+  return enriched.map((p) => toPublicProduct(p as Product & EnrichedProduct));
 }

@@ -2,6 +2,8 @@ import "server-only";
 
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "./admin";
+import { createHash } from "node:crypto";
+import { InputError, validId, orderStatuses, paymentStatuses } from "@/lib/security/validation";
 
 export type OrderItem = {
   id?: string;
@@ -58,31 +60,31 @@ function getPaymentMethodStatus(
   switch (method) {
     case "cod":
       if (settings?.allow_cash_on_delivery === false) {
-        throw new Error("Cash on delivery is currently unavailable.");
+        throw new InputError("Cash on delivery is currently unavailable.");
       }
       return "Unpaid";
     case "kbzpay":
       if (settings?.allow_kbzpay === false) {
-        throw new Error("KBZPay is currently unavailable.");
+        throw new InputError("KBZPay is currently unavailable.");
       }
       return "Verifying";
     case "wavepay":
       if (settings?.allow_wavepay === false) {
-        throw new Error("WavePay is currently unavailable.");
+        throw new InputError("WavePay is currently unavailable.");
       }
       return "Verifying";
     case "ayapay":
       if (settings?.allow_ayapay === false) {
-        throw new Error("AYA Pay is currently unavailable.");
+        throw new InputError("AYA Pay is currently unavailable.");
       }
       return "Verifying";
     case "bank":
       if (settings?.allow_bank_transfer === false) {
-        throw new Error("Bank transfer is currently unavailable.");
+        throw new InputError("Bank transfer is currently unavailable.");
       }
       return "Verifying";
     default:
-      throw new Error("Invalid payment method.");
+      throw new InputError("Invalid payment method.");
   }
 }
 
@@ -104,6 +106,7 @@ export interface PlaceOrderInput {
   payment_account_number: string | null;
   payment_screenshot_url: string | null;
   payment_screenshot_file_id: string | null;
+  idempotency_key?: string;
   items: Array<{
     product_id: string | null;
     selected_size: string | null;
@@ -113,7 +116,7 @@ export interface PlaceOrderInput {
 
 export async function placeOrder(input: PlaceOrderInput) {
   if (!Array.isArray(input.items) || input.items.length === 0) {
-    throw new Error("Order must include at least one item.");
+    throw new InputError("Order must include at least one item.");
   }
 
   const settingsSnap = await adminDb
@@ -131,46 +134,72 @@ export async function placeOrder(input: PlaceOrderInput) {
   );
 
   const result = await adminDb.runTransaction(async (transaction) => {
+    const requestRef = input.idempotency_key ? adminDb.collection("order_requests").doc(
+      createHash("sha256").update(`${input.user_id}:${input.idempotency_key}`).digest("hex")) : null;
+    const requestInput = { ...input };
+    delete requestInput.idempotency_key;
+    const fingerprint = createHash("sha256").update(JSON.stringify(requestInput)).digest("hex");
+    if (requestRef) {
+      const previous = await transaction.get(requestRef);
+      if (previous.exists) {
+        if (previous.data()?.fingerprint !== fingerprint) throw new InputError("Order request has changed. Please retry.", 409);
+        return previous.data()!.result;
+      }
+    }
+    const receiptRef = input.payment_screenshot_file_id ? adminDb.collection("payment_uploads").doc(input.payment_screenshot_file_id) : null;
+    if (receiptRef) {
+      const receipt = await transaction.get(receiptRef);
+      if (!receipt.exists || receipt.data()?.user_id !== input.user_id) throw new InputError("Payment proof not found.", 404);
+      if (receipt.data()?.order_id || receipt.data()?.deleting) throw new InputError("Payment proof is already in use or unavailable.", 409);
+    }
+    const trustedReceiptUrl = receiptRef ? `/api/checkout/payment-proof?fileId=${encodeURIComponent(receiptRef.id)}` : null;
     const trustedItems: OrderItem[] = [];
     let computedSubtotal = 0;
+    const quantities = new Map<string, number>();
+    const products = new Map<string, FirebaseFirestore.DocumentSnapshot>();
+    // Firestore transactions must perform ALL reads before ANY writes. Aggregate
+    // variants of the same product so duplicate lines cannot overspend stock.
+    for (const item of input.items) {
+      if (!validId(item.product_id)) throw new InputError("Invalid product.");
+      quantities.set(item.product_id, (quantities.get(item.product_id) || 0) + item.quantity);
+    }
+    for (const id of quantities.keys()) products.set(id, await transaction.get(adminDb.collection("products").doc(id)));
 
     for (const cartItem of input.items) {
       const quantity = Math.max(Math.trunc(Number(cartItem.quantity) || 1), 1);
 
       if (quantity > 99) {
-        throw new Error("Quantity is too high for one order.");
+        throw new InputError("Quantity is too high for one order.");
       }
 
       if (!cartItem.product_id) {
-        throw new Error(
+        throw new InputError(
           "One product in your cart is no longer available. Please remove it and add it again."
         );
       }
 
-      const productRef = adminDb
-        .collection("products")
-        .doc(cartItem.product_id);
 
-      const productSnap = await transaction.get(productRef);
+
+      const productSnap = products.get(cartItem.product_id)!;
 
       if (!productSnap.exists) {
-        throw new Error(
+        throw new InputError(
           "One product in your cart is no longer available. Please remove it and add it again."
         );
       }
 
       const product = productSnap.data() as Record<string, unknown> | undefined;
 
-      if (product?.is_active === false) {
-        throw new Error(
+      if (product?.is_active !== true) {
+        throw new InputError(
           "One product in your cart is no longer available. Please remove it and add it again."
         );
       }
 
       const stock = Number(product?.stock ?? 0);
 
-      if (stock < quantity) {
-        throw new Error(
+      if (!Number.isSafeInteger(stock) || stock < (quantities.get(cartItem.product_id) || quantity)) {
+        throw new InputError(
           `Only ${stock} left in stock for ${product?.name ?? "this product"}. Please reduce quantity or choose another product.`
         );
       }
@@ -189,7 +218,7 @@ export async function placeOrder(input: PlaceOrderInput) {
         const matched = decants.find((d) => d.label === cleanSelectedSize);
 
         if (!matched || typeof matched.price !== "number" || matched.price < 0) {
-          throw new Error(
+          throw new InputError(
             `Selected decant size is no longer available for ${product?.name ?? "this product"}.`
           );
         }
@@ -208,10 +237,7 @@ export async function placeOrder(input: PlaceOrderInput) {
               : null;
       }
 
-      transaction.update(productRef, {
-        stock: stock - quantity,
-        updated_at: FieldValue.serverTimestamp(),
-      });
+      if (!Number.isFinite(trustedPrice) || trustedPrice < 0 || trustedPrice > 1_000_000_000) throw new InputError("Product pricing is unavailable.");
 
       computedSubtotal += trustedPrice * quantity;
 
@@ -231,7 +257,7 @@ export async function placeOrder(input: PlaceOrderInput) {
     const minimumOrderAmount = Number(settings?.minimum_order_amount ?? 0) || 0;
 
     if (minimumOrderAmount > 0 && computedSubtotal < minimumOrderAmount) {
-      throw new Error(`Minimum order amount is ${minimumOrderAmount} MMK.`);
+      throw new InputError(`Minimum order amount is ${minimumOrderAmount} MMK.`);
     }
 
     const computedDeliveryFee =
@@ -262,7 +288,8 @@ export async function placeOrder(input: PlaceOrderInput) {
       payment_account_name: input.payment_account_name,
       payment_phone: input.payment_phone,
       payment_account_number: input.payment_account_number,
-      payment_screenshot_url: input.payment_screenshot_url,
+      payment_screenshot_url: trustedReceiptUrl,
+      payment_screenshot_file_id: receiptRef?.id ?? null,
       subtotal: computedSubtotal,
       delivery_fee: computedDeliveryFee,
       discount: computedDiscount,
@@ -273,7 +300,13 @@ export async function placeOrder(input: PlaceOrderInput) {
       updated_at: now,
     };
 
-    transaction.set(orderRef, orderDoc);
+    for (const [id, quantity] of quantities) {
+      transaction.update(adminDb.collection("products").doc(id), {
+        stock: Number(products.get(id)!.data()?.stock) - quantity, updated_at: now,
+      });
+    }
+    if (receiptRef) transaction.update(receiptRef, { order_id: orderRef.id, attached_at: now });
+    transaction.create(orderRef, orderDoc);
 
     trustedItems.forEach((item, index) => {
       transaction.set(
@@ -301,14 +334,14 @@ export async function placeOrder(input: PlaceOrderInput) {
       payment_account_name: input.payment_account_name,
       payment_phone: input.payment_phone,
       payment_account_number: input.payment_account_number,
-      payment_screenshot_url: input.payment_screenshot_url,
-      payment_screenshot_file_id: input.payment_screenshot_file_id,
+      payment_screenshot_url: trustedReceiptUrl,
+      payment_screenshot_file_id: receiptRef?.id ?? null,
       amount: computedTotal,
       created_at: now,
       updated_at: now,
     });
 
-    return {
+    const savedResult = {
       id: orderRef.id,
       order_number: orderNumber,
       customer_name: orderDoc.customer_name,
@@ -323,6 +356,8 @@ export async function placeOrder(input: PlaceOrderInput) {
         ...item,
       })),
     };
+    if (requestRef) transaction.create(requestRef, { fingerprint, result: savedResult, created_at: now });
+    return savedResult;
   });
 
   /*
@@ -337,121 +372,51 @@ export async function placeOrder(input: PlaceOrderInput) {
   return result;
 }
 
-export async function updateOrderStatus(
-  orderId: string,
-  status: string
-) {
-  const orderRef = adminDb.collection("orders").doc(orderId);
-  const orderSnap = await orderRef.get();
-
-  if (!orderSnap.exists) {
-    throw new Error("Order not found.");
-  }
-
-  const order = orderSnap.data() as Record<string, unknown> | undefined;
-  const previousStatus = String(order?.status ?? "");
-
-  if (status === "Cancelled" && previousStatus !== "Cancelled") {
-    const stockRestored = order?.stock_restored === true;
-
-    if (!stockRestored) {
-      const itemsSnap = await orderRef.collection("items").get();
-      const restorable = new Map<string, number>();
-
-      itemsSnap.forEach((itemDoc) => {
-        const item = itemDoc.data() as Record<string, unknown> | undefined;
-        const productId =
-          typeof item?.product_id === "string" ? item.product_id : null;
-        const selectedSize = String(item?.selected_size ?? "").toLowerCase();
-        const quantity = Number(item?.quantity ?? 0);
-
-        if (!productId || !quantity) return;
-        if (
-          selectedSize &&
-          selectedSize !== "full size" &&
-          selectedSize !== "full_size" &&
-          selectedSize !== "accessory"
-        ) {
-          return;
-        }
-
-        restorable.set(
-          productId,
-          (restorable.get(productId) || 0) + quantity
-        );
-      });
-
-      await adminDb.runTransaction(async (transaction) => {
-        for (const [productId, quantity] of restorable) {
-          const productRef = adminDb.collection("products").doc(productId);
-          const productSnap = await transaction.get(productRef);
-
-          if (!productSnap.exists) continue;
-
-          const product = productSnap.data() as Record<string, unknown> | undefined;
-          const currentStock = Number(product?.stock ?? 0);
-
-          transaction.update(productRef, { stock: currentStock + quantity });
-        }
-
-        transaction.update(orderRef, { stock_restored: true });
+export async function updateOrderStatus(orderId: string, status: string, actor?: string) {
+  if (!validId(orderId) || !orderStatuses.includes(status)) throw new InputError("Invalid order status.");
+  const ref = adminDb.collection("orders").doc(orderId);
+  return adminDb.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new InputError("Order not found.", 404);
+    const order = snap.data()!;
+    if (order.status === status) return { id: orderId, status };
+    if (order.status === "Cancelled") throw new InputError("Cancelled orders cannot be reopened after stock restoration.", 409);
+    const restorable = new Map<string, number>();
+    if (status === "Cancelled" && order.stock_restored !== true) {
+      const items = await tx.get(ref.collection("items"));
+      items.forEach(item => {
+        const d = item.data();
+        if (validId(d.product_id) && Number.isSafeInteger(d.quantity) && d.quantity > 0) restorable.set(d.product_id, (restorable.get(d.product_id) || 0) + d.quantity);
       });
     }
-  }
-
-  await orderRef.update({
-    status,
-    updated_at: FieldValue.serverTimestamp(),
+    const products = [];
+    for (const [id, quantity] of restorable) {
+      const productRef = adminDb.collection("products").doc(id);
+      const product = await tx.get(productRef);
+      if (product.exists) products.push({ ref: productRef, stock: Number(product.data()?.stock || 0) + quantity });
+    }
+    // All reads complete. The order guard and restored stock commit together.
+    for (const product of products) tx.update(product.ref, { stock: product.stock, updated_at: FieldValue.serverTimestamp() });
+    tx.update(ref, { status, status_previous: order.status, status_version: Number(order.status_version || 0) + 1, ...(status === "Cancelled" ? { stock_restored: true } : {}), updated_at: FieldValue.serverTimestamp() });
+    tx.create(adminDb.collection("audit_logs").doc(), { actor: actor || null, action: "order.status", resource_id: orderId, from: order.status, to: status, created_at: FieldValue.serverTimestamp() });
+    return { id: orderId, status };
   });
-
-  return { id: orderId, status };
 }
 
-export async function updatePaymentStatus(
-  orderId: string,
-  paymentStatus: string
-) {
-  const orderRef = adminDb.collection("orders").doc(orderId);
-  const orderSnap = await orderRef.get();
-
-  if (!orderSnap.exists) {
-    throw new Error("Order not found.");
-  }
-
-  const order = orderSnap.data() as Record<string, unknown> | undefined;
-  const paymentMethod = String(order?.payment_method ?? "");
-
-  if (
-    paymentStatus === "Paid" &&
-    ["kbzpay", "wavepay", "ayapay", "bank"].includes(paymentMethod) &&
-    !order?.payment_screenshot_url
-  ) {
-    throw new Error(
-      "Payment proof is missing. Upload or confirm proof before marking this prepaid order as Paid."
-    );
-  }
-
-  await orderRef.update({
-    payment_status: paymentStatus,
-    updated_at: FieldValue.serverTimestamp(),
+export async function updatePaymentStatus(orderId: string, paymentStatus: string, actor?: string) {
+  if (!validId(orderId) || !paymentStatuses.includes(paymentStatus)) throw new InputError("Invalid payment status.");
+  const ref = adminDb.collection("orders").doc(orderId);
+  return adminDb.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new InputError("Order not found.", 404);
+    const order = snap.data()!;
+    if (order.payment_status === paymentStatus) return { id: orderId, payment_status: paymentStatus };
+    if (paymentStatus === "Paid" && ["kbzpay", "wavepay", "ayapay", "bank"].includes(order.payment_method) && !order.payment_screenshot_file_id && !order.payment_screenshot_url) throw new InputError("Payment proof is missing.", 409);
+    const payments = await tx.get(adminDb.collection("payments").where("order_id", "==", orderId));
+    const update = { payment_status: paymentStatus, updated_at: FieldValue.serverTimestamp() };
+    tx.update(ref, update);
+    payments.forEach(payment => tx.update(payment.ref, update));
+    tx.create(adminDb.collection("audit_logs").doc(), { actor: actor || null, action: "payment.status", resource_id: orderId, from: order.payment_status, to: paymentStatus, created_at: FieldValue.serverTimestamp() });
+    return { id: orderId, payment_status: paymentStatus };
   });
-
-  /*
-   * Keep the matching payment record in sync so admin verification / rejection
-   * is reflected in payments/{paymentId}.
-   */
-  const paymentsSnap = await adminDb
-    .collection("payments")
-    .where("order_id", "==", orderId)
-    .limit(1)
-    .get();
-
-  if (!paymentsSnap.empty) {
-    await paymentsSnap.docs[0].ref.update({
-      payment_status: paymentStatus,
-      updated_at: FieldValue.serverTimestamp(),
-    });
-  }
-
-  return { id: orderId, payment_status: paymentStatus };
 }

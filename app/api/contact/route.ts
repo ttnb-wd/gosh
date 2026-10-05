@@ -1,3 +1,5 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
 import { sendAdminContactEmail } from "@/lib/email";
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as {
+    const body = (await readJson(request, "contact")) as {
       fullName?: string;
       email?: string;
       subject?: string;
@@ -117,18 +119,11 @@ export async function POST(request: Request) {
       email: sanitizedEmail,
       subject: sanitizedSubject,
       message: sanitizedMessage,
-    }).catch((emailError) => {
+    }).catch(() => {
       // Log email error but don't fail the request
-      console.error('Failed to send admin notification email:', emailError instanceof Error ? emailError.message : 'Unknown error');
+      console.error("Application operation failed.");
     });
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    // Log error for debugging but don't expose details
-    console.error('Contact form submission error:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      { error: "Could not send your message. Please try again later." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

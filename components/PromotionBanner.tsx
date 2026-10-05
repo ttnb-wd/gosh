@@ -1,4 +1,6 @@
 "use client";
+import devLog from "@/lib/dev-log";
+
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,11 +22,11 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
   const getPromotionState = (promo: Promotion): PromotionState => {
     const now = new Date();
     // Handle both Timestamp objects (if any remain) and ISO strings from API
-    const startDate = promo.start_at instanceof Timestamp 
-      ? promo.start_at.toDate() 
+    const startDate = promo.start_at instanceof Timestamp
+      ? promo.start_at.toDate()
       : new Date(promo.start_at as unknown as string);
-    const endDate = promo.end_at instanceof Timestamp 
-      ? promo.end_at.toDate() 
+    const endDate = promo.end_at instanceof Timestamp
+      ? promo.end_at.toDate()
       : new Date(promo.end_at as unknown as string);
 
     if (now < startDate) return "upcoming";
@@ -50,11 +52,11 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
 
   const state = getPromotionState(promotion);
   // Handle both Timestamp objects and ISO strings from API
-  const startDate = promotion.start_at instanceof Timestamp 
-    ? promotion.start_at.toDate() 
+  const startDate = promotion.start_at instanceof Timestamp
+    ? promotion.start_at.toDate()
     : new Date(promotion.start_at as unknown as string);
-  const endDate = promotion.end_at instanceof Timestamp 
-    ? promotion.end_at.toDate() 
+  const endDate = promotion.end_at instanceof Timestamp
+    ? promotion.end_at.toDate()
     : new Date(promotion.end_at as unknown as string);
 
   // Use timestamp (number) instead of Date object to prevent infinite re-renders
@@ -114,11 +116,11 @@ export default function PromotionBanner() {
       try {
         // Use unified endpoint to get both banner and product promotions
         const response = await fetch("/api/promotions/unified");
-        
+
         if (!response.ok) {
-          console.error("Failed to fetch promotions:", response.status, response.statusText);
+          devLog.error("Failed to fetch promotions:", response.status, response.statusText);
           const errorData = await response.json().catch(() => ({}));
-          console.error("Error details:", errorData);
+          devLog.error("Error details:", errorData);
           return;
         }
 
@@ -151,13 +153,13 @@ export default function PromotionBanner() {
               product: promo.product,
             })),
           ];
-          
+
           setPromotions(allPromotions);
         } else {
-          console.error("API returned unsuccessful response:", result);
+          devLog.error("API returned unsuccessful response:", result);
         }
       } catch (error) {
-        console.error("Failed to fetch promotions:", error);
+        devLog.error("Failed to fetch promotions:", error);
       } finally {
         setLoading(false);
       }

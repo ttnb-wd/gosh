@@ -1,3 +1,5 @@
+import { readJson, validId, InputError } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { checkRateLimit, createRateLimitId } from "@/lib/rateLimit";
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
 
     /*
      * Per-user rate limit to discourage duplicate submissions, order spam and
-     * request flooding. Best-effort in-memory limiting, consistent with the
+     * request flooding. Distributed Redis limiting; production fails closed if unavailable.
      * rest of the codebase; the window is generous so legitimate customers are
      * unaffected.
      */
@@ -73,13 +75,8 @@ export async function POST(request: Request) {
     let body: PlaceOrderBody;
 
     try {
-      body = (await request.json()) as PlaceOrderBody;
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid request body." },
-        { status: 400 }
-      );
-    }
+      body = (await readJson(request, "checkout")) as PlaceOrderBody;
+    } catch (error) { return securityError(error); }
 
     /*
      * Server-side input validation. Sensitive money/stock/payment-status fields
@@ -213,7 +210,10 @@ export async function POST(request: Request) {
       });
     }
 
+    const requestKey = request.headers.get("idempotency-key");
+    if (requestKey !== null && !validId(requestKey)) throw new InputError("Invalid order request key.");
     const data = await placeOrder({
+      idempotency_key: requestKey || undefined,
       user_id: user.uid,
       customer_email: user.email || null,
       customer_name: body.customerName.trim(),
@@ -243,33 +243,5 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ data });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "";
-
-    // Only pass through the known, user-facing business messages from placeOrder().
-    // Anything else is an unexpected internal error (e.g. a Firestore/transaction
-    // failure) — log it for server diagnostics but never surface it to the user.
-    const knownUserErrors = [
-      "must include at least one item",
-      "Quantity is too high",
-      "One product in your cart is no longer available",
-      "left in stock",
-      "Selected decant size is no longer available",
-    ];
-
-    if (
-      message &&
-      knownUserErrors.some((known) => message.includes(known))
-    ) {
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    console.error("Place order unexpected error:", error);
-
-    return NextResponse.json(
-      { error: "Could not place order. Please try again." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error, "Could not place order. Please try again."); }
 }

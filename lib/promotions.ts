@@ -1,6 +1,6 @@
 /**
  * Centralized Promotion Service
- * 
+ *
  * Single source of truth for all promotion-related logic across the application.
  * Handles both generic promotions (banners) and product promotions (pricing).
  */
@@ -60,16 +60,16 @@ export function isPromotionActive(
   if (!isActive) return false;
 
   const now = new Date();
-  
+
   // Convert to Date objects
-  const startDate = (startAt as any)?.toDate
-    ? (startAt as FirebaseTimestamp).toDate() 
+  const startDate = typeof startAt === 'object' && 'toDate' in startAt
+    ? (startAt as FirebaseTimestamp).toDate()
     : typeof startAt === 'string'
     ? new Date(startAt)
     : startAt as Date;
-    
-  const endDate = (endAt as any)?.toDate
-    ? (endAt as FirebaseTimestamp).toDate() 
+
+  const endDate = typeof endAt === 'object' && 'toDate' in endAt
+    ? (endAt as FirebaseTimestamp).toDate()
     : typeof endAt === 'string'
     ? new Date(endAt)
     : endAt as Date;
@@ -119,7 +119,6 @@ export function calculateDiscountAmount(
 export function enrichProductWithPromotion<T extends {
   id: string | number;
   price: number;
-  [key: string]: any;
 }>(
   product: T,
   promotion: {
@@ -136,25 +135,25 @@ export function enrichProductWithPromotion<T extends {
     promotion.is_active
   );
 
-  const displayPrice = hasActivePromotion 
-    ? promotion.promotion_price 
+  const displayPrice = hasActivePromotion
+    ? promotion.promotion_price
     : product.price;
 
-  const result: any = {
+  const result: T & { display_price: number; has_promotion: boolean; promotion?: ProductPromotionInfo } = {
     ...product,
     display_price: displayPrice,
     has_promotion: !!hasActivePromotion,
   };
 
   if (hasActivePromotion) {
-    const startDate = (promotion.start_at as any)?.toDate
-      ? (promotion.start_at as FirebaseTimestamp).toDate() 
+    const startDate = typeof promotion.start_at === 'object' && 'toDate' in promotion.start_at
+      ? (promotion.start_at as FirebaseTimestamp).toDate()
       : typeof promotion.start_at === 'string'
       ? new Date(promotion.start_at)
       : promotion.start_at as Date;
-      
-    const endDate = (promotion.end_at as any)?.toDate
-      ? (promotion.end_at as FirebaseTimestamp).toDate() 
+
+    const endDate = typeof promotion.end_at === 'object' && 'toDate' in promotion.end_at
+      ? (promotion.end_at as FirebaseTimestamp).toDate()
       : typeof promotion.end_at === 'string'
       ? new Date(promotion.end_at)
       : promotion.end_at as Date;
@@ -172,7 +171,7 @@ export function enrichProductWithPromotion<T extends {
     };
   }
 
-  return result as EnrichedProduct & Omit<T, keyof EnrichedProduct>;
+  return result as unknown as EnrichedProduct & Omit<T, keyof EnrichedProduct>;
 }
 
 /**
@@ -182,7 +181,6 @@ export function enrichProductWithPromotion<T extends {
 export function enrichProductsWithPromotions<T extends {
   id: string | number;
   price: number;
-  [key: string]: any;
 }>(
   products: T[],
   promotions: Array<{

@@ -1,3 +1,5 @@
+import { validatedImage, readUpload } from "@/lib/security/uploads";
+import { securityError } from "@/lib/security/responses";
 import { NextRequest, NextResponse } from "next/server";
 import imagekit from "@/lib/imagekit";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
@@ -8,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     await requireAdminApiAuth(request);
 
-    const formData = await request.formData();
+    const formData = await readUpload(request);
 
     const file = formData.get("file");
     const folder = formData.get("folder");
@@ -27,10 +29,7 @@ export async function POST(request: NextRequest) {
      * folder tree.
      */
     const rawFolder = typeof folder === "string" ? folder.trim() : "";
-    const safeFolder =
-      rawFolder.startsWith("/gosh/") && !rawFolder.includes("..")
-        ? rawFolder
-        : "/gosh/uploads";
+    const safeFolder = ["/gosh/products", "/gosh/promotions", "/gosh/uploads"].includes(rawFolder) ? rawFolder : "/gosh/uploads";
 
     const allowedTypes = [
       "image/jpeg",
@@ -55,12 +54,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const { buffer, fileName } = await validatedImage(file);
 
     const uploadResult = await imagekit.files.upload({
       file: buffer.toString("base64"),
-      fileName: file.name,
+      fileName,
       folder: safeFolder,
       useUniqueFileName: true,
     });
@@ -71,14 +69,5 @@ export async function POST(request: NextRequest) {
       fileId: uploadResult.fileId,
       name: uploadResult.name,
     });
-  } catch (error) {
-    console.error("ImageKit upload error:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to upload image";
-
-    const status = message === "Admin access required" ? 403 : 500;
-
-    return NextResponse.json({ error: message }, { status });
-  }
+  } catch (error) { return securityError(error, "Could not upload image."); }
 }

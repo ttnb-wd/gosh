@@ -1,3 +1,5 @@
+import { publicProduct, publicPromotion } from "@/lib/security/public-data";
+import { limitRequest } from "@/lib/security/abuse";
 import { NextResponse } from "next/server";
 import { getActivePromotions } from "@/lib/firebase/promotions-server";
 import { getProduct } from "@/lib/firebase/products-server";
@@ -5,12 +7,14 @@ import { getProduct } from "@/lib/firebase/products-server";
 /**
  * GET /api/promotions/active
  * Public endpoint - Fetch only active promotions visible to customers
- * 
+ *
  * A promotion is returned only if:
  * - is_active === true
  * - current time is between start_at and end_at
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = await limitRequest(request, "public-catalog", 120, 60);
+  if (limited) return limited;
   try {
     const promotions = await getActivePromotions();
 
@@ -19,7 +23,7 @@ export async function GET() {
       promotions.map(async (promo) => {
         // Serialize Firestore Timestamps to ISO strings for JSON transmission
         const serializedPromo = {
-          ...promo,
+          ...publicPromotion(promo),
           start_at: promo.start_at?.toDate?.()?.toISOString() || promo.start_at,
           end_at: promo.end_at?.toDate?.()?.toISOString() || promo.end_at,
           created_at: promo.created_at && typeof promo.created_at === 'object' && 'toDate' in promo.created_at
@@ -35,10 +39,10 @@ export async function GET() {
             const product = await getProduct(promo.product_id);
             return {
               ...serializedPromo,
-              product: product || null,
+              product: publicProduct(product),
             };
-          } catch (error) {
-            console.error("Product fetch error:", error);
+          } catch  {
+            console.error("Application operation failed.");
             return serializedPromo;
           }
         }
@@ -50,20 +54,14 @@ export async function GET() {
       success: true,
       promotions: enrichedPromotions,
     });
-  } catch (error) {
-    console.error("GET active promotions error:", error);
-    
-    // Log the full error details for debugging
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
+  } catch  {
+    console.error("Application operation failed.");
+
 
     return NextResponse.json(
       {
         success: false,
         error: "Failed to fetch active promotions",
-        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

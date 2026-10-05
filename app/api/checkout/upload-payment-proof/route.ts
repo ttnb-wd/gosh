@@ -1,3 +1,5 @@
+import { validatedImage, readUpload } from "@/lib/security/uploads";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
+    const formData = await readUpload(request);
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
@@ -93,12 +95,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const { buffer, fileName } = await validatedImage(file);
 
     const uploadResult = await imagekit.files.upload({
       file: buffer.toString("base64"),
-      fileName: file.name,
+      fileName,
       folder: "/gosh/payment-proofs",
       useUniqueFileName: true,
       isPrivateFile: true,
@@ -134,12 +135,5 @@ export async function POST(request: Request) {
       fileId: uploadResult.fileId,
       name: uploadResult.name,
     });
-  } catch (error) {
-    console.error("Payment proof upload error:", error);
-
-    return NextResponse.json(
-      { error: "Could not upload payment proof." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error, "Could not upload payment proof."); }
 }

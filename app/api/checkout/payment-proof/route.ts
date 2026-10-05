@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { checkAdminApiAuth } from "@/lib/auth/apiAuth";
 import imagekit, { buildSignedImageKitUrl } from "@/lib/imagekit";
 import { adminDb } from "@/lib/firebase/admin";
+import { validId } from "@/lib/security/validation";
+import { allowedReceiptUrl, imageTypes } from "@/lib/security/uploads";
+import { limitRequest } from "@/lib/security/abuse";
 
 export const runtime = "nodejs";
 
@@ -55,6 +58,9 @@ export async function GET(request: Request) {
 
     const uid = auth.user.uid;
     const isAdmin = auth.isAdmin;
+    if ((orderId && !validId(orderId)) || (fileIdParam && !validId(fileIdParam))) return NextResponse.json({ error: "Invalid reference." }, { status: 400 });
+    const limited = await limitRequest(request, "receipt", 60, 600, uid);
+    if (limited) return limited;
 
     let fileId: string | null = null;
     let legacyUrl: string | null = null;
@@ -86,8 +92,8 @@ export async function GET(request: Request) {
       // Ownership check: only the order owner or an admin may view the receipt.
       if (!isAdmin && (!ownerId || ownerId !== uid)) {
         return NextResponse.json(
-          { error: "Not authorized to view this payment proof." },
-          { status: 403 }
+          { error: "Payment proof not found." },
+          { status: 404 }
         );
       }
 
@@ -125,8 +131,8 @@ export async function GET(request: Request) {
 
       if (!isAdmin && (!ownerId || ownerId !== uid)) {
         return NextResponse.json(
-          { error: "Not authorized to view this payment proof." },
-          { status: 403 }
+          { error: "Payment proof not found." },
+          { status: 404 }
         );
       }
 
@@ -150,7 +156,7 @@ export async function GET(request: Request) {
         const file = await imagekit.files.get(fileId);
         const filePath = file.filePath;
 
-        if (!filePath) {
+        if (!filePath || !["/gosh/payment-proofs/", "/gosh/payments/"].some(prefix => filePath.startsWith(prefix))) {
           return NextResponse.json(
             { error: "Payment proof not found." },
             { status: 404 }
@@ -163,11 +169,8 @@ export async function GET(request: Request) {
         // upstream fetch below. The signed URL is NEVER returned to the browser
         // and the private key stays on the server.
         upstreamUrl = buildSignedImageKitUrl(filePath, 60);
-      } catch (error) {
-        console.error(
-          "[payment-proof] ImageKit file details error:",
-          error instanceof Error ? error.message : "Unknown error"
-        );
+      } catch  {
+        console.error("Application operation failed.");
         return NextResponse.json(
           { error: "Could not retrieve payment proof." },
           { status: 404 }
@@ -179,15 +182,14 @@ export async function GET(request: Request) {
     }
 
     let upstream: Response;
+    if (!allowedReceiptUrl(upstreamUrl)) return NextResponse.json({ error: "Payment proof unavailable." }, { status: 404 });
     try {
       upstream = await fetch(upstreamUrl, {
         headers: { Accept: "image/*" },
+        redirect: "error", cache: "no-store", signal: AbortSignal.timeout(10_000),
       });
-    } catch (error) {
-      console.error(
-        "[payment-proof] Upstream fetch error:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
+    } catch  {
+      console.error("Application operation failed.");
       return NextResponse.json(
         { error: "Could not retrieve payment proof." },
         { status: 502 }
@@ -202,22 +204,30 @@ export async function GET(request: Request) {
     }
 
     const contentType =
-      upstream.headers.get("content-type") || "application/octet-stream";
+      upstream.headers.get("content-type")?.split(";")[0] || "application/octet-stream";
+    if (!imageTypes.has(contentType) || !upstream.body) return NextResponse.json({ error: "Invalid receipt content." }, { status: 502 });
+    const reader = upstream.body.getReader();
+    const chunks: Uint8Array[] = []; let size = 0;
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      size += value.length;
+      if (size > 10 * 1024 * 1024) { await reader.cancel(); return NextResponse.json({ error: "Receipt is too large." }, { status: 502 }); }
+      chunks.push(value);
+    }
 
-    return new Response(upstream.body, {
+    return new Response(Buffer.concat(chunks), {
       status: 200,
       headers: {
         "Content-Type": contentType,
         // Never cache private receipts and never allow them to be sniffed.
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "Content-Disposition": "inline; filename=payment-proof",
       },
     });
-  } catch (error) {
-    console.error(
-      "[payment-proof] Unexpected error:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
+  } catch  {
+    console.error("Application operation failed.");
     return NextResponse.json(
       { error: "Could not retrieve payment proof." },
       { status: 500 }

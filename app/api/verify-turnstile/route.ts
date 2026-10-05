@@ -1,9 +1,14 @@
+import { limitRequest } from "@/lib/security/abuse";
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
+  const limited = await limitRequest(request, "turnstile", 30);
+  if (limited) return limited;
   try {
-    const body = (await request.json()) as { token?: string };
+    const body = (await readJson(request, "turnstile")) as { token?: string };
     const verification = await verifyTurnstileToken(body.token || "");
 
     if (!verification.success) {
@@ -11,7 +16,5 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Security check failed." }, { status: 400 });
-  }
+  } catch (error) { return securityError(error); }
 }

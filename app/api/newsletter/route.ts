@@ -1,3 +1,5 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as { email?: string; token?: string };
+    const body = (await readJson(request, "newsletter")) as { email?: string; token?: string };
 
     // Verify Turnstile token
     const verification = await verifyTurnstileToken(body.token || "");
@@ -58,12 +60,5 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    // Log error for debugging but don't expose details
-    console.error('Newsletter subscription error:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      { error: "Could not subscribe right now. Please try again later." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

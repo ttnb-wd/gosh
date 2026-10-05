@@ -10,7 +10,6 @@ import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import { db } from "@/lib/firebase/config";
 import {
   collection,
-  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -183,7 +182,8 @@ export default function AdminTestimonialsPage() {
     setError(null);
 
     try {
-      await deleteDoc(doc(db, "testimonials", testimonialId));
+      const response = await fetch("/api/admin/testimonials/delete", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ testimonialId }) });
+      if (!response.ok) throw new Error("Could not delete testimonial.");
 
       setTestimonials((prev) => prev.filter((testimonial) => testimonial.id !== testimonialId));
     } catch (deleteError) {

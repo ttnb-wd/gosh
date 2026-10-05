@@ -24,6 +24,7 @@ export function getAuthErrorMessage(error: unknown, fallback = "Something went w
 export function safeAuthRedirect(value: string | null, fallback = "/account"): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return fallback;
   const route = value.split(/[?#]/)[0];
+  if (/%2f|%5c|%00|%0a|%0d/i.test(route)) return fallback;
   if (["/login", "/register", "/verify-email", "/forgot-password", "/reset-password", "/auth/action"].includes(route)) return fallback;
   // Normal login returns to the storefront; admin login has its own entry.
   if (value === "/admin" || value.startsWith("/admin/")) return "/";

@@ -1,3 +1,4 @@
+import "server-only";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "./session";
 import { adminDb } from "@/lib/firebase/admin";

@@ -1,3 +1,6 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
+import { deliverOnce } from "@/lib/security/email-once";
 import { NextResponse } from "next/server";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
 import { adminDb } from "@/lib/firebase/admin";
@@ -9,10 +12,10 @@ export async function POST(request: Request) {
   try {
     await requireAdminApiAuth(request);
 
-    const body = (await request.json()) as {
-      orderId?: string;
-      previousStatus?: string;
-      nextStatus?: string;
+    const body = (await readJson(request, "statusEmail")) as {
+      orderId: string;
+      previousStatus: string;
+      nextStatus: string;
     };
 
     if (!body.orderId || !body.previousStatus || !body.nextStatus) {
@@ -26,6 +29,9 @@ export async function POST(request: Request) {
     }
 
     const orderData = orderSnap.data() as Record<string, unknown>;
+    if (body.nextStatus !== orderData.status || body.previousStatus !== orderData.status_previous) {
+      return NextResponse.json({ error: "Order status has changed." }, { status: 409 });
+    }
 
     const order: OrderEmailData = {
       id: orderSnap.id,
@@ -36,15 +42,12 @@ export async function POST(request: Request) {
       status: (orderData.status as string) || null,
     };
 
-    const result = await sendCustomerOrderStatusEmail(
+    const result = await deliverOnce(`status:${order.id}:${orderData.status_version}`, () => sendCustomerOrderStatusEmail(
       order,
       body.previousStatus,
       body.nextStatus
-    );
+    ));
 
     return NextResponse.json({ ok: true, email: result });
-  } catch (error) {
-    console.error("Order status email route failed:", error);
-    return NextResponse.json({ error: "Could not send order status email." }, { status: 500 });
-  }
+  } catch (error) { return securityError(error); }
 }

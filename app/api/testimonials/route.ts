@@ -1,3 +1,5 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { checkRateLimit, getClientIp, createRateLimitId } from "@/lib/rateLimit";
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as {
+    const body = (await readJson(request, "testimonial")) as {
       name?: string;
       role?: string | null;
       comment?: string;
@@ -110,12 +112,5 @@ export async function POST(request: Request) {
         avatar_url: body.avatarUrl?.trim() || null,
       },
     });
-  } catch (error) {
-    // Log error for debugging but don't expose details
-    console.error('Testimonial submission error:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      { error: "Could not submit your testimonial. Please try again." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

@@ -7,17 +7,17 @@ import { withSentryConfig } from "@sentry/nextjs";
  * must NOT appear in the production CSP, so we gate them on VERCEL_ENV
  * (set to "production" exclusively for production deployments on Vercel).
  */
-const isVercelProduction = process.env.VERCEL_ENV === "production";
+const allowVercelPreview = process.env.VERCEL_ENV === "preview";
 
-const vercelPreviewScript = isVercelProduction
-  ? []
-  : ["https://vercel.live/_next-live/feedback/feedback.js"];
+const vercelPreviewScript = allowVercelPreview
+  ? ["https://vercel.live/_next-live/feedback/feedback.js"] : [];
 
-const vercelPreviewConnect = isVercelProduction ? [] : ["https://vercel.com"];
+const vercelPreviewConnect = allowVercelPreview ? ["https://vercel.com"] : [];
 
-const vercelPreviewManifest = isVercelProduction ? [] : ["https://vercel.com"];
+const vercelPreviewManifest = allowVercelPreview ? ["https://vercel.com"] : [];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -102,14 +102,14 @@ const nextConfig: NextConfig = {
       // Cast to `any` to safely poke webpack.Configuration.externals without
       // fighting the Externals union type (the override below is structurally
       // compatible with webpack's array/function external form).
-      const wc = config as any;
+      const wc = config as { externals?: unknown[] };
       if (Array.isArray(wc.externals)) {
         const externals = wc.externals;
         const last = externals[externals.length - 1];
         if (typeof last === "function") {
           wc.externals = [
             ...externals.slice(0, -1),
-            (data: any, cb: any) => {
+            (data: { request?: string }, cb: (error?: Error | null, result?: string | boolean) => void) => {
               if (
                 data &&
                 typeof data.request === "string" &&
@@ -130,6 +130,7 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-store, no-cache, max-age=0" }] },
       {
         source: "/:path*",
         headers: [
@@ -152,7 +153,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "X-XSS-Protection",
-            value: "1; mode=block",
+            value: "0",
           },
           {
             key: "X-Download-Options",
@@ -185,7 +186,7 @@ const nextConfig: NextConfig = {
                * JavaScript
                */
               [
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.cloudflare.com https://*.sentry.io https://www.googletagmanager.com https://www.google-analytics.com",
+                "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : "") + " https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
                 ...vercelPreviewScript,
               ].join(" "),
 
@@ -220,6 +221,8 @@ const nextConfig: NextConfig = {
                   // Firebase Authentication
                 "https://identitytoolkit.googleapis.com",
                 "https://securetoken.googleapis.com",
+                "https://firebaseappcheck.googleapis.com",
+                "https://www.google.com/recaptcha/",
 
                   // Firebase Firestore
                 "https://firestore.googleapis.com",
@@ -248,7 +251,8 @@ const nextConfig: NextConfig = {
               /*
                * Turnstile iframe
                */
-              "frame-src 'self' https://challenges.cloudflare.com https://*.cloudflare.com",
+              "frame-src 'self' https://challenges.cloudflare.com https://www.google.com/recaptcha/ https://www.googletagmanager.com https://*.firebaseapp.com",
+              "worker-src 'self' blob:",
 
               /*
                * Prevent plugins

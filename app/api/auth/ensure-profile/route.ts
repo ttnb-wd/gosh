@@ -1,3 +1,4 @@
+import { limitRequest } from "@/lib/security/abuse";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { isSameOrigin } from "@/lib/auth/session";
@@ -5,6 +6,8 @@ import { isSameOrigin } from "@/lib/auth/session";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const limited = await limitRequest(request, "profile", 60);
+  if (limited) return limited;
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   const authorization = request.headers.get("authorization");
   try {

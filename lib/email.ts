@@ -1,3 +1,4 @@
+import "server-only";
 type EmailResult = {
   ok: boolean;
   skipped?: boolean;
@@ -14,7 +15,7 @@ type EmailPayload = {
 
 type OrderEmailItem = {
   product_name: string;
-  
+
   selected_size?: string | null;
   quantity: number;
   price: number;
@@ -92,19 +93,18 @@ export const sendTransactionalEmail = async ({
         text,
         ...(replyTo ? { reply_to: replyTo } : {}),
       }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Email send failed:", error);
-      return { ok: false, error };
+      console.error("Application operation failed.");
+      return { ok: false, error: "Email delivery is temporarily unavailable." };
     }
 
     return { ok: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Email send failed.";
-    console.error("Email send failed:", message);
-    return { ok: false, error: message };
+  } catch {
+    console.error("Application operation failed.");
+    return { ok: false, error: "Email delivery is temporarily unavailable." };
   }
 };
 

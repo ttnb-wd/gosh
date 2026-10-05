@@ -1,3 +1,6 @@
+import { recordAdminChange } from "@/lib/security/audit";
+import { InputError, readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
@@ -8,6 +11,7 @@ type ProductActionBody =
   | {
       action: "save";
       productId?: string | null;
+      expectedStock?: number;
       product: Record<string, unknown>;
     }
   | {
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
   try {
     const user = await requireAdminApiAuth(request);
 
-    const body = (await request.json()) as ProductActionBody;
+    const body = (await readJson(request, "productAction")) as ProductActionBody;
 
     if (!body || !body.action) {
       return NextResponse.json(
@@ -79,6 +83,7 @@ export async function POST(request: Request) {
         };
 
         await productRef.set(data);
+        await recordAdminChange(user.uid, "product.create", productRef.id);
 
         return NextResponse.json({
           data: {
@@ -95,18 +100,22 @@ export async function POST(request: Request) {
         .collection("products")
         .doc(productId);
 
-      const existingProduct = await productRef.get();
-
-      if (!existingProduct.exists) {
-        return NextResponse.json(
-          { error: "Product not found." },
-          { status: 404 }
-        );
-      }
-
-      const existingData = existingProduct.data() as
-        | Record<string, unknown>
-        | undefined;
+      // Do not overwrite inventory reserved by a checkout while the form was open.
+      const existingData = await adminDb.runTransaction(async transaction => {
+        const snapshot = await transaction.get(productRef);
+        if (!snapshot.exists) throw new InputError("Product not found.", 404);
+        const current = snapshot.data() as Record<string, unknown>;
+        if (Number(current.stock || 0) !== body.expectedStock) {
+          throw new InputError("Product inventory changed. Refresh the product before saving.", 409);
+        }
+        transaction.update(productRef, {
+          ...productData,
+          id: productId,
+          updatedAt: FieldValue.serverTimestamp(),
+          updated_by: user.uid,
+        });
+        return current;
+      });
 
       /*
        * Capture the current ImageKit file id before it is overwritten so we
@@ -127,15 +136,7 @@ export async function POST(request: Request) {
           ? productData.imageFileId
           : null;
 
-      await productRef.set(
-        {
-          ...productData,
-          id: productId,
-          updatedAt: FieldValue.serverTimestamp(),
-          updated_by: user.uid,
-        },
-        { merge: true }
-      );
+      await recordAdminChange(user.uid, "product.update", productId);
 
       /*
        * Best-effort cleanup of the replaced/removed ImageKit file.
@@ -146,18 +147,15 @@ export async function POST(request: Request) {
       if (oldImageFileId && oldImageFileId !== newImageFileId) {
         try {
           await deleteImageKitFile(oldImageFileId);
-        } catch (deleteImageError) {
-          console.error(
-            "ImageKit old file deletion failed:",
-            deleteImageError
-          );
+        } catch  {
+          console.error("Application operation failed.");
         }
       }
 
       return NextResponse.json({
         data: {
           id: productId,
-          ...existingProduct.data(),
+          ...existingData,
           ...productData,
         },
       });
@@ -243,6 +241,7 @@ export async function POST(request: Request) {
        * pointing at an image that has already been removed.
        */
       await productRef.delete();
+      await recordAdminChange(user.uid, "product.delete", body.productId);
 
       /*
        * Best-effort cleanup of the corresponding ImageKit file.
@@ -250,11 +249,8 @@ export async function POST(request: Request) {
       if (imageFileId) {
         try {
           await deleteImageKitFile(imageFileId);
-        } catch (deleteImageError) {
-          console.error(
-            "ImageKit file deletion failed:",
-            deleteImageError
-          );
+        } catch  {
+          console.error("Application operation failed.");
         }
       }
 
@@ -270,20 +266,5 @@ export async function POST(request: Request) {
       { error: "Invalid product action." },
       { status: 400 }
     );
-  } catch (error) {
-    console.error("Product action error:", error);
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Product action failed.";
-
-    const status =
-      message === "Admin access required" ? 403 : 500;
-
-    return NextResponse.json(
-      { error: message },
-      { status }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

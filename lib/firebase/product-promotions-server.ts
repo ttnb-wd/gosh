@@ -5,7 +5,7 @@ import { adminDb } from "./admin";
 
 /**
  * Product Promotion schema
- * 
+ *
  * Links to existing products to provide promotional pricing
  * Does NOT modify the original product price
  */
@@ -14,11 +14,11 @@ export type ProductPromotion = {
   product_id: string;
   promotion_price: number;
   is_active: boolean;
-  
+
   /** Promotion validity period */
   start_at: Timestamp;
   end_at: Timestamp;
-  
+
   created_at: Timestamp | FieldValue;
   updated_at: Timestamp | FieldValue;
 };
@@ -89,7 +89,7 @@ export async function getAllProductPromotions(): Promise<ProductPromotion[]> {
 export async function getActiveProductPromotions(): Promise<ProductPromotion[]> {
   try {
     const now = Timestamp.now();
-    
+
     // Query only active promotions without orderBy to avoid index requirement
     const snapshot = await productPromotionsCollection
       .where("is_active", "==", true)
@@ -105,7 +105,7 @@ export async function getActiveProductPromotions(): Promise<ProductPromotion[]> 
       .filter((promo) => {
         const startAt = promo.start_at;
         const endAt = promo.end_at;
-        
+
         if (!startAt || !endAt) {
           return false;
         }
@@ -129,7 +129,7 @@ export async function getActiveProductPromotions(): Promise<ProductPromotion[]> 
 
     return activePromotions;
   } catch (error) {
-    console.error("[getActiveProductPromotions] Error:", error);
+    console.error("Application operation failed.");
     throw error;
   }
 }

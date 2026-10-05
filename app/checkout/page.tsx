@@ -258,7 +258,7 @@ function CheckoutPageContent() {
     return paymentMethods.filter((method) => {
       // Hide COD card from UI if flag is false (can be restored later)
       if (method.id === "cod" && !SHOW_COD_PAYMENT_CARD) return false;
-      
+
       if (method.id === "cod") return settings.allow_cash_on_delivery;
       if (method.id === "kbzpay") return settings.allow_kbzpay;
       if (method.id === "wavepay") return settings.allow_wavepay;
@@ -411,7 +411,7 @@ function CheckoutPageContent() {
       }
 
       const nextErrors: Record<string, string> = {};
-      
+
       // Only validate delivery information if the form is visible
       if (SHOW_DELIVERY_INFORMATION) {
         if (!customerForm.fullName?.trim()) nextErrors.fullName = "Name is required";
@@ -419,7 +419,7 @@ function CheckoutPageContent() {
         if (!customerForm.address?.trim()) nextErrors.address = "Address is required";
         if (!customerForm.city?.trim()) nextErrors.city = "City is required";
       }
-      
+
       if (!selectedPayment) nextErrors.payment = "Please select a payment method";
       if (!cartItems || cartItems.length === 0) nextErrors.cart = "Your bag is empty";
 
@@ -491,6 +491,7 @@ function CheckoutPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
           ...authorizationHeader,
         },
         body: JSON.stringify({
@@ -588,8 +589,8 @@ function CheckoutPageContent() {
     if (newQuantity === 0) {
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
     } else {
-      setCartItems(items => 
-        items.map(item => 
+      setCartItems(items =>
+        items.map(item =>
           (item.id === id && item.selectedSize === selectedSize) ? { ...item, qty: newQuantity } : item
         )
       );
@@ -626,7 +627,7 @@ function CheckoutPageContent() {
 
   return (
     <main role="main" className="studio-page studio-checkout min-h-screen bg-[var(--site-bg)] text-ink">
-      <Navbar 
+      <Navbar
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
       />
@@ -826,7 +827,7 @@ function CheckoutPageContent() {
               <h4 className="mb-2 text-sm font-medium text-ink">
                 Your payments are protected
               </h4>
-              
+
               {/* Decorative divider */}
               <div className="mx-auto mb-3 flex items-center justify-center gap-2">
                 <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
@@ -845,8 +846,8 @@ function CheckoutPageContent() {
 
       <Footer />
 
-      <CartDrawer 
-        isOpen={cartOpen} 
+      <CartDrawer
+        isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         cartItems={cartItems}
         onUpdateQuantity={updateCartItemQuantity}
@@ -874,7 +875,7 @@ function CheckoutPageContent() {
                     <CheckCircle className="h-10 w-10 text-on-brand" />
                   </div>
                   <h2 className="mb-3 text-2xl font-semibold text-ink">Order Placed Successfully!</h2>
-                  
+
                   {successOrder.payment_status === "Verifying" ? (
                     <>
                       <p className="mb-2 text-sm font-semibold text-accent">
@@ -894,7 +895,7 @@ function CheckoutPageContent() {
                       </p>
                     </>
                   )}
-                  
+
                   <div className="mb-6 rounded-xl border border-line bg-surface p-4 text-left">
                     <p className="text-xs font-bold uppercase tracking-wider text-muted">Order Number</p>
                     <p className="mt-1 text-lg font-semibold text-accent">{successOrder.order_number}</p>
@@ -930,7 +931,7 @@ function CheckoutPageContent() {
 
       {/* Payment Details Modal */}
       {showPaymentModal && selectedPayment && paymentDetails[selectedPayment] && (
-        <div 
+        <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-overlay px-4 py-5 "
           onClick={() => setShowPaymentModal(false)}
         >
@@ -1115,7 +1116,7 @@ function CheckoutPageContent() {
                 <div className={`rounded-xl border border-line bg-surface/80 shadow-panel ${selectedPayment === "kbzpay" || selectedPayment === "wavepay" || selectedPayment === "ayapay" ? "mt-3 p-3" : "mt-5 p-4"}`}>
                   <p className="text-sm font-bold text-ink">Upload payment screenshot</p>
                   <p className="mt-1 text-xs text-muted">Attach your transaction screenshot after payment.</p>
-                  
+
                   <label htmlFor={`payment-screenshot-${selectedPayment}`} className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-line bg-accent-soft/50 px-4 py-4 text-center transition hover:bg-accent-soft">
                     <span className="text-2xl text-accent">☁</span>
                     <span className="mt-1 text-sm font-bold text-accent">Choose screenshot</span>

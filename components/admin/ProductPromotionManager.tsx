@@ -1,4 +1,6 @@
 "use client";
+import devLog from "@/lib/dev-log";
+
 import StudioRowActions from "@/components/ui/StudioRowActions";
 import { notify, confirmAction } from "@/components/ui/StudioFeedback";
 
@@ -85,7 +87,7 @@ export default function ProductPromotionManager() {
       });
 
       if (!response.ok) {
-        console.error("Failed to fetch promotions:", response.status, response.statusText);
+        devLog.error("Failed to fetch promotions:", response.status, response.statusText);
         return;
       }
 
@@ -95,7 +97,7 @@ export default function ProductPromotionManager() {
         setPromotions(result.promotions || []);
       }
     } catch (error) {
-      console.error("Failed to fetch promotions:", error);
+      devLog.error("Failed to fetch promotions:", error);
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,7 @@ export default function ProductPromotionManager() {
 
       setProducts(loadedProducts);
     } catch (error) {
-      console.error("Failed to fetch products:", error);
+      devLog.error("Failed to fetch products:", error);
     }
   }
 
@@ -150,7 +152,7 @@ export default function ProductPromotionManager() {
       ...prev,
       product_id: product.id,
       discount_percent: prev.discount_percent || "",
-      promotion_price: prev.discount_percent 
+      promotion_price: prev.discount_percent
         ? String(Math.round(product.price * (1 - parseFloat(prev.discount_percent) / 100)))
         : "",
     }));
@@ -160,10 +162,10 @@ export default function ProductPromotionManager() {
 
   function handleDiscountChange(percent: string) {
     const originalPrice = selectedProduct?.price || 0;
-    const promotionPrice = originalPrice > 0 && percent 
+    const promotionPrice = originalPrice > 0 && percent
       ? Math.round(originalPrice * (1 - parseFloat(percent) / 100))
       : "";
-    
+
     setFormData(prev => ({
       ...prev,
       discount_percent: percent,
@@ -219,7 +221,7 @@ export default function ProductPromotionManager() {
         notify("Unable to save your changes. Please try again.", "error");
       }
     } catch (error) {
-      console.error("Submit error:", error);
+      devLog.error("Submit error:", error);
       notify("Unable to save your changes. Please try again.", "error");
     } finally {
       setSubmitting(false);
@@ -256,7 +258,7 @@ export default function ProductPromotionManager() {
         notify("Unable to delete this item. Please try again.", "error");
       }
     } catch (error) {
-      console.error("Delete error:", error);
+      devLog.error("Delete error:", error);
       notify("Unable to delete this item. Please try again.", "error");
     }
   }
@@ -287,27 +289,27 @@ export default function ProductPromotionManager() {
         notify("Unable to update this item. Please try again.", "error");
       }
     } catch (error) {
-      console.error("Toggle error:", error);
+      devLog.error("Toggle error:", error);
       notify("Unable to update this item. Please try again.", "error");
     }
   }
 
   function handleEdit(promotion: EnrichedProductPromotion) {
     setEditingId(promotion.id);
-    
+
     let startAt = "";
     let endAt = "";
 
     if (promotion.start_at) {
-      const startDate = promotion.start_at instanceof Timestamp 
-        ? promotion.start_at.toDate() 
+      const startDate = promotion.start_at instanceof Timestamp
+        ? promotion.start_at.toDate()
         : new Date(promotion.start_at as string);
       startAt = formatDateForInput(startDate);
     }
 
     if (promotion.end_at) {
-      const endDate = promotion.end_at instanceof Timestamp 
-        ? promotion.end_at.toDate() 
+      const endDate = promotion.end_at instanceof Timestamp
+        ? promotion.end_at.toDate()
         : new Date(promotion.end_at as string);
       endAt = formatDateForInput(endDate);
     }
@@ -315,7 +317,7 @@ export default function ProductPromotionManager() {
     const product = products.find(p => p.id === promotion.product_id);
     setSelectedProduct(product || null);
 
-    const discountPercent = product 
+    const discountPercent = product
       ? String(calculateDiscountFromPrices(product.price, promotion.promotion_price))
       : "";
 
@@ -362,11 +364,11 @@ export default function ProductPromotionManager() {
     }
 
     const now = new Date();
-    const startDate = promotion.start_at instanceof Timestamp 
-      ? promotion.start_at.toDate() 
+    const startDate = promotion.start_at instanceof Timestamp
+      ? promotion.start_at.toDate()
       : new Date(promotion.start_at as string);
-    const endDate = promotion.end_at instanceof Timestamp 
-      ? promotion.end_at.toDate() 
+    const endDate = promotion.end_at instanceof Timestamp
+      ? promotion.end_at.toDate()
       : new Date(promotion.end_at as string);
 
     if (now < startDate) {
@@ -383,9 +385,9 @@ export default function ProductPromotionManager() {
   function scrollProducts(direction: 'left' | 'right') {
     if (scrollContainerRef.current) {
       const scrollAmount = 300;
-      scrollContainerRef.current.scrollBy({ 
-        left: direction === 'left' ? -scrollAmount : scrollAmount, 
-        behavior: 'smooth' 
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
       });
     }
   }
@@ -481,7 +483,7 @@ export default function ProductPromotionManager() {
                 <label className="mb-2 block text-sm font-bold text-ink ">
                   Select Product <span className="text-destructive">*</span>
                 </label>
-                
+
                 {!selectedProduct ? (
                   <button
                     type="button"
@@ -494,8 +496,8 @@ export default function ProductPromotionManager() {
                 ) : (
                   <div className="rounded-xl border-2 border-line bg-accent-soft p-4  ">
                     <div className="flex items-center gap-4">
-                      <img 
-                        src={getSafeProductImage(selectedProduct.images)} 
+                      <img
+                        src={getSafeProductImage(selectedProduct.images)}
                         alt={selectedProduct.name}
                         className="h-16 w-16 rounded-lg object-cover"
                       />
@@ -523,7 +525,7 @@ export default function ProductPromotionManager() {
                     </div>
                   </div>
                 )}
-                
+
                 {selectedProduct && (
                   <div className="mt-2 rounded-lg border border-info bg-info-soft p-3  ">
                     <p className="text-sm text-info ">
@@ -562,7 +564,7 @@ export default function ProductPromotionManager() {
                     )}
 
                     {/* Products */}
-                    <div 
+                    <div
                       ref={scrollContainerRef}
                       className="flex gap-4 overflow-x-auto pb-2"
                       onScroll={(e) => {
@@ -571,15 +573,15 @@ export default function ProductPromotionManager() {
                       }}
                     >
                       {filteredProducts.map((product) => (
-                        <div 
+                        <div
                           key={product.id}
                           onClick={() => handleProductSelect(product)}
                           className="group relative flex w-[220px] flex-shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border-2 border-line bg-surface transition-all hover:border-line hover:shadow-soft   "
                         >
                           {/* Product Image */}
                           <div className="relative h-[140px] w-full overflow-hidden bg-surface-muted   ">
-                            <img 
-                              src={getSafeProductImage(product.images)} 
+                            <img
+                              src={getSafeProductImage(product.images)}
                               alt={product.name}
                               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
@@ -786,7 +788,7 @@ export default function ProductPromotionManager() {
                             {status.label}
                           </span>
                         </div>
-                        
+
                         {product && (
                           <div className="mt-2 flex flex-wrap items-center gap-4">
                             <div>
@@ -806,11 +808,11 @@ export default function ProductPromotionManager() {
 
                         <div className="mt-2 flex items-center gap-3 text-xs text-muted ">
                           <span>
-                            {promotion.start_at instanceof Timestamp 
+                            {promotion.start_at instanceof Timestamp
                               ? new Date(promotion.start_at.toDate()).toLocaleDateString()
                               : new Date(promotion.start_at as string).toLocaleDateString()}
                             {" - "}
-                            {promotion.end_at instanceof Timestamp 
+                            {promotion.end_at instanceof Timestamp
                               ? new Date(promotion.end_at.toDate()).toLocaleDateString()
                               : new Date(promotion.end_at as string).toLocaleDateString()}
                           </span>

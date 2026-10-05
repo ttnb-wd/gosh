@@ -1,3 +1,6 @@
+import { recordAdminChange } from "@/lib/security/audit";
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
 import { Timestamp } from "firebase-admin/firestore";
@@ -38,20 +41,7 @@ export async function GET(request: NextRequest) {
       success: true,
       promotions: serializedPromotions,
     });
-  } catch (error) {
-    console.error("GET promotions error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch promotions",
-      },
-      { status: error instanceof Error && error.message === "Admin access required" ? 403 : 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }
 
 /**
@@ -60,9 +50,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    await requireAdminApiAuth(request);
+    const actor = await requireAdminApiAuth(request);
 
-    const body = await request.json();
+    const body = await readJson(request, "bannerAction");
     const { action, promotionId, data } = body;
 
     if (action === "create") {
@@ -119,6 +109,7 @@ export async function POST(request: NextRequest) {
       };
 
       const promotion = await createPromotion(promotionData);
+      await recordAdminChange(actor.uid, "promotion.create", promotion.id);
 
       return NextResponse.json({
         success: true,
@@ -171,6 +162,9 @@ export async function POST(request: NextRequest) {
         updateData.end_at = Timestamp.fromDate(new Date(data.end_at));
       }
 
+      await updatePromotion(promotionId, updateData);
+      await recordAdminChange(actor.uid, "promotion." + action, promotionId);
+
       // If image was replaced, delete old ImageKit file
       if (
         data.image &&
@@ -180,12 +174,12 @@ export async function POST(request: NextRequest) {
       ) {
         try {
           await deleteImageKitFile(existing.imageFileId);
-        } catch (error) {
-          console.error("ImageKit deletion error (non-fatal):", error);
+        } catch  {
+          console.error("Application operation failed.");
         }
       }
 
-      await updatePromotion(promotionId, updateData);
+
 
       return NextResponse.json({
         success: true,
@@ -214,16 +208,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      await deletePromotion(promotionId);
+      await recordAdminChange(actor.uid, "promotion." + action, promotionId);
+
       // Delete ImageKit file if present
       if (existing.imageFileId) {
         try {
           await deleteImageKitFile(existing.imageFileId);
-        } catch (error) {
-          console.error("ImageKit deletion error (non-fatal):", error);
+        } catch  {
+          console.error("Application operation failed.");
         }
       }
 
-      await deletePromotion(promotionId);
+
 
       return NextResponse.json({
         success: true,
@@ -268,18 +265,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 }
     );
-  } catch (error) {
-    console.error("POST promotions action error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to process promotion action",
-      },
-      { status: error instanceof Error && error.message === "Admin access required" ? 403 : 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

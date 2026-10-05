@@ -2,7 +2,7 @@
 
 /**
  * Security Headers Test Script
- * 
+ *
  * This script tests if all required security headers are present
  * Run: node scripts/test-security-headers.js [URL]
  * Example: node scripts/test-security-headers.js http://localhost:3000
@@ -31,7 +31,7 @@ const productionHeaders = {
 console.log(`\n🔒 Testing Security Headers for: ${url}\n`);
 
 const protocol = url.startsWith('https') ? https : http;
-const isProduction = url.includes('vercel.app') || url.includes('goshperfume.com');
+const isProduction = process.env.NODE_ENV === 'production' || url.includes('vercel.app') || url.includes('goshperfumestudio.com');
 
 protocol.get(url, (res) => {
   const headers = res.headers;
@@ -40,11 +40,11 @@ protocol.get(url, (res) => {
   let warnings = 0;
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   // Check required headers
   for (const [header, expectedValue] of Object.entries(requiredHeaders)) {
     const actualValue = headers[header];
-    
+
     if (!actualValue) {
       console.log(`❌ ${header}: MISSING`);
       failed++;
@@ -75,7 +75,7 @@ protocol.get(url, (res) => {
     console.log('\n📦 Production Headers:');
     for (const header of Object.keys(productionHeaders)) {
       const actualValue = headers[header];
-      
+
       if (!actualValue) {
         console.log(`❌ ${header}: MISSING (required in production)`);
         failed++;

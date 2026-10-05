@@ -1,3 +1,4 @@
+import { safeUrl } from "@/lib/security/validation";
 import devLog from "@/lib/dev-log";
 import {
   collection,
@@ -65,6 +66,9 @@ export async function getWebsiteSettings(): Promise<WebsiteSettings> {
     }
 
     const data = snapshot.docs[0].data() as WebsiteSettings;
+    for (const key of ["facebook_url", "instagram_url", "tiktok_url"] as const) {
+      if (data[key] && !safeUrl(data[key], false)) data[key] = null;
+    }
 
     return {
       ...defaultWebsiteSettings,

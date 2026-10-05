@@ -5,11 +5,11 @@ import { adminDb } from "./admin";
 
 /**
  * Promotion schema for both Promotions and New Product Announcements
- * 
+ *
  * Type A: Promotion
  * - Generic promotional content
  * - No product_id required
- * 
+ *
  * Type B: New Product Announcement
  * - Links to an existing product
  * - Requires product_id
@@ -19,24 +19,24 @@ export type Promotion = {
   type: "promotion" | "new_product";
   title: string;
   description: string;
-  
+
   /** ImageKit URL */
   image?: string | null;
   /** ImageKit file ID (for deletion) */
   imageFileId?: string | null;
-  
+
   cta_text: string;
   cta_url: string;
-  
+
   /** For new_product type only */
   product_id?: string | null;
-  
+
   is_active: boolean;
-  
+
   /** Promotion visibility period */
   start_at: Timestamp;
   end_at: Timestamp;
-  
+
   created_at: Timestamp | FieldValue;
   updated_at: Timestamp | FieldValue;
 };
@@ -77,16 +77,14 @@ export async function getAllPromotions(): Promise<Promotion[]> {
 
 /**
  * Get only currently active and visible promotions (customer view)
- * 
+ *
  * A promotion is visible if:
  * - is_active === true
  * - current time is between start_at and end_at
  */
 export async function getActivePromotions(): Promise<Promotion[]> {
   const now = Timestamp.now();
-  
-  console.log("[getActivePromotions] Current time:", now.toDate().toISOString());
-  
+
   // Query only active promotions, then filter by date in-memory
   // This avoids needing a composite index for multiple range queries
   const snapshot = await promotionsCollection
@@ -94,34 +92,18 @@ export async function getActivePromotions(): Promise<Promotion[]> {
     .orderBy("created_at", "desc")
     .get();
 
-  console.log("[getActivePromotions] Found", snapshot.docs.length, "active promotions");
-
   // Filter promotions by date range
   const allActive = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...(doc.data() as Omit<Promotion, "id">),
   }));
 
-  // Log each promotion for debugging
-  allActive.forEach((promo, index) => {
-    console.log(`[getActivePromotions] Promotion ${index}:`, {
-      id: promo.id,
-      title: promo.title,
-      is_active: promo.is_active,
-      start_at: promo.start_at?.toDate?.()?.toISOString() || promo.start_at,
-      end_at: promo.end_at?.toDate?.()?.toISOString() || promo.end_at,
-      hasStartAt: !!promo.start_at,
-      hasEndAt: !!promo.end_at,
-    });
-  });
-
   const activePromotions = allActive.filter((promo) => {
       // Safely handle timestamp comparisons
       const startAt = promo.start_at;
       const endAt = promo.end_at;
-      
+
       if (!startAt || !endAt) {
-        console.log(`[getActivePromotions] Filtered out ${promo.id}: missing timestamps`);
         return false;
       }
 
@@ -130,20 +112,9 @@ export async function getActivePromotions(): Promise<Promotion[]> {
       const nowMillis = now.toMillis();
 
       const isInRange = startMillis <= nowMillis && endMillis >= nowMillis;
-      
-      console.log(`[getActivePromotions] ${promo.id} time check:`, {
-        startMillis,
-        nowMillis,
-        endMillis,
-        startBeforeNow: startMillis <= nowMillis,
-        endAfterNow: endMillis >= nowMillis,
-        isInRange,
-      });
 
       return isInRange;
     });
-
-  console.log("[getActivePromotions] Returning", activePromotions.length, "promotions after filtering");
 
   return activePromotions;
 }

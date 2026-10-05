@@ -6,7 +6,6 @@ import { CheckCircle2, Edit, EyeOff, Plus, Search, Tags, Trash2, X } from "lucid
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -260,23 +259,11 @@ function BrandManagerContent() {
     setMessage("");
     setError("");
 
-    const productCount = brand.products?.length || 0;
-
     try {
-      if (productCount > 0) {
-        await updateDoc(doc(db, "brands", brand.id), {
-          is_active: false,
-          updated_at: serverTimestamp(),
-        });
-
-        setMessage(`${brand.name} has products, so it was deactivated instead of deleted.`);
-        await loadBrands();
-        return;
-      }
-
-      await deleteDoc(doc(db, "brands", brand.id));
-
-      setMessage("Brand deleted.");
+      const response = await fetch("/api/admin/brands/delete", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brandId: brand.id }) });
+      if (!response.ok) throw new Error("Could not delete brand.");
+      const result = await response.json();
+      setMessage(result.deleted ? "Brand deleted." : brand.name + " has products, so it was deactivated instead of deleted.");
       await loadBrands();
     } catch (deleteError) {
       setError(

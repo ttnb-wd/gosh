@@ -15,14 +15,14 @@
  *  - has expiration/TTL (EXPIRE)
  *  - atomic increment + expire (Lua script) to prevent race-condition bypass
  *  - fails safely: if the Redis provider is unavailable or not configured, we
- *    fall back to an in-memory limiter so the application is never blocked by a
- *    rate-limit provider outage
+ *    deny production requests; process-local fallback is development only
  *  - never logs or exposes Redis credentials
  */
 
 import "server-only";
 
 import { Redis } from "@upstash/redis";
+import { createHash } from "node:crypto";
 
 /**
  * Server-only credentials. These are NEVER logged, printed, or sent to the
@@ -67,7 +67,7 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Cleanup old entries every 5 minutes (fallback store only).
-setInterval(() => {
+const cleanup = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
     if (entry.resetAt < now) {
@@ -75,6 +75,7 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+cleanup.unref();
 
 export interface RateLimitConfig {
   /**
@@ -118,8 +119,8 @@ export async function checkRateLimit(
   // Safety: never allow an unbounded window or zero/negative max.
   if (windowSeconds <= 0 || maxRequests <= 0) {
     return {
-      success: true,
-      remaining: maxRequests,
+      success: false,
+      remaining: 0,
       resetAt: now,
     };
   }
@@ -129,7 +130,7 @@ export async function checkRateLimit(
   // ---------------------------------------------------------------------------
   if (redis) {
     try {
-      const key = `rl:${identifier}`;
+      const key = `rl:${createHash("sha256").update(identifier).digest("hex")}`;
       const result = (await redis.eval(
         INCR_EXPIRE_SCRIPT,
         [key],
@@ -157,19 +158,22 @@ export async function checkRateLimit(
         remaining: Math.max(0, maxRequests - count),
         resetAt,
       };
-    } catch (error) {
-      // Fail safe: if Redis is temporarily unavailable, do NOT block the
-      // application. Log a minimal, non-sensitive message and allow the request.
-      console.error(
-        "[rateLimit] Upstash Redis unavailable, falling back to in-memory:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      // Fall through to in-memory below.
+    } catch {
+      // Production fails closed after a shared-store outage.
+      console.error("Application operation failed.");
+      // Production returns a denial below; only development falls back.
     }
   }
 
+  // Process-local limits cannot protect production/serverless deployments.
+  // Stop abuse-sensitive operations when the shared limiter cannot enforce.
+  if (process.env.NODE_ENV === "production") {
+    return { success: false, remaining: 0, resetAt: now + 60_000,
+      error: "This service is temporarily unavailable. Please try again later." };
+  }
+
   // ---------------------------------------------------------------------------
-  // In-memory fallback (local dev / provider outage). Best-effort only.
+  // In-memory fallback (local development only).
   // ---------------------------------------------------------------------------
   let entry = rateLimitStore.get(identifier);
 

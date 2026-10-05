@@ -24,7 +24,7 @@ function fixture(options = {}) {
     verifySessionCookie: async (token, check) => { calls.push(["session", token, check]); if (options.sessionCheckFailure) throw fail("auth/internal-error"); if (options.invalid || revoked) throw fail("auth/session-cookie-revoked"); return claims; },
     createSessionCookie: async (token, config) => { calls.push(["mint", token, config]); if (options.mintFailure) throw fail("auth/internal-error"); return "signed-session"; },
     revokeRefreshTokens: async (id) => { calls.push(["revoke", id]); if (options.revokeFailure) throw fail("auth/internal-error"); revoked = true; },
-    getUser: async (id) => { calls.push(["user", id]); return { email: claims.email, emailVerified: claims.email_verified, displayName: "Real User" }; },
+    getUser: async (id) => { calls.push(["user", id]); if (options.deletedUser) throw fail("auth/user-not-found"); return { disabled: !!options.disabledUser, email: claims.email, emailVerified: claims.email_verified, displayName: "Real User" }; },
   };
   const adminDb = {
     collection: (name) => { calls.push(["collection", name]); return { doc: (id) => { calls.push(["doc", id]); return ref; } }; },
@@ -86,7 +86,7 @@ function fixture(options = {}) {
     };
     const context = vm.createContext({
       exports: loadedModule.exports, module: loadedModule, require: customRequire, process: { env: { NODE_ENV: options.production ? "production" : "test", NEXT_PUBLIC_SITE_URL: options.siteUrl, NEXT_PUBLIC_FIREBASE_API_KEY: "public-test-key" } },
-      console: { log() {}, warn() {}, error() {} }, URL, URLSearchParams, TypeError, Request, Response, Date, AbortSignal,
+      Buffer, console: { log() {}, warn() {}, error() {} }, URL, URLSearchParams, TypeError, Request, Response, Date, AbortSignal,
       fetch: fetchMock, window: { location: { origin: options.browserOrigin || "https://www.goshperfumestudio.com" }, dispatchEvent: () => calls.push(["auth-changed"]) }, Event,
     });
     new vm.Script(code, { filename: absolute }).runInContext(context);
@@ -95,8 +95,8 @@ function fixture(options = {}) {
   return { load, calls, profile: () => profile, claims: (value) => { claims = value; } };
 }
 function request(method = "POST", headers = {}, body) {
-  return new Request("https://goshperfume.com/api/auth/session", {
-    method, headers: { origin: "https://goshperfume.com", authorization: "Bearer trusted-id", ...headers },
+  return new Request("https://www.goshperfumestudio.com/api/auth/session", {
+    method, headers: { origin: "https://www.goshperfumestudio.com", authorization: "Bearer trusted-id", ...headers },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 }
@@ -210,6 +210,14 @@ test("protected API: cookie writes require same origin", async () => {
   const helper = fixture().load("lib/auth/apiAuth.ts");
   assert.equal(await helper.getAuthenticatedUser(request("POST", { authorization: "", cookie: "firebase-session=signed", origin: "https://evil.test" })), null);
   assert.ok(await helper.getAuthenticatedUser(request("POST", { authorization: "", cookie: "firebase-session=signed" })));
+});
+
+test("origin: a forged Host cannot authorize an external origin", () => {
+  assert.equal(fixture({ production: true }).load("lib/auth/session.ts").isSameOrigin(request("POST", { origin: "https://evil.test", host: "evil.test" })), false);
+});
+
+for (const options of [{ disabledUser: true }, { deletedUser: true }]) test("auth: disabled/deleted account cannot keep protected API access " + JSON.stringify(options), async () => {
+  assert.equal(await fixture(options).load("lib/auth/apiAuth.ts").getAuthenticatedUser(request()), null);
 });
 test("protected page: missing/invalid session redirects to login", async () => {
   for (const options of [{ noCookie: true }, { invalid: true }]) {

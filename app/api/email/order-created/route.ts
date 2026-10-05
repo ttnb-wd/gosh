@@ -1,3 +1,6 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
+import { deliverOnce } from "@/lib/security/email-once";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { checkAdminApiAuth } from "@/lib/auth/apiAuth";
@@ -24,7 +27,7 @@ export async function POST(request: Request) {
 
     /*
      * Rate limit per user to prevent a customer from repeatedly re-triggering
-     * the admin/order emails (inbox flooding). Best-effort in-memory limiting.
+     * the admin/order emails (inbox flooding). Distributed Redis limiting; production fails closed if unavailable.
      */
     const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(auth.user.uid, "order-email"),
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as { orderId?: string };
+    const body = (await readJson(request, "orderEmail")) as { orderId?: string };
 
     if (!body.orderId || typeof body.orderId !== "string" || body.orderId.length > 200) {
       return NextResponse.json({ error: "Missing order." }, { status: 400 });
@@ -92,8 +95,8 @@ export async function POST(request: Request) {
     };
 
     const [adminResult, customerResult] = await Promise.all([
-      sendAdminNewOrderEmail(order),
-      sendCustomerOrderConfirmationEmail(order),
+      deliverOnce(`created:admin:${order.id}`, () => sendAdminNewOrderEmail(order)),
+      deliverOnce(`created:customer:${order.id}`, () => sendCustomerOrderConfirmationEmail(order)),
     ]);
 
     return NextResponse.json({
@@ -101,8 +104,5 @@ export async function POST(request: Request) {
       adminEmail: adminResult,
       customerEmail: customerResult,
     });
-  } catch (error) {
-    console.error("Order email route failed:", error);
-    return NextResponse.json({ error: "Could not send order email." }, { status: 500 });
-  }
+  } catch (error) { return securityError(error); }
 }

@@ -1,4 +1,5 @@
 "use client";
+import devLog from "@/lib/dev-log";
 import StudioRowActions from "@/components/ui/StudioRowActions";
 import { notify, confirmAction } from "@/components/ui/StudioFeedback";
 
@@ -24,16 +25,16 @@ interface AnnouncementFormData {
 
 // Admin Countdown Component
 function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion }) {
-  const getAnnouncementStatus = (announcement: Promotion): { 
-    label: string; 
-    color: string; 
+  const getAnnouncementStatus = (announcement: Promotion): {
+    label: string;
+    color: string;
     state: "upcoming" | "active" | "expired" | "inactive";
     targetTimestamp: number | null;
   } => {
     if (!announcement.is_active) {
-      return { 
-        label: "Inactive", 
-        color: "text-muted bg-surface-muted  ", 
+      return {
+        label: "Inactive",
+        color: "text-muted bg-surface-muted  ",
         state: "inactive",
         targetTimestamp: null,
       };
@@ -41,34 +42,34 @@ function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion 
 
     const now = new Date();
     // Handle both Timestamp objects (if any remain) and ISO strings from API
-    const startDate = announcement.start_at instanceof Timestamp 
-      ? announcement.start_at.toDate() 
+    const startDate = announcement.start_at instanceof Timestamp
+      ? announcement.start_at.toDate()
       : new Date(announcement.start_at as unknown as string);
-    const endDate = announcement.end_at instanceof Timestamp 
-      ? announcement.end_at.toDate() 
+    const endDate = announcement.end_at instanceof Timestamp
+      ? announcement.end_at.toDate()
       : new Date(announcement.end_at as unknown as string);
 
     if (now < startDate) {
-      return { 
-        label: "UPCOMING", 
-        color: "text-info bg-info-soft  ", 
+      return {
+        label: "UPCOMING",
+        color: "text-info bg-info-soft  ",
         state: "upcoming",
         targetTimestamp: startDate.getTime(),
       };
     }
 
     if (now > endDate) {
-      return { 
-        label: "EXPIRED", 
-        color: "text-destructive bg-destructive-soft  ", 
+      return {
+        label: "EXPIRED",
+        color: "text-destructive bg-destructive-soft  ",
         state: "expired",
         targetTimestamp: null,
       };
     }
 
-    return { 
-      label: "ACTIVE", 
-      color: "text-success bg-success-soft  ", 
+    return {
+      label: "ACTIVE",
+      color: "text-success bg-success-soft  ",
       state: "active",
       targetTimestamp: endDate.getTime(),
     };
@@ -100,10 +101,10 @@ function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion 
 
   if (status.state === "expired") {
     // Handle both Timestamp objects and ISO strings
-    const endDate = announcement.end_at instanceof Timestamp 
-      ? announcement.end_at.toDate() 
+    const endDate = announcement.end_at instanceof Timestamp
+      ? announcement.end_at.toDate()
       : new Date(announcement.end_at as unknown as string);
-    
+
     return (
       <div className="mt-2 space-y-1 text-xs text-muted ">
         <div>
@@ -115,10 +116,10 @@ function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion 
 
   if (status.state === "upcoming") {
     // Handle both Timestamp objects and ISO strings
-    const startDate = announcement.start_at instanceof Timestamp 
-      ? announcement.start_at.toDate() 
+    const startDate = announcement.start_at instanceof Timestamp
+      ? announcement.start_at.toDate()
       : new Date(announcement.start_at as unknown as string);
-    
+
     return (
       <div className="mt-2 space-y-1 text-xs">
         <div className="text-muted ">
@@ -139,10 +140,10 @@ function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion 
 
   // Active
   // Handle both Timestamp objects and ISO strings
-  const endDate = announcement.end_at instanceof Timestamp 
-    ? announcement.end_at.toDate() 
+  const endDate = announcement.end_at instanceof Timestamp
+    ? announcement.end_at.toDate()
     : new Date(announcement.end_at as unknown as string);
-  
+
   return (
     <div className="mt-2 space-y-1 text-xs">
       <div className="text-muted ">
@@ -192,7 +193,7 @@ export default function AnnouncementManager() {
       });
 
       if (!response.ok) {
-        console.error("Failed to fetch announcements:", response.status, response.statusText);
+        devLog.error("Application operation failed.");
         return;
       }
 
@@ -205,8 +206,8 @@ export default function AnnouncementManager() {
         );
         setAnnouncements(genericAnnouncements);
       }
-    } catch (error) {
-      console.error("Failed to fetch announcements:", error);
+    } catch  {
+      devLog.error("Application operation failed.");
     } finally {
       setLoading(false);
     }
@@ -216,24 +217,11 @@ export default function AnnouncementManager() {
     setUploadingImage(true);
 
     try {
-      // Get ImageKit auth
-      const authResponse = await fetch("/api/imagekit/auth");
-      const authData = await authResponse.json();
-
-      // Upload to ImageKit
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("fileName", file.name);
-      formData.append("publicKey", authData.publicKey);
-      formData.append("signature", authData.signature);
-      formData.append("expire", authData.expire);
-      formData.append("token", authData.token);
-      formData.append("folder", "/promotions");
-
-      const uploadResponse = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-        method: "POST",
-        body: formData,
-      });
+      formData.append("folder", "/gosh/promotions");
+      const uploadResponse = await fetch("/api/upload/imagekit", { method: "POST", credentials: "include", body: formData });
+      if (!uploadResponse.ok) throw new Error("Upload failed.");
 
       const uploadData = await uploadResponse.json();
 
@@ -244,8 +232,8 @@ export default function AnnouncementManager() {
           imageFileId: uploadData.fileId,
         }));
       }
-    } catch (error) {
-      console.error("Image upload error:", error);
+    } catch  {
+      devLog.error("Application operation failed.");
       notify("Unable to upload this image. Please try again.", "error");
     } finally {
       setUploadingImage(false);
@@ -279,8 +267,8 @@ export default function AnnouncementManager() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Submit failed:", response.status, errorText);
+
+        devLog.error("Application operation failed.");
         notify("Unable to save your changes. Please try again.", "error");
         return;
       }
@@ -293,8 +281,8 @@ export default function AnnouncementManager() {
       } else {
         notify("Unable to save your changes. Please try again.", "error");
       }
-    } catch (error) {
-      console.error("Submit error:", error);
+    } catch  {
+      devLog.error("Application operation failed.");
       notify("Unable to save your changes. Please try again.", "error");
     } finally {
       setSubmitting(false);
@@ -329,8 +317,8 @@ export default function AnnouncementManager() {
       } else {
         notify("Unable to delete this item. Please try again.", "error");
       }
-    } catch (error) {
-      console.error("Delete error:", error);
+    } catch  {
+      devLog.error("Application operation failed.");
       notify("Unable to delete this item. Please try again.", "error");
     }
   }
@@ -359,28 +347,28 @@ export default function AnnouncementManager() {
       } else {
         notify("Unable to update this item. Please try again.", "error");
       }
-    } catch (error) {
-      console.error("Toggle error:", error);
+    } catch  {
+      devLog.error("Application operation failed.");
       notify("Unable to update this item. Please try again.", "error");
     }
   }
 
   function handleEdit(announcement: Promotion) {
     setEditingId(announcement.id);
-    
+
     let startAt = "";
     let endAt = "";
 
     if (announcement.start_at) {
-      const startDate = announcement.start_at instanceof Timestamp 
-        ? announcement.start_at.toDate() 
+      const startDate = announcement.start_at instanceof Timestamp
+        ? announcement.start_at.toDate()
         : new Date(announcement.start_at as unknown as string);
       startAt = formatDateForInput(startDate);
     }
 
     if (announcement.end_at) {
-      const endDate = announcement.end_at instanceof Timestamp 
-        ? announcement.end_at.toDate() 
+      const endDate = announcement.end_at instanceof Timestamp
+        ? announcement.end_at.toDate()
         : new Date(announcement.end_at as unknown as string);
       endAt = formatDateForInput(endDate);
     }
@@ -425,46 +413,46 @@ export default function AnnouncementManager() {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
-  function getPromotionStatus(promotion: Promotion): { 
-    label: string; 
-    color: string; 
+  function getPromotionStatus(promotion: Promotion): {
+    label: string;
+    color: string;
     state: "upcoming" | "active" | "expired" | "inactive";
   } {
     if (!promotion.is_active) {
-      return { 
-        label: "Inactive", 
-        color: "text-muted bg-surface-muted  ", 
+      return {
+        label: "Inactive",
+        color: "text-muted bg-surface-muted  ",
         state: "inactive",
       };
     }
 
     const now = new Date();
-    const startDate = promotion.start_at instanceof Timestamp 
-      ? promotion.start_at.toDate() 
+    const startDate = promotion.start_at instanceof Timestamp
+      ? promotion.start_at.toDate()
       : new Date(promotion.start_at as unknown as string);
-    const endDate = promotion.end_at instanceof Timestamp 
-      ? promotion.end_at.toDate() 
+    const endDate = promotion.end_at instanceof Timestamp
+      ? promotion.end_at.toDate()
       : new Date(promotion.end_at as unknown as string);
 
     if (now < startDate) {
-      return { 
-        label: "UPCOMING", 
-        color: "text-info bg-info-soft  ", 
+      return {
+        label: "UPCOMING",
+        color: "text-info bg-info-soft  ",
         state: "upcoming",
       };
     }
 
     if (now > endDate) {
-      return { 
-        label: "EXPIRED", 
-        color: "text-destructive bg-destructive-soft  ", 
+      return {
+        label: "EXPIRED",
+        color: "text-destructive bg-destructive-soft  ",
         state: "expired",
       };
     }
 
-    return { 
-      label: "ACTIVE", 
-      color: "text-success bg-success-soft  ", 
+    return {
+      label: "ACTIVE",
+      color: "text-success bg-success-soft  ",
       state: "active",
     };
   }

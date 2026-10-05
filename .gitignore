@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+*service-account*.json
+*serviceAccount*.json
+*.key
 
 # debug
 npm-debug.log*
@@ -53,3 +56,8 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+/.npm-cache/
+/audit-dependencies*.json
+/security-checks*.log
+/security-checks*.json

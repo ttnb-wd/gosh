@@ -1,3 +1,6 @@
+import { limitRequest } from "@/lib/security/abuse";
+import { InputError } from "@/lib/security/validation";
+import "server-only";
 /**
  * API Route Authentication Utilities
  * Firebase Authentication + Firebase Admin
@@ -116,6 +119,8 @@ export async function requireAdminApiAuth(
     throw new Error("Admin access required");
   }
 
+  const limited = await limitRequest(request, "admin", 120, 60, user.uid);
+  if (limited) throw new InputError("Too many requests or service temporarily unavailable.", 429);
   return user;
 }
 

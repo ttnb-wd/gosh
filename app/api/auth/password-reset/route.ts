@@ -1,7 +1,9 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { getEmailActionUrl } from "@/lib/auth/config";
-import { getAuthErrorMessage } from "@/lib/auth/errors";
-import devLog from "@/lib/dev-log";
+
+
 import { validateEmail } from "@/lib/validation";
 import { isSameOrigin } from "@/lib/auth/session";
 import { checkRateLimit, createRateLimitId, getClientIp } from "@/lib/rateLimit";
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
   try {
     /*
      * Rate limit (5 per hour per IP) to prevent password-reset email abuse /
-     * spam. Best-effort in-memory limiting on serverless.
+     * spam. Distributed Redis limiting; production fails closed if unavailable.
      */
     const rateLimit = await checkRateLimit({
       identifier: createRateLimitId(
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json().catch(() => ({}))) as {
+    const body = (await readJson(request, "reset")) as {
       email?: string;
     };
 
@@ -88,12 +90,5 @@ export async function POST(request: Request) {
       },
       { status: 200 }
     );
-  } catch (error) {
-    devLog.warn("Password recovery request could not be completed.");
-
-    return NextResponse.json(
-      { success: false, error: getAuthErrorMessage(error) },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

@@ -1,3 +1,4 @@
+import { limitRequest } from "@/lib/security/abuse";
 import { NextResponse } from "next/server";
 import { getPublicProductsWithPromotions } from "@/lib/firebase/products-with-promotions-server";
 
@@ -20,7 +21,9 @@ import { getPublicProductsWithPromotions } from "@/lib/firebase/products-with-pr
  * - has_promotion: Boolean flag
  * - promotion: Full promotion details if active
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = await limitRequest(request, "public-catalog", 120, 60);
+  if (limited) return limited;
   try {
     const productsWithPromotions = await getPublicProductsWithPromotions();
 
@@ -57,8 +60,8 @@ export async function GET() {
       products: serialized,
       count: serialized.length,
     });
-  } catch (error) {
-    console.error("[products/with-promotions] GET error:", error);
+  } catch  {
+    console.error("Application operation failed.");
 
     return NextResponse.json(
       {

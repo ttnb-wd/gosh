@@ -72,7 +72,7 @@ export async function proxy(request: NextRequest) {
     "none"
   );
 
-  if (isAdminPage || isAdminApi) {
+  if (isAdminPage || isAdminApi || ["/account", "/orders", "/checkout"].some(path => pathname === path || pathname.startsWith(path + "/"))) {
     response.headers.set(
       "X-Frame-Options",
       "DENY"

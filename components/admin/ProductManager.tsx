@@ -81,12 +81,7 @@ interface ImageKitUploadResult {
   filePath?: string;
 }
 
-interface ImageKitAuthResponse {
-  token: string;
-  expire: number;
-  signature: string;
-  publicKey: string;
-}
+
 
 const FALLBACK_PRODUCT_IMAGE =
   "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop";
@@ -383,47 +378,6 @@ function ProductManagerContent() {
    * }
    */
 
-  const getImageKitAuth = async (): Promise<ImageKitAuthResponse> => {
-    const response = await fetch("/api/imagekit/auth", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      let message = "Could not authenticate ImageKit upload.";
-
-      try {
-        const result = (await response.json()) as {
-          error?: string;
-        };
-
-        if (result.error) {
-          message = result.error;
-        }
-      } catch {
-        // Ignore invalid JSON response.
-      }
-
-      throw new Error(message);
-    }
-
-    const data = (await response.json()) as ImageKitAuthResponse;
-
-    if (
-      !data.token ||
-      !data.expire ||
-      !data.signature ||
-      !data.publicKey
-    ) {
-      throw new Error(
-        "Invalid ImageKit authentication response."
-      );
-    }
-
-    return data;
-  };
-
   const uploadProductImage = async (
     file: File
   ): Promise<ImageKitUploadResult> => {
@@ -437,57 +391,10 @@ function ProductManagerContent() {
       throw new Error("Image must be smaller than 5MB.");
     }
 
-    const auth = await getImageKitAuth();
-
-    const endpoint =
-      "https://upload.imagekit.io/api/v1/files/upload";
-
-    const fileExtension =
-      file.name.split(".").pop()?.toLowerCase() || "jpg";
-
-    const safeBaseName =
-      file.name
-        .replace(/\.[^/.]+$/, "")
-        .replace(/[^a-zA-Z0-9-_]/g, "-")
-        .slice(0, 80) || "product";
-
-    const fileName = `${Date.now()}-${safeBaseName}.${fileExtension}`;
-
     const form = new FormData();
-
     form.append("file", file);
-    form.append("fileName", fileName);
-    form.append("publicKey", auth.publicKey);
-    form.append("signature", auth.signature);
-    form.append("expire", String(auth.expire));
-    form.append("token", auth.token);
-
-    /*
-     * ImageKit folder structure.
-     *
-     * Example:
-     *
-     * /products/2026/08/product-name.jpg
-     */
-    form.append(
-      "folder",
-      "/products"
-    );
-
-    form.append(
-      "useUniqueFileName",
-      "true"
-    );
-
-    form.append(
-      "tags",
-      "gosh,product"
-    );
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      body: form,
-    });
+    form.append("folder", "/gosh/products");
+    const response = await fetch("/api/upload/imagekit", { method: "POST", credentials: "include", body: form });
 
     let result: Partial<ImageKitUploadResult> & {
       message?: string;
@@ -511,7 +418,7 @@ function ProductManagerContent() {
     return {
       url: result.url,
       fileId: result.fileId,
-      name: result.name || fileName,
+      name: result.name || "product-image",
       filePath: result.filePath,
     };
   };
@@ -587,20 +494,20 @@ function ProductManagerContent() {
       const result = await response.json();
 
       if (result.success && Array.isArray(result.promotions)) {
-        const promotionMap = new Map<string, { 
-          id: string; 
-          promotion_price: number; 
-          is_active: boolean; 
-          start_at: string; 
-          end_at: string 
+        const promotionMap = new Map<string, {
+          id: string;
+          promotion_price: number;
+          is_active: boolean;
+          start_at: string;
+          end_at: string
         }>(
-          result.promotions.map((promo: { 
-            id: string; 
-            product_id: string; 
-            promotion_price: number; 
-            is_active: boolean; 
-            start_at: string; 
-            end_at: string 
+          result.promotions.map((promo: {
+            id: string;
+            product_id: string;
+            promotion_price: number;
+            is_active: boolean;
+            start_at: string;
+            end_at: string
           }) => [
             promo.product_id,
             {
@@ -1123,7 +1030,7 @@ function ProductManagerContent() {
       // Promotion fields
       hasPromotion: !!existingPromotion,
       selectedProductForPromotion: existingPromotion ? product : null,
-      promotionDiscountPercent: existingPromotion && product.price > 0 
+      promotionDiscountPercent: existingPromotion && product.price > 0
         ? String(Math.round(((product.price - existingPromotion.promotion_price) / product.price) * 100))
         : "",
       promotionPrice: existingPromotion ? String(existingPromotion.promotion_price) : "",
@@ -1473,6 +1380,8 @@ function ProductManagerContent() {
 
         productId:
           editingProduct?.id || null,
+
+        expectedStock: editingProduct ? Number(editingProduct.stock || 0) : undefined,
 
         product: productPayload,
       }) as { id: string } | undefined;
@@ -2232,7 +2141,7 @@ function ProductManagerContent() {
                       )
                     }
                   />
-                  
+
                   {formData.badge === "New" && (
                     <div className="mt-2 rounded-lg border border-info bg-info-soft p-3  ">
                       <p className="text-sm text-info ">
@@ -2689,8 +2598,8 @@ function ProductManagerContent() {
                         checked={formData.hasPromotion}
                         onChange={(e) => {
                           const checked = e.target.checked;
-                          setFormData(prev => ({ 
-                            ...prev, 
+                          setFormData(prev => ({
+                            ...prev,
                             hasPromotion: checked,
                             selectedProductForPromotion: checked && editingProduct ? editingProduct : prev.selectedProductForPromotion,
                           }));
@@ -2722,8 +2631,8 @@ function ProductManagerContent() {
                               {formData.selectedProductForPromotion ? (
                                 <span className="flex items-center gap-3">
                                   {formData.selectedProductForPromotion.image && (
-                                    <img 
-                                      src={getSafeProductImage(formData.selectedProductForPromotion.image)} 
+                                    <img
+                                      src={getSafeProductImage(formData.selectedProductForPromotion.image)}
                                       alt={formData.selectedProductForPromotion.name}
                                       className="h-10 w-10 rounded-lg object-cover"
                                     />
@@ -2772,7 +2681,7 @@ function ProductManagerContent() {
                                 )}
 
                                 {/* Products Container */}
-                                <div 
+                                <div
                                   id="product-selector-scroll"
                                   className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-yellow-300"
                                   onScroll={(e) => {
@@ -2791,11 +2700,11 @@ function ProductManagerContent() {
                                       );
                                     })
                                     .map((product) => (
-                                      <div 
+                                      <div
                                         key={product.id}
                                         onClick={() => {
-                                          setFormData(prev => ({ 
-                                            ...prev, 
+                                          setFormData(prev => ({
+                                            ...prev,
                                             selectedProductForPromotion: product,
                                             promotionDiscountPercent: "",
                                             promotionPrice: "",
@@ -2807,8 +2716,8 @@ function ProductManagerContent() {
                                       >
                                         {/* Product Image */}
                                         <div className="relative h-[140px] w-full overflow-hidden bg-surface-muted">
-                                          <img 
-                                            src={getSafeProductImage(product.image)} 
+                                          <img
+                                            src={getSafeProductImage(product.image)}
                                             alt={product.name}
                                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             onError={(e) => {
@@ -2866,8 +2775,8 @@ function ProductManagerContent() {
                             <div className="rounded-xl border border-line bg-accent-soft p-4">
                               <div className="flex items-center gap-4">
                                 {formData.selectedProductForPromotion.image && (
-                                  <img 
-                                    src={getSafeProductImage(formData.selectedProductForPromotion.image)} 
+                                  <img
+                                    src={getSafeProductImage(formData.selectedProductForPromotion.image)}
                                     alt={formData.selectedProductForPromotion.name}
                                     className="h-16 w-16 rounded-lg object-cover"
                                   />
@@ -2890,8 +2799,8 @@ function ProductManagerContent() {
                             <div className="rounded-xl border border-line bg-accent-soft p-4">
                               <div className="flex items-center gap-4">
                                 {editingProduct.image && (
-                                  <img 
-                                    src={getSafeProductImage(editingProduct.image)} 
+                                  <img
+                                    src={getSafeProductImage(editingProduct.image)}
                                     alt={editingProduct.name}
                                     className="h-16 w-16 rounded-lg object-cover"
                                   />
@@ -2926,7 +2835,7 @@ function ProductManagerContent() {
                                 onChange={(e) => {
                                   const percent = e.target.value;
                                   const originalPrice = editingProduct?.price || formData.selectedProductForPromotion?.price || 0;
-                                  const promotionPrice = originalPrice > 0 && percent 
+                                  const promotionPrice = originalPrice > 0 && percent
                                     ? Math.round(originalPrice * (1 - parseFloat(percent) / 100))
                                     : "";
                                   setFormData(prev => ({

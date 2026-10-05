@@ -1,3 +1,5 @@
+"use client";
+import devLog from "@/lib/dev-log";
 import { useState, useEffect } from "react";
 import { enrichProductWithPromotion, enrichProductsWithPromotions, type EnrichedProduct } from "@/lib/promotions";
 
@@ -24,17 +26,17 @@ export function useProductPromotions() {
       try {
         setLoading(true);
         const response = await fetch("/api/product-promotions/active");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch promotions: ${response.status}`);
         }
 
         const result = await response.json();
-        
+
         if (result.success && Array.isArray(result.promotions)) {
           const map = new Map<string, ProductPromotionData>();
-          
-          result.promotions.forEach((promo: any) => {
+
+          result.promotions.forEach((promo: ProductPromotionData) => {
             map.set(promo.product_id, {
               id: promo.id,
               product_id: promo.product_id,
@@ -44,12 +46,12 @@ export function useProductPromotions() {
               end_at: promo.end_at,
             });
           });
-          
+
           setPromotionsMap(map);
         }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
-        console.error("[useProductPromotions] Error:", err);
+        devLog.error("[useProductPromotions] Error:", err);
       } finally {
         setLoading(false);
       }
@@ -61,7 +63,7 @@ export function useProductPromotions() {
   /**
    * Enrich a single product with its promotion
    */
-  const enrichProduct = <T extends { id: string | number; price: number; [key: string]: any }>(
+  const enrichProduct = <T extends { id: string | number; price: number }>(
     product: T
   ): EnrichedProduct & Omit<T, keyof EnrichedProduct> => {
     const promotion = promotionsMap.get(String(product.id));
@@ -71,7 +73,7 @@ export function useProductPromotions() {
   /**
    * Enrich multiple products with their promotions
    */
-  const enrichProducts = <T extends { id: string | number; price: number; [key: string]: any }>(
+  const enrichProducts = <T extends { id: string | number; price: number }>(
     products: T[]
   ): Array<EnrichedProduct & Omit<T, keyof EnrichedProduct>> => {
     const promotionsArray = Array.from(promotionsMap.values());

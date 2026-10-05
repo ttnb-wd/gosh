@@ -1,3 +1,4 @@
+import "server-only";
 import { ImageKit } from "@imagekit/nodejs";
 
 const imagekit = new ImageKit({
@@ -44,12 +45,17 @@ export function buildSignedImageKitUrl(
  * @param fileId The ImageKit file id (returned as `fileId` on upload).
  */
 export async function deleteImageKitFile(
-  fileId: string
+  fileId: string,
+  purpose: "public" | "receipt" = "public"
 ): Promise<void> {
   if (!fileId) {
     return;
   }
 
+  const file = await imagekit.files.get(fileId);
+  const folders = purpose === "receipt" ? ["/gosh/payment-proofs/", "/gosh/payments/"]
+    : ["/gosh/products/", "/gosh/promotions/", "/gosh/uploads/", "/products/", "/promotions/"];
+  if (!file.filePath || !folders.some(folder => file.filePath!.startsWith(folder))) throw new Error("File is outside the authorized folder.");
   await imagekit.files.delete(fileId);
 }
 

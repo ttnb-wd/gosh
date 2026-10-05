@@ -1,3 +1,4 @@
+import { limitRequest } from "@/lib/security/abuse";
 import { NextResponse } from "next/server";
 import {
   SESSION_COOKIE_NAME, SESSION_EXPIRES_IN, sessionCookieOptions,
@@ -7,6 +8,8 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const limited = await limitRequest(request, "session", 30);
+  if (limited) return limited;
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ") || !authorization.slice(7).trim()) {
@@ -42,11 +45,13 @@ export async function GET(request: Request) {
     if (!token) throw new Error("Missing session");
     const { adminAuth, adminDb } = await import("@/lib/firebase/admin");
     const user = await adminAuth.verifySessionCookie(token, true);
+    const current = await adminAuth.getUser(user.uid);
+    if (current.disabled) throw new Error("Account unavailable");
     const profile = (await adminDb.collection("users").doc(user.uid).get()).data();
-    const allowed = user.email_verified === true || profile?.role === "admin";
+    const allowed = current.emailVerified === true || profile?.role === "admin";
     return NextResponse.json({
       status: allowed ? "authenticated" : "unverified",
-      user: { uid: user.uid, email: user.email ?? null, emailVerified: user.email_verified === true,
+      user: { uid: user.uid, email: current.email ?? null, emailVerified: current.emailVerified === true,
         full_name: typeof profile?.full_name === "string" ? profile.full_name : null, role: profile?.role === "admin" ? "admin" : profile?.role === "customer" ? "customer" : "user" },
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {

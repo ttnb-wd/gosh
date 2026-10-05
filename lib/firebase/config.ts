@@ -1,9 +1,9 @@
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import {
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
+  memoryLocalCache,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,6 +20,14 @@ const app = getApps().length > 0
   ? getApp()
   : initializeApp(firebaseConfig);
 
+// Opt in only after Console registration. Localhost remains unaffected.
+const runtime = globalThis as typeof globalThis & { __goshAppCheck?: boolean };
+if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED === "true" &&
+    process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname) && !runtime.__goshAppCheck) {
+  initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY), isTokenAutoRefreshEnabled: true });
+  runtime.__goshAppCheck = true;
+}
 export const auth = getAuth(app);
 
 // Firebase retains its app through Fast Refresh, but this module is re-evaluated.
@@ -41,13 +49,10 @@ export const db = firestoreByApp.get(app) ?? initializeFirestore(app, {
    * Admin SDK uses a different transport (@google-cloud/firestore over gRPC),
    * which is why server-side reads succeed while the client getDoc() times out.
    *
-   * Keep the normal Firestore browser transport. persistentLocalCache below is
-   * a local IndexedDB cache layer, NOT a network transport; it does not cause
-   * the hang and is intentionally retained.
+   * Memory cache avoids retaining private documents in IndexedDB on shared
+   * browser profiles; authentication persistence remains unchanged.
    */
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
+  localCache: memoryLocalCache(),
 });
 firestoreByApp.set(app, db);
 

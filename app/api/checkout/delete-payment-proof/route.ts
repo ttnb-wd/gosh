@@ -1,3 +1,5 @@
+import { readJson, InputError } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { deleteImageKitFile } from "@/lib/imagekit";
@@ -30,10 +32,8 @@ export async function POST(request: Request) {
     let body: { fileId?: string };
 
     try {
-      body = (await request.json()) as { fileId?: string };
-    } catch {
-      return NextResponse.json({ error: "Missing file id." }, { status: 400 });
-    }
+      body = (await readJson(request, "file")) as { fileId?: string };
+    } catch (error) { return securityError(error); }
 
     const fileId =
       typeof body.fileId === "string" && body.fileId.trim()
@@ -48,23 +48,15 @@ export async function POST(request: Request) {
      * Ownership check: the caller may only delete a file that they uploaded
      * (tracked in payment_uploads/{fileId} by the upload route).
      */
-    const tracking = await adminDb
-      .collection("payment_uploads")
-      .doc(fileId)
-      .get();
-
-    const ownerId = tracking.exists
-      ? ((tracking.data()?.user_id as string | undefined) ?? null)
-      : null;
-
-    if (!ownerId || ownerId !== user.uid) {
-      return NextResponse.json(
-        { error: "Not authorized to delete this file." },
-        { status: 403 }
-      );
-    }
-
-    await deleteImageKitFile(fileId);
+    const ref = adminDb.collection("payment_uploads").doc(fileId);
+    await adminDb.runTransaction(async tx => {
+      const tracking = await tx.get(ref);
+      if (!tracking.exists || tracking.data()?.user_id !== user.uid) throw new InputError("Payment proof not found.", 404);
+      if (tracking.data()?.order_id || tracking.data()?.deleting) throw new InputError("Payment proof is in use.", 409);
+      tx.update(ref, { deleting: true });
+    });
+    try { await deleteImageKitFile(fileId, "receipt"); }
+    catch (error) { await ref.update({ deleting: false }); throw error; }
 
     // Remove the temporary ownership record now that the file is gone.
     await adminDb
@@ -76,12 +68,5 @@ export async function POST(request: Request) {
       });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Payment proof delete error:", error);
-
-    return NextResponse.json(
-      { error: "Could not delete payment proof." },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return securityError(error); }
 }

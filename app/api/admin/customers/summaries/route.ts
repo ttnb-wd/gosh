@@ -1,3 +1,5 @@
+import { readJson } from "@/lib/security/validation";
+import { securityError } from "@/lib/security/responses";
 import { NextResponse } from "next/server";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
 import { getCustomerSummaries } from "@/lib/firebase/customers-server";
@@ -5,7 +7,7 @@ import { getCustomerSummaries } from "@/lib/firebase/customers-server";
 export async function POST(request: Request) {
   try {
     await requireAdminApiAuth(request);
-    const body = (await request.json()) as {
+    const body = (await readJson(request, "customers")) as {
       page?: number;
       pageSize?: number;
       search?: string;
@@ -22,9 +24,5 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ data });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Customer summaries failed.";
-    const status = message === "Admin access required" ? 403 : 500;
-    return NextResponse.json({ error: message }, { status });
-  }
+  } catch (error) { return securityError(error); }
 }

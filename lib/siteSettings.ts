@@ -1,3 +1,4 @@
+import { safeUrl } from "@/lib/security/validation";
 import devLog from "@/lib/dev-log";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase/config";
@@ -98,6 +99,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
 
     const data = snapshot.data() as Partial<SiteSettings>;
+    for (const key of ["facebook_url", "instagram_url", "tiktok_url", "messenger_url"] as const) {
+      if (data[key] && !safeUrl(data[key], false)) data[key] = null;
+    }
 
     return { ...defaultSettings, ...data };
   } catch (err) {

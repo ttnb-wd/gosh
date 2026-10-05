@@ -22,7 +22,11 @@ export function isSameOrigin(request: Request): boolean {
     const source = new URL(origin);
     const target = new URL(request.url);
     const host = request.headers.get("host") || target.host;
-    return source.host === host &&
+    const allowed = new Set(["https://www.goshperfumestudio.com", "https://goshperfumestudio.com",
+      ...(process.env.SECURITY_ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean)]);
+    if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL) allowed.add(`https://${process.env.VERCEL_URL}`);
+    const development = process.env.NODE_ENV !== "production" && ["localhost", "127.0.0.1", "[::1]"].includes(source.hostname);
+    return source.origin === origin && source.host === host && (allowed.has(origin) || development) &&
       source.protocol === (process.env.NODE_ENV === "production" ? "https:" : target.protocol);
   } catch { return false; }
 }
@@ -36,8 +40,10 @@ export function readSessionCookie(request: Request): string | null {
 }
 
 export async function canAccessProtectedPages(user: DecodedIdToken): Promise<boolean> {
-  if (user.email_verified === true) return true;
-  const { adminDb } = await import("@/lib/firebase/admin");
+  const { adminAuth, adminDb } = await import("@/lib/firebase/admin");
+  const current = await adminAuth.getUser(user.uid);
+  if (current.disabled) return false;
+  if (current.emailVerified === true) return true;
   // Preserve existing administrators; the exception is derived server-side.
   return (await adminDb.collection("users").doc(user.uid).get()).data()?.role === "admin";
 }
@@ -47,7 +53,9 @@ export async function getCurrentUser() {
   if (!token) return null;
   try {
     const { adminAuth } = await import("@/lib/firebase/admin");
-    return await adminAuth.verifySessionCookie(token, true);
+    const user = await adminAuth.verifySessionCookie(token, true);
+    const current = await adminAuth.getUser(user.uid);
+    return current.disabled ? null : user;
   } catch { return null; }
 }
 
