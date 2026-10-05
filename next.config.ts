@@ -222,6 +222,7 @@ const nextConfig: NextConfig = {
                 "https://identitytoolkit.googleapis.com",
                 "https://securetoken.googleapis.com",
                 "https://firebaseappcheck.googleapis.com",
+                "https://content-firebaseappcheck.googleapis.com",
                 "https://www.google.com/recaptcha/",
 
                   // Firebase Firestore
