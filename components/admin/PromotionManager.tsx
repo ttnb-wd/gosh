@@ -8,6 +8,7 @@ import { Plus, Edit2, Trash2, Power, PowerOff, Tag, Sparkles, Image as ImageIcon
 import { motion, AnimatePresence } from "framer-motion";
 import StudioSelect from "@/components/ui/StudioSelect";
 import DateTimePicker from "@/components/admin/DateTimePicker";
+import { BUSINESS_TIME_ZONE, formatBusinessSchedule, isBusinessScheduleRangeInvalid, parseBusinessSchedule, scheduleSaveError } from "@/lib/business-schedule";
 import type { Promotion } from "@/lib/types/promotions";
 import type { Product } from "@/lib/types/products";
 import { Timestamp } from "firebase/firestore";
@@ -102,10 +103,12 @@ function AdminPromotionCountdown({ promotion }: { promotion: Promotion }) {
       return "Invalid date";
     }
     return date.toLocaleDateString("en-US", {
+      timeZone: BUSINESS_TIME_ZONE,
       month: "short",
       day: "numeric",
       year: "numeric",
     }) + " · " + date.toLocaleTimeString("en-US", {
+      timeZone: BUSINESS_TIME_ZONE,
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -328,20 +331,20 @@ export default function PromotionManager() {
         body: JSON.stringify(payload),
       });
 
+      const result: unknown = await response.json();
+
       if (!response.ok) {
 
         devLog.error("Application operation failed.");
-        notify("Unable to save your changes. Please try again.", "error");
+        notify(scheduleSaveError(result), "error");
         return;
       }
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result && typeof result === "object" && "success" in result && result.success) {
         await fetchPromotions();
         resetForm();
       } else {
-        notify("Unable to save your changes. Please try again.", "error");
+        notify(scheduleSaveError(result), "error");
       }
     } catch  {
       devLog.error("Application operation failed.");
@@ -430,14 +433,14 @@ export default function PromotionManager() {
       const startDate = promotion.start_at instanceof Timestamp
         ? promotion.start_at.toDate()
         : new Date(promotion.start_at as unknown as string);
-      startAt = formatDateForInput(startDate);
+      startAt = formatBusinessSchedule(startDate);
     }
 
     if (promotion.end_at) {
       const endDate = promotion.end_at instanceof Timestamp
         ? promotion.end_at.toDate()
         : new Date(promotion.end_at as unknown as string);
-      endAt = formatDateForInput(endDate);
+      endAt = formatBusinessSchedule(endDate);
     }
 
     setFormData({
@@ -473,15 +476,6 @@ export default function PromotionManager() {
       end_at: "",
     });
     setShowForm(false);
-  }
-
-  function formatDateForInput(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   function getPromotionStatus(promotion: Promotion): {
@@ -697,11 +691,10 @@ export default function PromotionManager() {
               {/* Start Date */}
               <div>
                 <DateTimePicker
-                  selected={formData.start_at ? new Date(formData.start_at) : null}
+                  businessSchedule
+                  selected={parseBusinessSchedule(formData.start_at)}
                   onChange={(date) => {
-                    if (date) {
-                      setFormData({ ...formData, start_at: formatDateForInput(date) });
-                    }
+                    setFormData({ ...formData, start_at: date ? formatBusinessSchedule(date) : "" });
                   }}
                   label="Start Date & Time"
                   required
@@ -713,18 +706,17 @@ export default function PromotionManager() {
               {/* End Date */}
               <div>
                 <DateTimePicker
-                  selected={formData.end_at ? new Date(formData.end_at) : null}
+                  businessSchedule
+                  selected={parseBusinessSchedule(formData.end_at)}
                   onChange={(date) => {
-                    if (date) {
-                      setFormData({ ...formData, end_at: formatDateForInput(date) });
-                    }
+                    setFormData({ ...formData, end_at: date ? formatBusinessSchedule(date) : "" });
                   }}
                   label="End Date & Time"
                   required
-                  minDate={formData.start_at ? new Date(formData.start_at) : new Date()}
+                  minDate={parseBusinessSchedule(formData.start_at) || new Date()}
                   placeholderText="Select end date and time"
                   showValidationError={
-                    !!(formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at))
+                    isBusinessScheduleRangeInvalid(formData.start_at, formData.end_at)
                   }
                   validationMessage="End date must be after start date"
                 />

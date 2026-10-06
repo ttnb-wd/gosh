@@ -4,12 +4,11 @@ import StudioRowActions from "@/components/ui/StudioRowActions";
 import { notify, confirmAction } from "@/components/ui/StudioFeedback";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, Power, PowerOff, Sparkles, Image as ImageIcon, ExternalLink, Clock } from "lucide-react";
+import { Plus, Edit2, Trash2, Power, PowerOff, Sparkles, Image as ImageIcon, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DateTimePicker from "@/components/admin/DateTimePicker";
-import type { Promotion } from "@/lib/types/promotions";
-import { Timestamp } from "firebase/firestore";
-import { useCountdown, formatCountdown } from "@/hooks/useCountdown";
+import StudioSelect from "@/components/ui/StudioSelect";
+import { ANNOUNCEMENT_LABELS, formatArrivalDate, announcementSaveError } from "@/lib/announcements";
+import type { Announcement, AnnouncementType } from "@/lib/types/announcements";
 
 interface AnnouncementFormData {
   title: string;
@@ -19,151 +18,12 @@ interface AnnouncementFormData {
   cta_text: string;
   cta_url: string;
   is_active: boolean;
-  start_at: string;
-  end_at: string;
-}
-
-// Admin Countdown Component
-function AdminAnnouncementCountdown({ announcement }: { announcement: Promotion }) {
-  const getAnnouncementStatus = (announcement: Promotion): {
-    label: string;
-    color: string;
-    state: "upcoming" | "active" | "expired" | "inactive";
-    targetTimestamp: number | null;
-  } => {
-    if (!announcement.is_active) {
-      return {
-        label: "Inactive",
-        color: "text-muted bg-surface-muted  ",
-        state: "inactive",
-        targetTimestamp: null,
-      };
-    }
-
-    const now = new Date();
-    // Handle both Timestamp objects (if any remain) and ISO strings from API
-    const startDate = announcement.start_at instanceof Timestamp
-      ? announcement.start_at.toDate()
-      : new Date(announcement.start_at as unknown as string);
-    const endDate = announcement.end_at instanceof Timestamp
-      ? announcement.end_at.toDate()
-      : new Date(announcement.end_at as unknown as string);
-
-    if (now < startDate) {
-      return {
-        label: "UPCOMING",
-        color: "text-info bg-info-soft  ",
-        state: "upcoming",
-        targetTimestamp: startDate.getTime(),
-      };
-    }
-
-    if (now > endDate) {
-      return {
-        label: "EXPIRED",
-        color: "text-destructive bg-destructive-soft  ",
-        state: "expired",
-        targetTimestamp: null,
-      };
-    }
-
-    return {
-      label: "ACTIVE",
-      color: "text-success bg-success-soft  ",
-      state: "active",
-      targetTimestamp: endDate.getTime(),
-    };
-  };
-
-  const formatDateTime = (date: Date): string => {
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return "Invalid date";
-    }
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }) + " · " + date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const status = getAnnouncementStatus(announcement);
-  // Use timestamp (number) instead of Date object to prevent infinite re-renders
-  const timeRemaining = useCountdown(status.targetTimestamp);
-
-  if (status.state === "inactive") {
-    return null;
-  }
-
-  if (status.state === "expired") {
-    // Handle both Timestamp objects and ISO strings
-    const endDate = announcement.end_at instanceof Timestamp
-      ? announcement.end_at.toDate()
-      : new Date(announcement.end_at as unknown as string);
-
-    return (
-      <div className="mt-2 space-y-1 text-xs text-muted ">
-        <div>
-          <span className="font-bold">Ended:</span> {formatDateTime(endDate)}
-        </div>
-      </div>
-    );
-  }
-
-  if (status.state === "upcoming") {
-    // Handle both Timestamp objects and ISO strings
-    const startDate = announcement.start_at instanceof Timestamp
-      ? announcement.start_at.toDate()
-      : new Date(announcement.start_at as unknown as string);
-
-    return (
-      <div className="mt-2 space-y-1 text-xs">
-        <div className="text-muted ">
-          <span className="font-bold">Starts:</span> {formatDateTime(startDate)}
-        </div>
-        {timeRemaining.total > 0 && (
-          <div className="flex items-center gap-1.5 rounded bg-info-soft px-2 py-1 ">
-            <Clock className="h-3 w-3 text-info " />
-            <span className="font-bold text-info ">Starts in:</span>
-            <span className="font-mono font-bold text-info ">
-              {formatCountdown(timeRemaining)}
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Active
-  // Handle both Timestamp objects and ISO strings
-  const endDate = announcement.end_at instanceof Timestamp
-    ? announcement.end_at.toDate()
-    : new Date(announcement.end_at as unknown as string);
-
-  return (
-    <div className="mt-2 space-y-1 text-xs">
-      <div className="text-muted ">
-        <span className="font-bold">Ends:</span> {formatDateTime(endDate)}
-      </div>
-      {timeRemaining.total > 0 && (
-        <div className="flex items-center gap-1.5 rounded bg-success-soft px-2 py-1 ">
-          <Clock className="h-3 w-3 text-success " />
-          <span className="font-bold text-success ">Remaining:</span>
-          <span className="font-mono font-bold text-success ">
-            {formatCountdown(timeRemaining)}
-          </span>
-        </div>
-      )}
-    </div>
-  );
+  announcement_type: AnnouncementType;
+  arrival_date: string;
 }
 
 export default function AnnouncementManager() {
-  const [announcements, setAnnouncements] = useState<Promotion[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -178,8 +38,8 @@ export default function AnnouncementManager() {
     cta_text: "Learn More",
     cta_url: "/products",
     is_active: false,
-    start_at: "",
-    end_at: "",
+    announcement_type: "coming_soon",
+    arrival_date: "",
   });
 
   useEffect(() => {
@@ -188,7 +48,7 @@ export default function AnnouncementManager() {
 
   async function fetchAnnouncements() {
     try {
-      const response = await fetch("/api/admin/promotions/action", {
+      const response = await fetch("/api/admin/announcements/action", {
         credentials: "include",
       });
 
@@ -200,11 +60,7 @@ export default function AnnouncementManager() {
       const result = await response.json();
 
       if (result.success) {
-        // Filter to only show "promotion" type (generic announcements, not new_product)
-        const genericAnnouncements = (result.promotions || []).filter(
-          (p: Promotion) => p.type === "promotion"
-        );
-        setAnnouncements(genericAnnouncements);
+        setAnnouncements(result.announcements || []);
       }
     } catch  {
       devLog.error("Application operation failed.");
@@ -219,7 +75,7 @@ export default function AnnouncementManager() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("folder", "/gosh/promotions");
+      formData.append("folder", "/gosh/uploads");
       const uploadResponse = await fetch("/api/upload/imagekit", { method: "POST", credentials: "include", body: formData });
       if (!uploadResponse.ok) throw new Error("Upload failed.");
 
@@ -249,37 +105,35 @@ export default function AnnouncementManager() {
       const payload: Record<string, unknown> = {
         action,
         data: {
-          type: "promotion", // Always "promotion" type for announcements
           ...formData,
-          product_id: null, // Announcements don't link to products
         },
       };
 
       if (editingId) {
-        payload.promotionId = editingId;
+        payload.announcementId = editingId;
       }
 
-      const response = await fetch("/api/admin/promotions/action", {
+      const response = await fetch("/api/admin/announcements/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(payload),
       });
 
+      const result: unknown = await response.json();
+
       if (!response.ok) {
 
         devLog.error("Application operation failed.");
-        notify("Unable to save your changes. Please try again.", "error");
+        notify(announcementSaveError(result), "error");
         return;
       }
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result && typeof result === "object" && "success" in result && result.success) {
         await fetchAnnouncements();
         resetForm();
       } else {
-        notify("Unable to save your changes. Please try again.", "error");
+        notify(announcementSaveError(result), "error");
       }
     } catch  {
       devLog.error("Application operation failed.");
@@ -295,13 +149,13 @@ export default function AnnouncementManager() {
     }
 
     try {
-      const response = await fetch("/api/admin/promotions/action", {
+      const response = await fetch("/api/admin/announcements/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           action: "delete",
-          promotionId: id,
+          announcementId: id,
         }),
       });
 
@@ -325,13 +179,13 @@ export default function AnnouncementManager() {
 
   async function handleToggle(id: string) {
     try {
-      const response = await fetch("/api/admin/promotions/action", {
+      const response = await fetch("/api/admin/announcements/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           action: "toggle",
-          promotionId: id,
+          announcementId: id,
         }),
       });
 
@@ -353,36 +207,19 @@ export default function AnnouncementManager() {
     }
   }
 
-  function handleEdit(announcement: Promotion) {
+  function handleEdit(announcement: Announcement) {
     setEditingId(announcement.id);
-
-    let startAt = "";
-    let endAt = "";
-
-    if (announcement.start_at) {
-      const startDate = announcement.start_at instanceof Timestamp
-        ? announcement.start_at.toDate()
-        : new Date(announcement.start_at as unknown as string);
-      startAt = formatDateForInput(startDate);
-    }
-
-    if (announcement.end_at) {
-      const endDate = announcement.end_at instanceof Timestamp
-        ? announcement.end_at.toDate()
-        : new Date(announcement.end_at as unknown as string);
-      endAt = formatDateForInput(endDate);
-    }
 
     setFormData({
       title: announcement.title || "",
       description: announcement.description || "",
       image: announcement.image || "",
       imageFileId: announcement.imageFileId || "",
-      cta_text: announcement.cta_text || "Learn More",
-      cta_url: announcement.cta_url || "/products",
+      cta_text: announcement.cta_text || "",
+      cta_url: announcement.cta_url || "",
       is_active: announcement.is_active,
-      start_at: startAt,
-      end_at: endAt,
+      announcement_type: announcement.announcement_type,
+      arrival_date: announcement.arrival_date,
     });
 
     setShowForm(true);
@@ -398,63 +235,10 @@ export default function AnnouncementManager() {
       cta_text: "Learn More",
       cta_url: "/products",
       is_active: false,
-      start_at: "",
-      end_at: "",
+      announcement_type: "coming_soon",
+      arrival_date: "",
     });
     setShowForm(false);
-  }
-
-  function formatDateForInput(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-
-  function getPromotionStatus(promotion: Promotion): {
-    label: string;
-    color: string;
-    state: "upcoming" | "active" | "expired" | "inactive";
-  } {
-    if (!promotion.is_active) {
-      return {
-        label: "Inactive",
-        color: "text-muted bg-surface-muted  ",
-        state: "inactive",
-      };
-    }
-
-    const now = new Date();
-    const startDate = promotion.start_at instanceof Timestamp
-      ? promotion.start_at.toDate()
-      : new Date(promotion.start_at as unknown as string);
-    const endDate = promotion.end_at instanceof Timestamp
-      ? promotion.end_at.toDate()
-      : new Date(promotion.end_at as unknown as string);
-
-    if (now < startDate) {
-      return {
-        label: "UPCOMING",
-        color: "text-info bg-info-soft  ",
-        state: "upcoming",
-      };
-    }
-
-    if (now > endDate) {
-      return {
-        label: "EXPIRED",
-        color: "text-destructive bg-destructive-soft  ",
-        state: "expired",
-      };
-    }
-
-    return {
-      label: "ACTIVE",
-      color: "text-success bg-success-soft  ",
-      state: "active",
-    };
   }
 
   if (loading) {
@@ -471,7 +255,7 @@ export default function AnnouncementManager() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-ink ">Announcements</h2>
-          <p className="mt-1 text-sm text-muted ">Manage marketing banners and announcements</p>
+          <p className="mt-1 text-sm text-muted ">Manage upcoming products and new arrivals</p>
         </div>
         <button
           type="button"
@@ -508,6 +292,7 @@ export default function AnnouncementManager() {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink focus:border-focus focus:outline-none    "
+                  maxLength={200}
                   placeholder="e.g., New Collection Available"
                   required
                 />
@@ -516,7 +301,7 @@ export default function AnnouncementManager() {
               {/* Description */}
               <div className="md:col-span-2">
                 <label htmlFor="studio-components-admin-AnnouncementManager-2" className="mb-2 block text-sm font-bold text-ink ">
-                  Description <span className="text-destructive">*</span>
+                  Description (optional)
                 </label>
                 <textarea id="studio-components-admin-AnnouncementManager-2"
                   value={formData.description}
@@ -524,14 +309,14 @@ export default function AnnouncementManager() {
                   className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink focus:border-focus focus:outline-none    "
                   rows={3}
                   placeholder="Describe your announcement"
-                  required
+                  maxLength={5000}
                 />
               </div>
 
               {/* Image Upload */}
               <div className="md:col-span-2">
                 <label htmlFor="studio-components-admin-AnnouncementManager-3" className="mb-2 block text-sm font-bold text-ink ">
-                  Promotional Image
+                  Announcement Image
                 </label>
                 <div className="flex items-center gap-4">
                   <input id="studio-components-admin-AnnouncementManager-3"
@@ -563,22 +348,22 @@ export default function AnnouncementManager() {
               {/* CTA Text */}
               <div>
                 <label htmlFor="studio-components-admin-AnnouncementManager-4" className="mb-2 block text-sm font-bold text-ink ">
-                  CTA Text <span className="text-destructive">*</span>
+                  CTA Text (optional)
                 </label>
                 <input id="studio-components-admin-AnnouncementManager-4"
                   type="text"
                   value={formData.cta_text}
                   onChange={(e) => setFormData({ ...formData, cta_text: e.target.value })}
                   className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink focus:border-focus focus:outline-none    "
-                  placeholder="e.g., Shop Now"
-                  required
+                  maxLength={100}
+                  placeholder="e.g., Learn More"
                 />
               </div>
 
               {/* CTA URL */}
               <div>
                 <label htmlFor="studio-components-admin-AnnouncementManager-5" className="mb-2 block text-sm font-bold text-ink ">
-                  CTA URL <span className="text-destructive">*</span>
+                  CTA URL (optional)
                 </label>
                 <input id="studio-components-admin-AnnouncementManager-5"
                   type="text"
@@ -586,44 +371,22 @@ export default function AnnouncementManager() {
                   onChange={(e) => setFormData({ ...formData, cta_url: e.target.value })}
                   className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink focus:border-focus focus:outline-none    "
                   placeholder="e.g., /products?collection=Summer"
-                  required
+                  maxLength={2048}
                 />
               </div>
 
-              {/* Start Date */}
               <div>
-                <DateTimePicker
-                  selected={formData.start_at ? new Date(formData.start_at) : null}
-                  onChange={(date) => {
-                    if (date) {
-                      setFormData({ ...formData, start_at: formatDateForInput(date) });
-                    }
-                  }}
-                  label="Start Date & Time"
-                  required
-                  minDate={new Date()}
-                  placeholderText="Select start date and time"
-                />
+                <StudioSelect label="Announcement Type *" value={formData.announcement_type}
+                  onChange={(value) => setFormData({ ...formData, announcement_type: value as AnnouncementType })}
+                  options={[{ value: "coming_soon", label: "COMING SOON" }, { value: "new_arrival", label: "NEW ARRIVAL" }]} />
               </div>
-
-              {/* End Date */}
               <div>
-                <DateTimePicker
-                  selected={formData.end_at ? new Date(formData.end_at) : null}
-                  onChange={(date) => {
-                    if (date) {
-                      setFormData({ ...formData, end_at: formatDateForInput(date) });
-                    }
-                  }}
-                  label="End Date & Time"
-                  required
-                  minDate={formData.start_at ? new Date(formData.start_at) : new Date()}
-                  placeholderText="Select end date and time"
-                  showValidationError={
-                    !!(formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at))
-                  }
-                  validationMessage="End date must be after start date"
-                />
+                <label htmlFor="announcement-arrival-date" className="mb-2 block text-sm font-bold text-ink">
+                  Arrival Date <span className="text-destructive">*</span>
+                </label>
+                <input id="announcement-arrival-date" type="date" required value={formData.arrival_date}
+                  onChange={(e) => setFormData({ ...formData, arrival_date: e.target.value })}
+                  className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink focus:border-focus focus:outline-none" />
               </div>
 
               {/* Is Active */}
@@ -638,7 +401,7 @@ export default function AnnouncementManager() {
                   <span className="text-sm font-bold text-ink ">Active</span>
                 </label>
                 <p className="ml-7 mt-1 text-xs text-muted ">
-                  Inactive promotions won&apos;t be visible to customers, even if within the date range
+                  Only active announcements are visible to customers
                 </p>
               </div>
             </div>
@@ -650,7 +413,7 @@ export default function AnnouncementManager() {
                 disabled={submitting || uploadingImage}
                 className="flex-1 rounded-full bg-brand px-6 py-3 text-sm font-bold text-on-brand transition-all hover:-translate-y-0.5 hover:shadow-soft disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? "Saving..." : editingId ? "Update Promotion" : "Create Promotion"}
+                {submitting ? "Saving..." : editingId ? "Update Announcement" : "Create Announcement"}
               </button>
               <button
                 type="button"
@@ -674,7 +437,9 @@ export default function AnnouncementManager() {
           </div>
         ) : (
           announcements.map((announcement) => {
-            const status = getPromotionStatus(announcement);
+            const status = announcement.is_active
+              ? { label: "Active", color: "text-success bg-success-soft" }
+              : { label: "Inactive", color: "text-muted bg-surface-muted" };
             return (
               <motion.div
                 key={announcement.id}
@@ -705,15 +470,14 @@ export default function AnnouncementManager() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-lg font-semibold text-ink ">{announcement.title}</h3>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${status.color}`}>
-                            {status.label}
+                            {ANNOUNCEMENT_LABELS[announcement.announcement_type]} · {status.label}
                           </span>
                         </div>
                         <p className="mt-1 text-sm text-muted ">{announcement.description}</p>
 
-                        {/* Countdown Display */}
-                        <AdminAnnouncementCountdown announcement={announcement} />
+                        <p className="mt-2 text-xs text-muted">Arrival Date: {formatArrivalDate(announcement.arrival_date)}</p>
 
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted ">
+                        {announcement.cta_url && announcement.cta_text && <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted ">
                           <a
                             href={announcement.cta_url}
                             target="_blank"
@@ -723,7 +487,7 @@ export default function AnnouncementManager() {
                             <ExternalLink className="h-3.5 w-3.5" />
                             {announcement.cta_text}
                           </a>
-                        </div>
+                        </div>}
                       </div>
 
                       {/* Actions */}

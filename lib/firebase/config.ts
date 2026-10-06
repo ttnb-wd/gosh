@@ -20,11 +20,20 @@ const app = getApps().length > 0
   ? getApp()
   : initializeApp(firebaseConfig);
 
-// Opt in only after Console registration. Localhost remains unaffected.
-const runtime = globalThis as typeof globalThis & { __goshAppCheck?: boolean };
+// Opt in only after Console registration. Debug mode is local development only.
+const runtime = globalThis as typeof globalThis & {
+  __goshAppCheck?: boolean;
+  FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
+};
+const isLocalBrowser = typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+const isLocalDevelopment = process.env.NODE_ENV === "development" && isLocalBrowser;
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED === "true" &&
     process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY &&
-    !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname) && !runtime.__goshAppCheck) {
+    (!isLocalBrowser || isLocalDevelopment) && !runtime.__goshAppCheck) {
+  // The SDK generates/stores the token in this browser; register it in Console.
+  // Set this before initialization so local requests use the debug provider.
+  if (isLocalDevelopment) runtime.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY), isTokenAutoRefreshEnabled: true });
   runtime.__goshAppCheck = true;
 }

@@ -1,5 +1,7 @@
 // Runtime validation shared by server boundaries. No request-provided keys are
 // selected dynamically for collection paths or privileged database writes.
+import { parseBusinessSchedule } from "@/lib/business-schedule";
+import { isArrivalDate } from "@/lib/announcements";
 export class InputError extends Error {
   constructor(message = "Invalid request body.", public status = 400) { super(message); }
 }
@@ -43,10 +45,14 @@ const product = shape({
   scent_collection: optionalText(100), is_active: boolean, is_featured: optional(boolean),
   decants: optional(array(shape({ label: text(100, 1), price: number(1_000_000_000) }), 30)), notes: optional(nullable(notes)),
 });
-const banner = shape({ type: oneOf("promotion", "new_product"), title: text(200, 1), description: text(5000, 1),
+const bannerFields = { type: oneOf("promotion", "new_product"), title: text(200, 1), description: text(5000, 1),
   cta_text: text(100, 1), cta_url: v => safeUrl(v), image: optionalImage, imageFileId: optionalId,
-  product_id: optionalId, is_active: optional(boolean), start_at: date, end_at: date });
+  product_id: optionalId, is_active: optional(boolean), start_at: v => parseBusinessSchedule(v) !== null, end_at: v => parseBusinessSchedule(v) !== null } satisfies Record<string, Check>;
+const banner = shape(bannerFields);
 const promotion = shape({ product_id: validId, promotion_price: number(1_000_000_000, 0.01), is_active: optional(boolean), start_at: date, end_at: date });
+const announcement = shape({ title: text(200, 1), description: optional(text(5000)),
+  image: optionalImage, imageFileId: optionalId, cta_text: optional(text(100)), cta_url: optional(v => v === "" || safeUrl(v)),
+  announcement_type: oneOf("coming_soon", "new_arrival"), arrival_date: isArrivalDate, is_active: boolean });
 export const orderStatuses = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
 export const paymentStatuses = ["Unpaid", "Verifying", "Paid", "Failed", "Refunded"];
 export const schemas: Record<string, Check> = {
@@ -59,12 +65,49 @@ export const schemas: Record<string, Check> = {
   status: v => shape({ type: oneOf("order"), orderId: validId, status: oneOf(...orderStatuses) })(v) || shape({ type: oneOf("payment"), orderId: validId, paymentStatus: oneOf(...paymentStatuses) })(v),
   customers: shape({ page: optional(number(100_000, 1, true)), pageSize: optional(number(100, 1, true)), search: optional(text(200)), filter: optional(oneOf("all", "customers", "admins", "has_orders", "no_orders")), sort: optional(oneOf("newest", "oldest", "highest_spent", "most_orders")) }),
   productAction: v => (shape({ action: oneOf("save"), productId: optionalId, expectedStock: optional(number(1_000_000, 0, true)), product })(v) && (!(v as { productId?: string }).productId || number(1_000_000, 0, true)((v as { expectedStock?: number }).expectedStock))) || shape({ action: oneOf("delete"), productId: validId })(v) || shape({ action: oneOf("setActive"), productId: validId, isActive: boolean })(v),
-  bannerAction: v => promotionAction(v, banner), promotionAction: v => promotionAction(v, promotion),
+  bannerAction: validateBannerAction, promotionAction: v => promotionAction(v, promotion),
+  announcementAction: validateAnnouncementAction,
   checkout: shape({ customerName: text(100, 2), phone: text(20, 1), address: text(500, 1), city: text(100, 1),
     paymentMethod: oneOf("cod", "kbzpay", "wavepay", "ayapay", "bank"), paymentAccountName: optionalText(200), paymentPhone: optionalText(50), paymentAccountNumber: optionalText(100),
     paymentScreenshotUrl: optional(v => v === null || v === ""), paymentScreenshotFileId: optionalId,
     items: array(shape({ product_id: validId, selected_size: optionalText(100), quantity: number(99, 1, true) }), 100, 1) }),
 };
+function validateAnnouncementAction(value: unknown): boolean {
+  if (shape({ action: oneOf("delete", "toggle"), announcementId: validId })(value)) return true;
+  if (!shape({ action: oneOf("create"), data: announcement })(value) &&
+      !shape({ action: oneOf("update"), announcementId: validId, data: announcement })(value)) {
+    throw new InputError("Enter a title (1–200 characters), announcement type, valid arrival date (YYYY-MM-DD), and active setting. Optional message/links must be valid; promotion and scheduling fields are not allowed.");
+  }
+  const body = value as { data: { cta_text?: string; cta_url?: string } };
+  if (!!body.data.cta_text !== !!body.data.cta_url) throw new InputError("Provide both CTA text and a valid link, or leave both empty.");
+  return true;
+}
+function validateBannerAction(value: unknown): boolean {
+  if (shape({ action: oneOf("delete", "toggle"), promotionId: validId })(value)) return true;
+  if (!shape({ action: oneOf("create", "update"), promotionId: optionalId, data: banner })(value)) {
+    if (value && typeof value === "object" && "data" in value && value.data && typeof value.data === "object" && !Array.isArray(value.data)) {
+      const data = value.data as Record<string, unknown>;
+      const messages: Record<keyof typeof bannerFields, string> = {
+        type: "Select a valid promotion type.", title: "Enter a title of 1–200 characters.",
+        description: "Enter a description of 1–5000 characters.", cta_text: "Enter CTA text of 1–100 characters.",
+        cta_url: "Use a relative path starting with / or a valid HTTPS URL without spaces for the CTA URL.",
+        image: "Use a valid HTTPS image URL or leave it empty.", imageFileId: "Invalid image file ID. Please upload the image again.",
+        product_id: "Select a valid product.", is_active: "Invalid active setting.",
+        start_at: "Enter a valid start date and time (Myanmar time, UTC+06:30).",
+        end_at: "Enter a valid end date and time (Myanmar time, UTC+06:30).",
+      };
+      for (const key of Object.keys(bannerFields) as (keyof typeof bannerFields)[]) {
+        if (!bannerFields[key](data[key])) throw new InputError(messages[key]);
+      }
+    }
+    return false;
+  }
+  const body = value as { action: string; promotionId?: string; data: { start_at: string; end_at: string } };
+  if (body.action === "update" && !validId(body.promotionId)) throw new InputError("Promotion ID is required.");
+  const start = parseBusinessSchedule(body.data.start_at), end = parseBusinessSchedule(body.data.end_at);
+  if (!start || !end || end.getTime() <= start.getTime()) throw new InputError("End date must be after start date (Myanmar time, UTC+06:30).");
+  return true;
+}
 function promotionAction(v: unknown, data: Check): boolean {
   if (shape({ action: oneOf("delete", "toggle"), promotionId: validId })(v)) return true;
   if (!shape({ action: oneOf("create", "update"), promotionId: optionalId, data })(v)) return false;

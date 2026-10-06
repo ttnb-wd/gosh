@@ -6,13 +6,44 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Sparkles, Tag, ArrowRight, Clock } from "lucide-react";
-import type { Promotion } from "@/lib/types/promotions";
+import type { Promotion, ProductPromotion } from "@/lib/types/promotions";
 import type { Product } from "@/lib/types/products";
 import { Timestamp } from "firebase/firestore";
 import { useCountdown, formatCountdown } from "@/hooks/useCountdown";
+import { BUSINESS_TIME_ZONE } from "@/lib/business-schedule";
+import { ANNOUNCEMENT_LABELS, formatArrivalDate } from "@/lib/announcements";
+import type { PublicAnnouncement } from "@/lib/types/announcements";
 
 interface EnrichedPromotion extends Promotion {
   product?: Product | null;
+  promotion_price: number;
+}
+
+type HomepageItem =
+  | { kind: "promotion"; data: EnrichedPromotion }
+  | { kind: "announcement"; data: PublicAnnouncement };
+
+type ProductPromotionResponse = ProductPromotion & { product: Product & { image?: string } };
+
+class HomepageLoadError extends Error {}
+
+async function fetchHomepageJson(endpoint: string): Promise<Record<string, unknown>> {
+  let response: Response;
+  try { response = await fetch(endpoint); }
+  catch { throw new HomepageLoadError("Network request failed."); }
+  let result: unknown;
+  try { result = await response.json(); }
+  catch { throw new HomepageLoadError(`HTTP ${response.status}: Expected a JSON response.`); }
+  if (!response.ok) {
+    // These APIs serialize curated public errors. Never log HTML or raw exceptions.
+    const message = result && typeof result === "object" && "error" in result &&
+      typeof result.error === "string" && result.error.length <= 300 ? result.error : "Request rejected.";
+    throw new HomepageLoadError(`HTTP ${response.status}: ${message}`);
+  }
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new HomepageLoadError(`HTTP ${response.status}: Invalid JSON response.`);
+  }
+  return result as Record<string, unknown>;
 }
 
 type PromotionState = "upcoming" | "active" | "expired";
@@ -34,19 +65,16 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
     return "active";
   };
 
-  const formatDateTime = (date: Date): string => {
+  const formatDate = (date: Date): string => {
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return "Invalid date";
     }
     return date.toLocaleDateString("en-US", {
+      timeZone: BUSINESS_TIME_ZONE,
       month: "short",
       day: "numeric",
       year: "numeric",
-    }) + " · " + date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
     });
   };
 
@@ -80,11 +108,11 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
       <div className="flex flex-col gap-1 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-muted ">Starts:</span>
-          <span className="text-muted ">{formatDateTime(startDate)}</span>
+          <span className="text-muted ">{formatDate(startDate)}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-muted ">Ends:</span>
-          <span className="text-muted ">{formatDateTime(endDate)}</span>
+          <span className="text-muted ">{formatDate(endDate)}</span>
         </div>
       </div>
 
@@ -107,65 +135,49 @@ function PromotionCountdown({ promotion }: { promotion: Promotion }) {
 }
 
 export default function PromotionBanner() {
-  const [promotions, setPromotions] = useState<EnrichedPromotion[]>([]);
+  const [promotions, setPromotions] = useState<HomepageItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchPromotions() {
-      try {
-        // Use unified endpoint to get both banner and product promotions
-        const response = await fetch("/api/promotions/unified");
-
-        if (!response.ok) {
-          devLog.error("Failed to fetch promotions:", response.status, response.statusText);
-          const errorData = await response.json().catch(() => ({}));
-          devLog.error("Error details:", errorData);
-          return;
-        }
-
-        const result = await response.json();
-
-        if (result.success && result.data) {
-          // Combine banner promotions and product promotions
-          const allPromotions: EnrichedPromotion[] = [
-            ...result.data.bannerPromotions,
-            // Convert product promotions to banner format
-            ...result.data.productPromotions.map((promo: {
-              id: string; product_id: string; promotion_price: number; is_active: boolean;
-              start_at: Timestamp; end_at: Timestamp; created_at: Timestamp; updated_at: Timestamp;
-              product: Product & { image?: string };
-            }) => ({
-              id: promo.id,
-              type: 'new_product' as const,
-              title: promo.product?.name || 'Special Offer',
-              description: `Save ${Math.round(((promo.product?.price - promo.promotion_price) / promo.product?.price) * 100)}% on this product!`,
-              image: promo.product?.image,
-              imageFileId: null,
-              cta_text: 'Shop Now',
-              cta_url: `/products/${promo.product_id}`,
-              product_id: promo.product_id,
-              is_active: promo.is_active,
-              start_at: promo.start_at,
-              end_at: promo.end_at,
-              created_at: promo.created_at,
-              updated_at: promo.updated_at,
-              product: promo.product,
-            })),
-          ];
-
-          setPromotions(allPromotions);
-        } else {
-          devLog.error("API returned unsuccessful response:", result);
-        }
-      } catch (error) {
-        devLog.error("Failed to fetch promotions:", error);
-      } finally {
-        setLoading(false);
-      }
+    async function loadProductPromotions(): Promise<HomepageItem[]> {
+      const result = await fetchHomepageJson("/api/product-promotions/active");
+      if (result.success !== true || !Array.isArray(result.promotions)) throw new HomepageLoadError("Invalid promotions response.");
+      return result.promotions.map((promo: ProductPromotionResponse) => ({
+        kind: "promotion" as const,
+        data: {
+          id: promo.id, type: "promotion" as const,
+          title: promo.product?.name || "Special Offer",
+          description: `Save ${Math.round(((promo.product?.price - promo.promotion_price) / promo.product?.price) * 100)}% on this product!`,
+          image: promo.product?.image, imageFileId: null,
+          cta_text: "Shop Now", cta_url: `/products/${promo.product_id}`,
+          product_id: promo.product_id, is_active: promo.is_active,
+          start_at: promo.start_at, end_at: promo.end_at,
+          created_at: promo.created_at, updated_at: promo.updated_at,
+          product: promo.product, promotion_price: promo.promotion_price,
+        },
+      }));
     }
-
-    fetchPromotions();
+    async function loadAnnouncements(): Promise<HomepageItem[]> {
+      const result = await fetchHomepageJson("/api/announcements/active");
+      if (result.success !== true || !Array.isArray(result.announcements)) throw new HomepageLoadError("Invalid announcements response.");
+      return result.announcements.map((announcement: PublicAnnouncement) => ({ kind: "announcement" as const, data: announcement }));
+    }
+    async function loadHomepageItems() {
+      const results = await Promise.allSettled([loadProductPromotions(), loadAnnouncements()]);
+      const items: HomepageItem[] = [];
+      for (const [index, result] of results.entries()) {
+        if (result.status === "fulfilled") items.push(...result.value);
+        else {
+          const source = index === 0 ? "Product promotions (/api/product-promotions/active)" : "Announcements (/api/announcements/active)";
+          const message = result.reason instanceof HomepageLoadError ? result.reason.message : "Unexpected response.";
+          devLog.error(`${source} load failed: ${message}`);
+        }
+      }
+      setPromotions(items);
+      setLoading(false);
+    }
+    loadHomepageItems();
   }, []);
 
   // Auto-rotate promotions every 10 seconds
@@ -184,25 +196,21 @@ export default function PromotionBanner() {
     return null;
   }
 
-  const activePromotion = promotions[activeIndex];
-
-  const getPromotionLabel = (type: string) => {
-    return type === "new_product" ? "NEW ARRIVAL" : "LIMITED OFFER";
-  };
-
-  // Use product image for new_product type if available
-  const displayImage = activePromotion.type === "new_product" && activePromotion.product?.images && activePromotion.product.images.length > 0
-    ? activePromotion.product.images[0]
-    : activePromotion.image;
-
-  const PromotionIcon = activePromotion.type === "new_product" ? Sparkles : Tag;
+  const activeItem = promotions[activeIndex];
+  const activePromotion = activeItem.data;
+  const productPromotion = activeItem.kind === "promotion" ? activeItem.data : null;
+  const announcement = activeItem.kind === "announcement" ? activeItem.data : null;
+  const label = announcement ? ANNOUNCEMENT_LABELS[announcement.announcement_type] : "LIMITED OFFER";
+  const displayImage = productPromotion?.product?.images?.length
+    ? productPromotion.product.images[0] : activePromotion.image;
+  const PromotionIcon = announcement ? Sparkles : Tag;
 
   return (
     <section className="studio-promotion relative overflow-hidden bg-[var(--site-bg)] px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
       <div className="mx-auto max-w-[1400px]">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activePromotion.id}
+            key={`${activeItem.kind}:${activePromotion.id}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -246,7 +254,7 @@ export default function PromotionBanner() {
                   <span className="h-[1.5px] w-7 bg-brand" aria-hidden="true" />
                   <PromotionIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent ">
-                    {getPromotionLabel(activePromotion.type)}
+                    {label}
                   </span>
                 </div>
 
@@ -262,20 +270,24 @@ export default function PromotionBanner() {
 
                 {/* Promotion Countdown */}
                 <div className="mb-4">
-                  <PromotionCountdown promotion={activePromotion} />
+                  {announcement ? (
+                    <p className="text-xs text-muted">
+                      {announcement.announcement_type === "coming_soon" ? "Arriving" : "Available"} {formatArrivalDate(announcement.arrival_date)}
+                    </p>
+                  ) : productPromotion && <PromotionCountdown promotion={productPromotion} />}
                 </div>
 
-                {/* Product info (new arrivals only) */}
-                {activePromotion.type === "new_product" && activePromotion.product && (
+                {/* Product promotion details */}
+                {productPromotion?.product && (
                   <div className="mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                    {activePromotion.product.brand && (
+                    {productPromotion.product.brand && (
                       <span className="text-[10px] font-bold uppercase tracking-wider text-accent ">
-                        {activePromotion.product.brand}
+                        {productPromotion.product.brand}
                       </span>
                     )}
-                    {activePromotion.product.price && (
+                    {productPromotion.product.price && (
                       <span className="text-base font-semibold text-accent">
-                        {activePromotion.product.price.toLocaleString()} Ks
+                        {productPromotion.promotion_price.toLocaleString()} Ks
                       </span>
                     )}
                   </div>
@@ -283,13 +295,13 @@ export default function PromotionBanner() {
 
                 {/* Actions row */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <Link
+                  {activePromotion.cta_url && activePromotion.cta_text && <Link
                     href={activePromotion.cta_url}
                     className="group/btn inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2 text-xs font-bold uppercase tracking-wide text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-panel"
                   >
                     {activePromotion.cta_text}
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
-                  </Link>
+                  </Link>}
 
                   {/* Navigation dots */}
                   {promotions.length > 1 && (
@@ -299,7 +311,7 @@ export default function PromotionBanner() {
                           key={index}
                           type="button"
                           onClick={() => setActiveIndex(index)}
-                          aria-label={`Go to promotion ${index + 1}`}
+                          aria-label={`Go to offer or announcement ${index + 1}`}
                           className={`h-1 rounded-full transition-all duration-300 ${
                             index === activeIndex
                               ? "w-5 bg-brand"
@@ -343,7 +355,7 @@ export default function PromotionBanner() {
                   <span className="h-[2px] w-9 bg-brand" aria-hidden="true" />
                   <PromotionIcon className="h-4 w-4 text-accent" aria-hidden="true" />
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent  lg:text-[11px]">
-                    {getPromotionLabel(activePromotion.type)}
+                    {label}
                   </span>
                 </div>
 
@@ -359,20 +371,24 @@ export default function PromotionBanner() {
 
                 {/* Promotion Countdown */}
                 <div className="mb-4 lg:mb-4">
-                  <PromotionCountdown promotion={activePromotion} />
+                  {announcement ? (
+                    <p className="text-xs text-muted">
+                      {announcement.announcement_type === "coming_soon" ? "Arriving" : "Available"} {formatArrivalDate(announcement.arrival_date)}
+                    </p>
+                  ) : productPromotion && <PromotionCountdown promotion={productPromotion} />}
                 </div>
 
-                {/* Product info (new arrivals only) */}
-                {activePromotion.type === "new_product" && activePromotion.product && (
+                {/* Product promotion details */}
+                {productPromotion?.product && (
                   <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 lg:mb-4">
-                    {activePromotion.product.brand && (
+                    {productPromotion.product.brand && (
                       <span className="text-[10px] font-bold uppercase tracking-wider text-accent  lg:text-[11px]">
-                        {activePromotion.product.brand}
+                        {productPromotion.product.brand}
                       </span>
                     )}
-                    {activePromotion.product.price && (
+                    {productPromotion.product.price && (
                       <span className="text-lg font-semibold text-accent lg:text-xl">
-                        {activePromotion.product.price.toLocaleString()} Ks
+                        {productPromotion.promotion_price.toLocaleString()} Ks
                       </span>
                     )}
                   </div>
@@ -380,13 +396,13 @@ export default function PromotionBanner() {
 
                 {/* Actions row */}
                 <div className="flex flex-wrap items-center gap-3.5">
-                  <Link
+                  {activePromotion.cta_url && activePromotion.cta_text && <Link
                     href={activePromotion.cta_url}
                     className="group/btn inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-xs font-bold uppercase tracking-wide text-on-brand shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-panel lg:px-7 lg:py-3"
                   >
                     {activePromotion.cta_text}
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5 lg:h-4 lg:w-4" />
-                  </Link>
+                  </Link>}
 
                   {/* Navigation dots */}
                   {promotions.length > 1 && (
@@ -396,7 +412,7 @@ export default function PromotionBanner() {
                           key={index}
                           type="button"
                           onClick={() => setActiveIndex(index)}
-                          aria-label={`Go to promotion ${index + 1}`}
+                          aria-label={`Go to offer or announcement ${index + 1}`}
                           className={`h-1 rounded-full transition-all duration-300 ${
                             index === activeIndex
                               ? "w-5 bg-brand"

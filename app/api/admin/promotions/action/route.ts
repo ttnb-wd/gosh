@@ -1,5 +1,6 @@
 import { recordAdminChange } from "@/lib/security/audit";
-import { readJson } from "@/lib/security/validation";
+import { InputError, readJson } from "@/lib/security/validation";
+import { parseBusinessSchedule } from "@/lib/business-schedule";
 import { securityError } from "@/lib/security/responses";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApiAuth } from "@/lib/auth/apiAuth";
@@ -13,6 +14,12 @@ import {
 } from "@/lib/firebase/promotions-server";
 import { getProduct } from "@/lib/firebase/products-server";
 import { deleteImageKitFile } from "@/lib/imagekit";
+
+function scheduleTimestamp(value: unknown): Timestamp {
+  const date = parseBusinessSchedule(value);
+  if (!date) throw new InputError("Enter a valid schedule date and time (Myanmar time, UTC+06:30).");
+  return Timestamp.fromDate(date);
+}
 
 /**
  * GET /api/admin/promotions/action
@@ -103,8 +110,8 @@ export async function POST(request: NextRequest) {
       // Convert date strings to Firestore Timestamps
       const promotionData = {
         ...data,
-        start_at: Timestamp.fromDate(new Date(data.start_at)),
-        end_at: Timestamp.fromDate(new Date(data.end_at)),
+        start_at: scheduleTimestamp(data.start_at),
+        end_at: scheduleTimestamp(data.end_at),
         is_active: data.is_active ?? false,
       };
 
@@ -156,10 +163,10 @@ export async function POST(request: NextRequest) {
       // Convert date strings to Timestamps if present
       const updateData: Record<string, unknown> = { ...data };
       if (data.start_at) {
-        updateData.start_at = Timestamp.fromDate(new Date(data.start_at));
+        updateData.start_at = scheduleTimestamp(data.start_at);
       }
       if (data.end_at) {
-        updateData.end_at = Timestamp.fromDate(new Date(data.end_at));
+        updateData.end_at = scheduleTimestamp(data.end_at);
       }
 
       await updatePromotion(promotionId, updateData);

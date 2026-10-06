@@ -85,3 +85,126 @@ for(const options of [{production:true},{production:true,redisFails:true,env:{UP
 test('email delivery: concurrent repeated event sends once',async()=>{const f=fixture(),helper=f.load('lib/security/email-once.ts');let sent=0;const send=async()=>{sent++;return {ok:true}};await Promise.all([helper.deliverOnce('order:1',send),helper.deliverOnce('order:1',send)]);await helper.deliverOnce('order:1',send);assert.equal(sent,1)});
 test('brand deletion: server detects linked products and preserves records',async()=>{const f=fixture({admin:true,data:{'brands/brand':{name:'Brand',is_active:true},'products/product':{brand_id:'brand'}}});const result=await f.load('app/api/admin/brands/delete/route.ts').POST(request({brandId:'brand'}));assert.equal(result.status,200);assert.equal((await result.json()).deleted,false);assert.equal(f.data.get('brands/brand').is_active,false);assert.ok(f.data.has('products/product'))});
 test('admin destructive deletion targets only the validated document and records actor',async()=>{const f=fixture({admin:true,data:{'testimonials/one':{name:'one'},'testimonials/two':{name:'two'}}});assert.equal((await f.load('app/api/admin/testimonials/delete/route.ts').POST(request({testimonialId:'one'}))).status,200);assert.ok(!f.data.has('testimonials/one'));assert.ok(f.data.has('testimonials/two'));assert.ok([...f.data.entries()].some(([key,value])=>key.startsWith('audit_logs/')&&value.actor==='user-a'))});
+
+// Announcements have their own guarded boundary and calendar-date model.
+const announcementInput = { title: 'New fragrance', announcement_type: 'coming_soon', arrival_date: '2026-10-15', is_active: true };
+const announcementRoute = 'app/api/admin/announcements/action/route.ts';
+for (const options of [{ anonymous: true }, {}]) {
+ for (const action of ['create', 'update', 'delete', 'toggle']) test(`announcements: non-admin cannot ${action}`, async () => {
+  const f = fixture(options);
+  const response = await f.load(announcementRoute).POST(request({ action, announcementId: 'one', data: announcementInput, role: 'admin' }));
+  assert.equal(response.status, 403); assert.equal(f.calls.length, 0);
+ });
+ test('announcements: non-admin cannot read admin list ' + JSON.stringify(options), async () => {
+  const f = fixture(options);
+  assert.equal((await f.load(announcementRoute).GET(new Request('https://www.goshperfumestudio.com/api/admin/announcements/action'))).status, 403);
+  assert.equal(f.calls.length, 0);
+ });
+}
+for (const announcement_type of ['coming_soon', 'new_arrival']) test('announcements: minimal ' + announcement_type + ' create writes only announcements with trusted actor/audit', async () => {
+ const f = fixture({ admin: true, production: true, data: { 'product_promotions/offer': { promotion_price: 75000 } } });
+ const response = await f.load(announcementRoute).POST(request({ action: 'create', data: { ...announcementInput, announcement_type } }));
+ assert.equal(response.status, 200);
+ const { announcementId } = await response.json(), saved = f.data.get('announcements/' + announcementId);
+ assert.equal(saved.announcement_type, announcement_type); assert.equal(saved.arrival_date, '2026-10-15');
+ assert.equal(saved.created_by, 'user-a'); assert.equal(saved.created_at, 'server-time'); assert.equal(saved.updated_at, 'server-time');
+ for (const field of ['start_at','end_at','promotion_price','discount_percent','product_id','type']) assert.ok(!(field in saved));
+ assert.equal(f.data.get('product_promotions/offer').promotion_price, 75000);
+ assert.ok([...f.data.values()].some(v => v.action === 'announcement.create' && v.actor === 'user-a' && v.resource_id === announcementId));
+ assert.equal((await f.load(announcementRoute).GET(new Request('https://www.goshperfumestudio.com/api/admin/announcements/action'))).status, 200);
+});
+const invalidAnnouncements = [
+ { title: '' }, { title: 'x'.repeat(201) }, { description: 'x'.repeat(5001) }, { title: 'bad\u0000text' },
+ { announcement_type: 'promotion' }, { announcement_type: 'COMING SOON' },
+ { arrival_date: '2026-02-29' }, { arrival_date: '2026-04-31' }, { arrival_date: '2026-13-01' },
+ { arrival_date: '2026-10-15T09:00' }, { arrival_date: '2026-10-15T00:00:00Z' }, { arrival_date: '' },
+ { is_active: 'true' }, { image: 'javascript:alert(1)' }, { imageFileId: '../private' },
+ { cta_text: 'Buy', cta_url: 'javascript:alert(1)' }, { cta_text: 'Only text' },
+ { start_at: '2026-10-15T09:00' }, { end_at: '2026-10-16T09:00' }, { promotion_price: 1 }, { discount_percent: 20 },
+ { created_by: 'attacker' }, { updated_at: 'forged' }, { product_id: 'existing' }, { type: 'new_product' },
+];
+for (const action of ['create', 'update']) for (const changes of invalidAnnouncements) test(`announcements: ${action} rejects ${Object.keys(changes).join('/')}: ${String(Object.values(changes)[0]).slice(0,25)}`, async () => {
+ const f = fixture({ admin: true });
+ const response = await f.load(announcementRoute).POST(request({ action, ...(action === 'update' ? { announcementId: 'one' } : {}), data: { ...announcementInput, ...changes } }));
+ assert.equal(response.status, 400); assert.ok((await response.json()).error.length < 300); assert.equal(f.calls.length, 0);
+});
+test('announcements: update/toggle/delete preserve isolation and audit each mutation', async () => {
+ const stored = { ...announcementInput, created_by: 'original-admin', created_at: 'original-time', image: 'https://example.test/old.png', imageFileId: 'old-image' };
+ const f = fixture({ admin: true, data: { 'announcements/one': stored, 'promotions/one': { title: 'Legacy' }, 'product_promotions/one': { promotion_price: 75 } } }), route = f.load(announcementRoute);
+ assert.equal((await route.POST(request({ action: 'update', announcementId: 'one', data: { ...announcementInput, announcement_type: 'new_arrival', arrival_date: '2026-11-01', image: 'https://example.test/new.png', imageFileId: 'new-image' } }))).status, 200);
+ assert.equal(f.data.get('announcements/one').created_by, 'original-admin'); assert.equal(f.data.get('announcements/one').created_at, 'original-time');
+ assert.equal(f.data.get('announcements/one').arrival_date, '2026-11-01'); assert.ok(f.calls.some(c => c[0] === 'delete-file' && c[1] === 'old-image'));
+ assert.equal((await route.POST(request({ action: 'toggle', announcementId: 'one' }))).status, 200); assert.equal(f.data.get('announcements/one').is_active, false);
+ assert.equal((await route.POST(request({ action: 'delete', announcementId: 'one' }))).status, 200); assert.ok(!f.data.has('announcements/one'));
+ assert.equal(f.data.get('promotions/one').title, 'Legacy'); assert.equal(f.data.get('product_promotions/one').promotion_price, 75);
+ for (const action of ['update','toggle','delete']) assert.ok([...f.data.values()].some(v => v.action === 'announcement.' + action && v.actor === 'user-a'));
+});
+for (const action of ['update', 'toggle', 'delete']) test('announcements: ' + action + ' cannot target promotion storage', async () => {
+ const f = fixture({ admin: true, data: { 'promotions/only-promo': { title: 'Promotion' } } });
+ const response = await f.load(announcementRoute).POST(request({ action, announcementId: 'only-promo', ...(action === 'update' ? { data: announcementInput } : {}) }));
+ assert.equal(response.status, 404); assert.equal(f.calls.length, 0);
+});
+test('announcements: invalid IDs and missing active fields cannot write', async () => {
+ for (const body of [{ action: 'delete', announcementId: '../promotions/one' }, { action: 'update', data: announcementInput }, { action: 'create', data: { title: 'Missing fields' } }]) {
+  const f = fixture({ admin: true }); assert.equal((await f.load(announcementRoute).POST(request(body))).status, 400); assert.equal(f.calls.length, 0);
+ }
+});
+test('announcements: body size cap and private provider errors stay protected', async () => {
+ const f = fixture({ admin: true }), route = f.load(announcementRoute);
+ assert.equal((await route.POST(request({ action: 'create', data: { ...announcementInput, description: 'x'.repeat(65537) } }))).status, 413);
+ f.load('lib/firebase/announcements-server.ts').createAnnouncement = async () => { throw new Error('PRIVATE PROVIDER DETAIL credential=secret'); };
+ const response = await route.POST(request({ action: 'create', data: announcementInput }));
+ assert.equal(response.status, 500); assert.equal((await response.json()).error, 'Could not save this announcement. Please try again.'); assert.equal(f.calls.length, 0);
+});
+test('public announcements: active only, no expiry/inference, no private or promotion fields', async () => {
+ const data = {
+  'announcements/coming': { ...announcementInput, arrival_date: '2099-10-15', created_by: 'private', imageFileId: 'private-upload', promotion_price: 1 },
+  'announcements/arrived': { ...announcementInput, announcement_type: 'new_arrival', arrival_date: '2000-01-01' },
+  'announcements/draft': { ...announcementInput, is_active: false },
+  'announcements/bad-type': { ...announcementInput, announcement_type: 'promotion' },
+  'announcements/bad-date': { ...announcementInput, arrival_date: '2026-02-30' },
+  'promotions/legacy': { ...announcementInput },
+ };
+ const f = fixture({ data }), response = await f.load('app/api/announcements/active/route.ts').GET(new Request('https://www.goshperfumestudio.com/api/announcements/active'));
+ assert.equal(response.status, 200); const { announcements } = await response.json();
+ assert.deepEqual(announcements.map(v => v.id).sort(), ['arrived','coming']);
+ for (const entry of announcements) for (const field of ['created_by','imageFileId','created_at','updated_at','promotion_price','start_at','end_at','type']) assert.ok(!(field in entry));
+});
+test('public announcements: unsafe manual URLs are withheld', async () => {
+ const f = fixture({ data: { 'announcements/one': { ...announcementInput, image: 'javascript:alert(1)', cta_text: 'Unsafe', cta_url: '//evil.test' } } });
+ const { announcements } = await (await f.load('app/api/announcements/active/route.ts').GET(new Request('https://www.goshperfumestudio.com/api/announcements/active'))).json();
+ assert.equal(announcements[0].image, null); assert.equal(announcements[0].cta_url, '');
+});
+
+test('separation: existing product-promotion creation retains discounted price, UTC schedule and its own collection', async () => {
+ const f = fixture({ admin: true, data: { 'products/existing': { name: 'Existing product', price: 100000, stock: 5, is_active: true } } });
+ const response = await f.load('app/api/admin/product-promotions/action/route.ts').POST(request({ action: 'create', data: {
+  product_id: 'existing', promotion_price: 75000, is_active: true,
+  start_at: '2026-10-06T09:00+06:30', end_at: '2026-10-08T17:15+06:30',
+ } }));
+ assert.equal(response.status, 200);
+ const saved = [...f.data.entries()].find(([key]) => key.startsWith('product_promotions/'))[1];
+ assert.equal(saved.promotion_price, 75000); assert.equal(saved.is_active, true);
+ assert.equal(saved.start_at.toDate().toISOString(), '2026-10-06T02:30:00.000Z');
+ assert.equal(saved.end_at.toDate().toISOString(), '2026-10-08T10:45:00.000Z');
+ assert.equal(f.data.get('products/existing').price, 100000); assert.ok(![...f.data.keys()].some(key => key.startsWith('announcements/')));
+});
+
+test('public announcements: empty collection returns successful empty JSON', async () => {
+ const response = await fixture().load('app/api/announcements/active/route.ts').GET(new Request('https://www.goshperfumestudio.com/api/announcements/active'));
+ assert.equal(response.status, 200); assert.deepEqual(await response.json(), { success: true, announcements: [] });
+});
+test('public announcements serializer/route: absent and null optional fields remain sanitized and serializable', async () => {
+ const f = fixture({ data: {
+  'announcements/minimal': { ...announcementInput },
+  'announcements/nullable': { ...announcementInput, description: null, image: null, imageFileId: null, cta_text: null, cta_url: null, created_at: null, updated_at: null },
+ } });
+ const response = await f.load('app/api/announcements/active/route.ts').GET(new Request('https://www.goshperfumestudio.com/api/announcements/active'));
+ assert.equal(response.status, 200); const { announcements } = await response.json(); assert.equal(announcements.length, 2);
+ for (const value of announcements) {
+  assert.equal(value.description, ''); assert.equal(value.image, null); assert.equal(value.cta_text, ''); assert.equal(value.cta_url, '');
+  assert.equal(value.arrival_date, '2026-10-15'); assert.equal(value.announcement_type, 'coming_soon'); assert.ok(!('imageFileId' in value));
+ }
+ const serialized = f.load('lib/announcements.ts').publicAnnouncement({ ...announcementInput, id: 'direct', description: null, image: null, cta_text: null, cta_url: null, created_by: 'private', promotion_price: 1 });
+ assert.equal(JSON.parse(JSON.stringify(serialized)).arrival_date, '2026-10-15'); assert.ok(!('created_by' in serialized)); assert.ok(!('promotion_price' in serialized));
+});
