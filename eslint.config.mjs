@@ -27,6 +27,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scripts/firestore-backup.cjs",
   ]),
 ]);
 

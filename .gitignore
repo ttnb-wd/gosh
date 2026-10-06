@@ -61,3 +61,20 @@ next-env.d.ts
 /audit-dependencies*.json
 /security-checks*.log
 /security-checks*.json
+
+backups/
+
+# Internal/generated documentation
+/*.md
+!/README.md
+!/LICENSE.md
+/public/*.md
+
+# Additional sensitive/generated files
+*.log
+
+credentials*.json
+**/credentials*.json
+
+*.p12
+*.pfx
