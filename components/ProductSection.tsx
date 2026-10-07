@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import StudioSelect from "@/components/ui/StudioSelect";
 import QuickViewModal from "./QuickViewModal";
 import ProductCardWithPromotion from "./ProductCardWithPromotion";
@@ -61,6 +61,7 @@ interface ProductQuickViewNotes {
   story?: string;
   top?: string[];
   heart?: string[];
+  middle?: string[];
   base?: string[];
   madeWith?: string;
   bestFor?: string;
@@ -83,6 +84,7 @@ const normalizeQuickViewNotes = (value: unknown): ProductQuickViewNotes | undefi
     story: typeof notes.story === "string" ? notes.story.trim() : undefined,
     top: normalizeNotesArray(notes.top),
     heart: normalizeNotesArray(notes.heart),
+    middle: normalizeNotesArray(notes.middle),
     base: normalizeNotesArray(notes.base),
     madeWith: typeof notes.madeWith === "string" ? notes.madeWith.trim() : undefined,
     bestFor: typeof notes.bestFor === "string" ? notes.bestFor.trim() : undefined,
@@ -90,6 +92,10 @@ const normalizeQuickViewNotes = (value: unknown): ProductQuickViewNotes | undefi
 
   return Object.values(normalized).some(Boolean) ? normalized : undefined;
 };
+
+const getProductNotes = (product: Product): string[] =>
+  [product.notes?.top, product.notes?.heart, product.notes?.middle, product.notes?.base]
+    .flatMap((notes) => normalizeNotesArray(notes) || []);
 
 const container = {
   hidden: {},
@@ -106,11 +112,13 @@ function ProductRevealCard({ children, index }: { children: React.ReactNode; ind
 interface ProductSectionProps {
   selectedBrand?: string;
   onBrandSelect?: (brand: string) => void;
+  selectedNote?: string;
+  onNoteSelect?: (note: string) => void;
   onAddToBag: (product: Product) => void;
 }
 
 
-export default function ProductSection({ selectedBrand = "All", onBrandSelect, onAddToBag }: ProductSectionProps) {
+export default function ProductSection({ selectedBrand = "All", onBrandSelect, selectedNote = "", onNoteSelect, onAddToBag }: ProductSectionProps) {
   const searchParams = useSearchParams();
   const collectionParam = searchParams.get("collection");
   const urlCollection = isScentCollection(collectionParam) ? collectionParam : null;
@@ -553,6 +561,30 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
 
   const safeProducts = Array.isArray(products) ? products : [];
 
+  const noteOptions = useMemo(() => {
+    const availableNotes = new Map<string, string>();
+    (Array.isArray(products) ? products : []).forEach((product) => {
+      const category = String(product.category || "").toLowerCase().trim();
+      if (category === "accessories" || category === "accessory") return;
+      getProductNotes(product).forEach((note) => {
+        const value = note.toLowerCase();
+        if (!availableNotes.has(value)) availableNotes.set(value, note);
+      });
+    });
+    return [
+      { value: "", label: "All notes" },
+      ...Array.from(availableNotes, ([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    ];
+  }, [products]);
+  const normalizedSelectedNote = selectedNote.trim().toLowerCase();
+
+  useEffect(() => {
+    if (!loading && normalizedSelectedNote && !noteOptions.some((option) => option.value === normalizedSelectedNote)) {
+      onNoteSelect?.("");
+    }
+  }, [loading, normalizedSelectedNote, noteOptions, onNoteSelect]);
+
   const filteredProducts = safeProducts.filter((product) => {
     // Normalize category for comparison
     const normalizedCategory = String(product.category || "").toLowerCase().trim();
@@ -587,8 +619,13 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
     const matchesCollection =
       selectedCollection === "All Collections" ||
       normalizedScentCollection === selectedCollection;
+
+    const matchesNote =
+      selectedCategory === "Accessories" ||
+      !normalizedSelectedNote ||
+      getProductNotes(product).some((note) => note.toLowerCase() === normalizedSelectedNote);
     
-    return matchesBrand && matchesCategory && matchesCollection;
+    return matchesBrand && matchesCategory && matchesCollection && matchesNote;
   });
 
   const getBrandTitle = () => {
@@ -676,9 +713,11 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           ))}
         </div>
 
-        <div className="w-full sm:w-56">
+        <div className={`grid w-full min-w-0 gap-2 ${selectedCategory === "Accessories" ? "sm:w-56" : "sm:w-[28.5rem] sm:grid-cols-2"}`}>
           {onBrandSelect && brands.length > 1 && <StudioSelect value={selectedBrand} placeholder="Choose brand" ariaLabel="Filter by brand"
             options={brands.map(brand => ({ value: brand.id, label: brand.id === "All" ? "All brands" : brand.name || "Unbranded" }))} onChange={onBrandSelect} />}
+          {onNoteSelect && selectedCategory !== "Accessories" && <StudioSelect value={selectedNote} placeholder="All notes" ariaLabel="Filter by notes"
+            options={noteOptions} onChange={onNoteSelect} />}
         </div>
       </div>
 
@@ -687,7 +726,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
           <StudioLoading label="Loading products…" grid />
         ) : filteredProducts.length > 0 ? (
           <motion.div
-            key={`${selectedBrand}-${selectedCollection}`}
+            key={`${selectedBrand}-${selectedCollection}-${selectedCategory === "Accessories" ? "" : selectedNote}`}
             variants={container}
             initial="hidden"
             animate="show"
@@ -719,8 +758,10 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, o
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-line bg-accent-soft text-accent">
                 <ShoppingBag className="h-8 w-8" />
               </div>
-              <h3 className="mb-2 text-xl font-bold text-ink">No perfumes found</h3>
-              {isCollectionFilterActive ? (
+              <h3 className="mb-2 text-xl font-bold text-ink">No products found</h3>
+              {normalizedSelectedNote && selectedCategory !== "Accessories" ? (
+                <p className="text-secondary">No products match these filters.</p>
+              ) : isCollectionFilterActive ? (
                 <p className="text-secondary">
                   No products found in <span className="font-medium text-accent">{selectedCollection} Collection</span> yet.
                 </p>

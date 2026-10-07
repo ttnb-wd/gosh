@@ -37,6 +37,7 @@ function ProductsPageContent() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedBrand, setSelectedBrand] = useState("All");
+  const [selectedNote, setSelectedNote] = useState("");
   const lastAddedRef = useRef<{ id: string | number; timestamp: number } | null>(null);
 
   // Load cart from localStorage on mount
@@ -146,6 +147,8 @@ function ProductsPageContent() {
         <ProductSection
           selectedBrand={selectedBrand}
           onBrandSelect={setSelectedBrand}
+          selectedNote={selectedNote}
+          onNoteSelect={setSelectedNote}
           onAddToBag={handleAddToBag}
         />
       </motion.div>
