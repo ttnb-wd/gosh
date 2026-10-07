@@ -6,9 +6,13 @@
 html, body { min-height: 100%; width: 100%; background: var(--browser-chrome-bg); color: var(--ink); font-family: var(--studio-body); }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: auto; scroll-padding-top: 130px; }
 body { margin: 0; padding-top: var(--browser-safe-top); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-/* Only the device's top safe area is neutral; the existing page artwork stays below it. */
-html::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--browser-safe-top); background: var(--browser-chrome-bg); z-index: 2147483647; pointer-events: none; }
-.studio-navbar, .home-brand-strip { margin-top: var(--browser-safe-top); margin-left: env(safe-area-inset-left, 0px); margin-right: env(safe-area-inset-right, 0px); }
+/* A real, unanimated region owns the device's top inset in either theme. */
+.site-safe-area { position: fixed; inset: 0 0 auto; height: var(--browser-safe-top); background: var(--browser-chrome-bg); z-index: 2147483647; pointer-events: none; }
+.site-header-frame, .homepage-luxury .home-brand-frame { position: fixed; top: var(--browser-safe-top); left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px); }
+/* Clip animation at the safe edge; keep menus/shadows within the visible viewport. */
+.site-header-frame { z-index: 1000; bottom: 0; overflow: hidden; pointer-events: none; }
+.site-header-frame > .studio-navbar { pointer-events: auto; }
+.homepage-luxury .home-brand-frame { z-index: 1001; height: 31px; overflow: hidden; }
 dialog.studio-mobile-menu { padding-top: calc(24px + var(--browser-safe-top)); padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
 * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 :where(main,section,article,aside,header,footer,nav,div,form,fieldset) { min-width: 0; }

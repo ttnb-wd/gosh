@@ -98,6 +98,7 @@ export default function RootLayout({
         <ThemeInit />
       </head>
       <body className="relative isolate flex min-h-full w-full flex-col overflow-x-hidden bg-[var(--background)] " suppressHydrationWarning>
+        <div className="site-safe-area" aria-hidden="true" />
         <GlobalAmbientBackground />
         {/* Google Tag Manager (noscript) */}
         <noscript>

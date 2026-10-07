@@ -21,7 +21,7 @@
 .homepage-luxury .home-gradient-static { background-size: 100% 100%; }
 
 /* Tier 1: campaign strip, gradient headline, and a bounded typography atmosphere. */
-.homepage-luxury .home-brand-strip { position: fixed; inset: 0 0 auto; z-index: 1001; height: 31px; overflow: hidden; color: var(--on-campaign); background: linear-gradient(100deg, var(--campaign-start), var(--campaign-middle) 50%, var(--campaign-end)); transition: transform .4s var(--home-ease); }
+.homepage-luxury .home-brand-strip { position: relative; height: 31px; overflow: hidden; color: var(--on-campaign); background: linear-gradient(100deg, var(--campaign-start), var(--campaign-middle) 50%, var(--campaign-end)); transition: transform .4s var(--home-ease); }
 .homepage-luxury .home-brand-track { display: flex; width: max-content; animation: home-marquee 38s linear infinite; }
 .homepage-luxury .home-brand-copy { display: flex; flex-shrink: 0; }
 .homepage-luxury .home-brand-copy > span { height: 31px; display: flex; align-items: center; gap: 35px; padding-right: 35px; white-space: nowrap; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; }

@@ -28,7 +28,7 @@ button:hover, a:hover, select:hover, [role="button"]:hover { cursor: pointer; }
 .studio-page > section:first-of-type:not(.studio-hero), .studio-page > div > section:first-of-type { padding-top: 70px; }
 /* Floating shell: a quiet announcement above a glass navigation rail. */
 .studio-nav-space { height: 126px; }
-.studio-navbar { position: fixed; z-index: 1000; inset: 0 0 auto; transition: transform .5s, background .5s; animation: studio-nav-enter .8s both; }
+.studio-navbar { position: relative; display: flow-root; z-index: 1000; inset: 0 0 auto; transition: transform .5s, background .5s; animation: studio-nav-enter .8s both; }
 .studio-announcement { height: 30px; background: var(--studio-wine); color: var(--studio-paper); overflow: hidden; transition: height .4s,opacity .4s; }
 .studio-announcement-track { width: max-content; display: flex; animation: studio-marquee 48s linear infinite; }
 .studio-announcement-copy { display: flex; flex-shrink: 0; gap: 56px; padding-right: 56px; }

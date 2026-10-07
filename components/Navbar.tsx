@@ -102,6 +102,7 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
   };
 
   return <>
+    <div className="site-header-frame">
     <header role="banner" className={`studio-navbar ${scrolled ? "studio-navbar--scrolled" : ""}`}>
       <MarqueeBanner />
       {logoutError && <p role="alert" className="px-4 py-2 text-center text-sm text-destructive">{logoutError}</p>}
@@ -122,8 +123,10 @@ export default function Navbar({ onCartOpen, cartCount }: NavbarProps) {
         </div>
       </div>
     </header>
+    </div>
     <div className="studio-nav-space" aria-hidden="true" />
     <dialog ref={dialog} id="studio-mobile-menu" className="studio-mobile-menu" aria-label="Main navigation" onCancel={() => setMobileOpen(false)} onClose={() => setMobileOpen(false)}>
+      <div className="site-safe-area" aria-hidden="true" />
       <div className="studio-mobile-top"><Link href="/" onClick={() => setMobileOpen(false)} className="studio-wordmark">GOSH<span>PERFUME STUDIO</span></Link><button type="button" className="studio-icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu"><X size={24} /></button></div>
       <p className="studio-eyebrow">THE WORLD OF GOSH</p>
       <nav role="navigation" aria-label="Mobile main navigation">{links.map((link, index) => <Link style={{ animationDelay: `${index * 65}ms` }} href={link.href} key={link.href} onClick={() => setMobileOpen(false)} aria-current={pathname === link.href ? "page" : undefined}><small>0{index + 1}</small>{link.label}<ArrowUpRight size={25} /></Link>)}</nav>

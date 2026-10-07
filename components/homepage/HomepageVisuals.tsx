@@ -39,11 +39,11 @@ export function HomepageAtmosphere() {
     };
   }, []);
 
-  return <div className="home-brand-strip" aria-label="GOSH: Find your signature. Wear your mood. Leave a memory.">
+  return <div className="home-brand-frame"><div className="home-brand-strip" aria-label="GOSH: Find your signature. Wear your mood. Leave a memory.">
     <div className="home-brand-track" aria-hidden="true">
       {[0, 1].map(copy => <div className="home-brand-copy" key={copy}>{brandPhrases.map(phrase => <span key={phrase}>{phrase}<span className="home-brand-star">✦</span></span>)}</div>)}
     </div>
-  </div>;
+  </div></div>;
 }
 
 function HomeLink({ children, href, secondary = false }: { children: ReactNode; href: string; secondary?: boolean }) {
