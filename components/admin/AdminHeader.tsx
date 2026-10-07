@@ -47,6 +47,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   const [msgNots, setMsgNots] = useState<AdminNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const notiRef = useRef<HTMLDivElement>(null);
+  const notificationDialogRef = useRef<HTMLDialogElement>(null);
   const markingRef = useRef<Set<string>>(new Set());
 
   const notifications = useMemo<AdminNotification[]>(() => {
@@ -158,18 +159,27 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notiRef.current && !notiRef.current.contains(event.target as Node)) {
-        setNotiOpen(false);
-      }
-    };
+    const dialog = notificationDialogRef.current;
+    const trigger = notiRef.current?.querySelector("button");
+    if (!notiOpen || !dialog) return;
 
-    if (notiOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    const positionDialog = () => {
+      const bounds = trigger?.getBoundingClientRect();
+      if (!bounds) return;
+      dialog.style.setProperty("--notification-top", `${Math.max(12, Math.min(bounds.bottom + 12, window.innerHeight - 96))}px`);
+      dialog.style.setProperty("--notification-right", `${Math.max(12, window.innerWidth - bounds.right)}px`);
+    };
+    positionDialog();
+    dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("resize", positionDialog);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", positionDialog);
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus({ preventScroll: true });
     };
   }, [notiOpen]);
 
@@ -298,6 +308,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
               onClick={() => setNotiOpen((prev) => !prev)}
               className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-soft transition duration-300 hover:scale-105 hover:bg-surface sm:h-11 sm:w-11"
               aria-label="Admin notifications"
+              aria-haspopup="dialog"
               aria-expanded={notiOpen}
               aria-controls="studio-admin-notifications"
             >
@@ -311,15 +322,22 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
 
             <AnimatePresence>
               {notiOpen && (
-                <motion.div
+                <dialog
+                  ref={notificationDialogRef}
                   id="studio-admin-notifications"
-                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="fixed left-3 right-3 top-20 z-[9999] max-h-[calc(100vh-96px)] origin-top overflow-hidden rounded-xl border border-line bg-surface/95 shadow-panel  sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[92vw] sm:max-w-[380px] sm:origin-top-right"
+                  aria-label="Admin notifications"
+                  onCancel={event => { event.preventDefault(); setNotiOpen(false); }}
+                  onClose={() => setNotiOpen(false)}
+                  onClick={event => {
+                    if (event.target !== event.currentTarget) return;
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+                      setNotiOpen(false);
+                    }
+                  }}
+                  className="studio-admin-notifications origin-top overflow-hidden rounded-xl border border-line bg-surface text-ink shadow-panel sm:origin-top-right"
                 >
-                  <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
+                  <div className="flex shrink-0 items-center justify-between border-b border-line bg-surface px-4 py-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
                         Notifications
@@ -337,7 +355,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     )}
                   </div>
 
-                  <div className="max-h-[calc(100vh-250px)] overflow-y-auto p-2 sm:max-h-[360px]">
+                  <div className="min-h-0 max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-contain p-2 sm:max-h-[360px]">
                     {loadingNotifications ? <div role="status" className="flex items-center gap-3 p-6 text-sm text-muted"><span className="studio-spinner" aria-hidden="true" />Loading notifications…</div> : notifications.length === 0 ? (
                       <div className="p-6 text-center">
                         <p className="text-sm font-bold text-muted">No notifications yet.</p>
@@ -391,7 +409,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                     )}
                   </div>
 
-                  <div className="border-t border-line bg-surface p-3">
+                  <div className="shrink-0 border-t border-line bg-surface p-3">
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -415,7 +433,7 @@ export default function AdminHeader({ title, subtitle }: AdminHeaderProps) {
                       </button>
                     </div>
                   </div>
-                </motion.div>
+                </dialog>
               )}
             </AnimatePresence>
           </div>

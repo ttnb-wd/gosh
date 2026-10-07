@@ -397,6 +397,10 @@ button:disabled { cursor: not-allowed; }
 .studio-admin-header { background: var(--site-bg); border-bottom: 1px solid var(--line); }
 .studio-admin-header h1 { font: 2rem/1.15 var(--studio-display); letter-spacing: -.035em; }
 .studio-admin-header p { color: var(--muted); font-size: .75rem; }
+.studio-admin-notifications { position: fixed; inset: 5rem 12px auto; width: auto; max-width: none; max-height: calc(100dvh - 96px); margin: 0; padding: 0; }
+.studio-admin-notifications[open] { display: flex; flex-direction: column; animation: studio-popover .22s var(--ease-studio) both; }
+.studio-admin-notifications::backdrop { background: var(--overlay); }
+@media (min-width: 640px) { .studio-admin-notifications { top: var(--notification-top, 5rem); right: var(--notification-right, 12px); left: auto; width: min(380px, calc(100vw - 24px)); max-height: calc(100dvh - var(--notification-top, 5rem) - 12px); } }
 .studio-admin-toolbar { padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--line); }
 .studio-admin-shortcuts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .75rem; }
 .studio-admin-shortcuts a { justify-content: flex-start; padding: 1rem; }
