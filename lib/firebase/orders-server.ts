@@ -3,6 +3,7 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "./admin";
 import { createHash } from "node:crypto";
+import devLog from "@/lib/dev-log";
 import { InputError, validId, orderStatuses, paymentStatuses } from "@/lib/security/validation";
 
 export type OrderItem = {
@@ -128,11 +129,6 @@ export async function placeOrder(input: PlaceOrderInput) {
     ? (settingsSnap.data() as SiteSettingsDoc)
     : null) ?? null;
 
-  const paymentStatus = getPaymentMethodStatus(
-    input.payment_method,
-    settings
-  );
-
   const result = await adminDb.runTransaction(async (transaction) => {
     const requestRef = input.idempotency_key ? adminDb.collection("order_requests").doc(
       createHash("sha256").update(`${input.user_id}:${input.idempotency_key}`).digest("hex")) : null;
@@ -143,9 +139,13 @@ export async function placeOrder(input: PlaceOrderInput) {
       const previous = await transaction.get(requestRef);
       if (previous.exists) {
         if (previous.data()?.fingerprint !== fingerprint) throw new InputError("Order request has changed. Please retry.", 409);
+        devLog.log("Checkout idempotent retry", { idempotencyReused: true });
         return previous.data()!.result;
       }
     }
+    // Retrieve a committed order before applying current availability to a NEW
+    // order. A payment setting change must not turn a retry into another order.
+    const paymentStatus = getPaymentMethodStatus(input.payment_method, settings);
     const receiptRef = input.payment_screenshot_file_id ? adminDb.collection("payment_uploads").doc(input.payment_screenshot_file_id) : null;
     if (receiptRef) {
       const receipt = await transaction.get(receiptRef);
@@ -197,6 +197,12 @@ export async function placeOrder(input: PlaceOrderInput) {
       }
 
       const stock = Number(product?.stock ?? 0);
+      devLog.log("Checkout inventory validation", {
+        productId: cartItem.product_id,
+        requestedQuantity: quantities.get(cartItem.product_id),
+        serverStock: stock,
+        idempotencyReused: false,
+      });
 
       if (!Number.isSafeInteger(stock) || stock < (quantities.get(cartItem.product_id) || quantity)) {
         throw new InputError(

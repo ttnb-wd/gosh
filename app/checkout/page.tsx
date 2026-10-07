@@ -3,7 +3,7 @@ import StudioErrorText from "@/components/ui/StudioErrorText";
 import StudioModal from "@/components/ui/StudioModal";
 import devLog from "@/lib/dev-log";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Check, CheckCircle, Banknote, Building2, Smartphone } from "lucide-react";
 import { getFirebaseAuthorizationHeader } from "@/lib/firebase/client-auth";
+import { auth } from "@/lib/firebase/config";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { PageErrorBoundary } from "@/components/ErrorBoundaries";
@@ -191,6 +192,48 @@ const paymentMethods = [
   }
 ];
 
+async function deleteUploadedPaymentScreenshot(fileId: string | null) {
+  if (!fileId) return true;
+  try {
+    const headers = await getFirebaseAuthorizationHeader();
+    const response = await fetch("/api/checkout/delete-payment-proof", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({ fileId }),
+    });
+    if (!response.ok) devLog.warn("Payment proof cleanup could not be completed.");
+    return response.ok;
+  } catch {
+    devLog.error("Failed to delete payment screenshot.");
+    return false;
+  }
+}
+
+type CheckoutAttempt = { userId: string; key: string; body: string };
+const CHECKOUT_ATTEMPT_STORAGE = "gosh_checkout_attempt";
+function saveCheckoutAttempt(attempt: CheckoutAttempt | null) {
+  try {
+    if (attempt) sessionStorage.setItem(CHECKOUT_ATTEMPT_STORAGE, JSON.stringify(attempt));
+    else sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+  } catch {
+    devLog.warn("Checkout retry backup is unavailable; the current page retains the attempt.");
+  }
+}
+function restoreCheckoutAttempt(): CheckoutAttempt | null {
+  try {
+    const stored = sessionStorage.getItem(CHECKOUT_ATTEMPT_STORAGE);
+    if (!stored) return null;
+    const value = JSON.parse(stored) as Partial<CheckoutAttempt>;
+    if (typeof value.userId !== "string" || typeof value.key !== "string" ||
+      !/^[A-Za-z0-9_-]{1,200}$/.test(value.key) || typeof value.body !== "string" || value.body.length > 65536) return null;
+    const body = JSON.parse(value.body);
+    if (!paymentMethods.some(method => method.id === body?.paymentMethod)) return null;
+    return value as CheckoutAttempt;
+  } catch {
+    return null;
+  }
+}
+
 function CheckoutPageContent() {
   const router = useRouter();
   const { settings } = useSiteSettings();
@@ -202,6 +245,12 @@ function CheckoutPageContent() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [paymentScreenshots, setPaymentScreenshots] = useState<Record<string, File | null>>({});
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const submitInFlight = useRef(false);
+  const orderCompleted = useRef(false);
+  const orderAttempt = useRef<CheckoutAttempt | null>(null);
+  const uploadedProof = useRef<{ file: File; fileId: string } | null>(null);
+  const [orderPending, setOrderPending] = useState(false);
+  const checkoutLocked = submittingOrder || orderPending;
   const showSubmitLoading = useDelayedLoading(submittingOrder, 400);
   const [submitError, setSubmitError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -215,9 +264,19 @@ function CheckoutPageContent() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => () => {
+    // Keep an ambiguous attempt's proof for retry. Otherwise clean up an unused
+    // completed upload on navigation; the API still prevents deleting used proof.
+    if (!orderAttempt.current) {
+      void deleteUploadedPaymentScreenshot(uploadedProof.current?.fileId ?? null);
+    }
+  }, []);
+
   // Load cart from localStorage on mount
   useEffect(() => {
     const loadCart = () => {
+      // Keep the visible cart consistent with an in-flight or unresolved request.
+      if (submitInFlight.current || orderAttempt.current) return;
       try {
         const savedCart = localStorage.getItem("gosh_cart");
         if (!savedCart) {
@@ -226,6 +285,7 @@ function CheckoutPageContent() {
         }
         const parsed = JSON.parse(savedCart);
         const items = Array.isArray(parsed) ? parsed : [];
+        if (items.length > 0) orderCompleted.current = false;
         setCartItems(items);
       } catch (error) {
         devLog.error("Failed to load checkout cart:", error);
@@ -243,6 +303,16 @@ function CheckoutPageContent() {
       window.removeEventListener("storage", loadCart);
       window.removeEventListener("cart-updated", loadCart);
     };
+  }, []);
+
+  useEffect(() => {
+    const attempt = restoreCheckoutAttempt();
+    if (!attempt || (auth.currentUser && auth.currentUser.uid !== attempt.userId)) return;
+    orderAttempt.current = attempt;
+    setOrderPending(true);
+    setSelectedPayment(JSON.parse(attempt.body).paymentMethod);
+    setShowPaymentModal(true);
+    setSubmitError("An order confirmation is pending. Please retry to check the same order.");
   }, []);
 
   const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
@@ -281,6 +351,7 @@ function CheckoutPageContent() {
 
   // Auto-select first available payment method if current selection is disabled
   useEffect(() => {
+    if (orderAttempt.current) return;
     if (availablePaymentMethods.length === 0) {
       setSelectedPayment(null);
       return;
@@ -332,7 +403,11 @@ function CheckoutPageContent() {
 
   const clearCart = () => {
     setCartItems([]);
-    localStorage.removeItem("gosh_cart");
+    try {
+      localStorage.removeItem("gosh_cart");
+    } catch {
+      devLog.warn("Checkout cart backup could not be cleared.");
+    }
     window.dispatchEvent(new Event("cart-updated"));
   };
 
@@ -345,6 +420,17 @@ function CheckoutPageContent() {
 
     if (!selectedFile) {
       return null;
+    }
+
+    if (uploadedProof.current?.file === selectedFile) {
+      return { fileId: uploadedProof.current.fileId };
+    }
+    if (uploadedProof.current) {
+      // Replace only an unattached proof, through the existing ownership-checked API.
+      if (!await deleteUploadedPaymentScreenshot(uploadedProof.current.fileId)) {
+        throw new Error("Could not replace your payment proof. Please try again.");
+      }
+      uploadedProof.current = null;
     }
 
     const formData = new FormData();
@@ -368,32 +454,14 @@ function CheckoutPageContent() {
 
     // Only the fileId is returned — the public ImageKit URL is never exposed.
     // The receipt is served later through the authenticated proxy route.
+    uploadedProof.current = { file: selectedFile, fileId: result.fileId };
     return { fileId: result.fileId };
   };
 
-  const deleteUploadedPaymentScreenshot = async (
-    fileId: string | null
-  ) => {
-    if (!fileId) return;
-
-    try {
-      const headers = await getFirebaseAuthorizationHeader();
-
-      await fetch("/api/checkout/delete-payment-proof", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({ fileId }),
-      });
-    } catch (error) {
-      // Payment screenshot cleanup failed (non-critical) - log for debugging
-      devLog.error("Failed to delete payment screenshot:", error);
-    }
-  };
-
   const submitGuestOrder = async () => {
+    // React state disables the button after render; this guard locks immediately.
+    if (submitInFlight.current || orderCompleted.current) return;
+    submitInFlight.current = true;
     setSubmitError("");
     setSubmittingOrder(true);
 
@@ -409,6 +477,14 @@ function CheckoutPageContent() {
         router.push("/login?redirect=/checkout");
         return;
       }
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("Sign in required.");
+      if (orderAttempt.current && orderAttempt.current.userId !== userId) {
+        orderAttempt.current = null;
+        uploadedProof.current = null;
+        setOrderPending(false);
+        saveCheckoutAttempt(null);
+      }
 
       const nextErrors: Record<string, string> = {};
 
@@ -421,7 +497,10 @@ function CheckoutPageContent() {
       }
 
       if (!selectedPayment) nextErrors.payment = "Please select a payment method";
-      if (!cartItems || cartItems.length === 0) nextErrors.cart = "Your bag is empty";
+      if ((!cartItems || cartItems.length === 0) && !orderAttempt.current) nextErrors.cart = "Your bag is empty";
+      if (!orderAttempt.current && selectedPayment !== "cod" && !paymentScreenshots[selectedPayment ?? ""]) {
+        nextErrors.screenshot = "Please upload your payment screenshot";
+      }
 
       setErrors(nextErrors);
       if (Object.keys(nextErrors).length > 0) {
@@ -476,25 +555,17 @@ function CheckoutPageContent() {
         return;
       }
 
-      let paymentScreenshotFileId: string | null = null;
-
-      const paymentUploadResult = await uploadPaymentProof(authorizationHeader);
-      paymentScreenshotFileId = paymentUploadResult?.fileId ?? null;
-
-      const orderItemsPayload = cartItems.map((item) => ({
-        product_id: String(item.id),
-        selected_size: item.selectedSize || null,
-        quantity: Number(item.qty || 1),
-      }));
-
-      const orderResponse = await fetch("/api/checkout/place-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
-          ...authorizationHeader,
-        },
-        body: JSON.stringify({
+      const isRetry = orderAttempt.current !== null;
+      if (!orderAttempt.current) {
+        const paymentUploadResult = await uploadPaymentProof(authorizationHeader);
+        const orderItemsPayload = cartItems.map((item) => ({
+          product_id: String(item.id),
+          selected_size: item.selectedSize || null,
+          quantity: Number(item.qty || 1),
+        }));
+        // Keep this exact body AND key after a lost/ambiguous response. Reuploading
+        // the proof would change the server's idempotency fingerprint.
+        orderAttempt.current = { userId, key: crypto.randomUUID(), body: JSON.stringify({
           customerName: SHOW_DELIVERY_INFORMATION ? customerForm.fullName : "Guest Customer",
           phone: SHOW_DELIVERY_INFORMATION ? customerForm.phone : "N/A",
           address: SHOW_DELIVERY_INFORMATION ? customerForm.address : "N/A",
@@ -504,9 +575,30 @@ function CheckoutPageContent() {
           paymentPhone: selectedPaymentInfo.payment_phone,
           paymentAccountNumber: selectedPaymentInfo.payment_account_number,
           paymentScreenshotUrl: null,
-          paymentScreenshotFileId,
+          paymentScreenshotFileId: paymentUploadResult?.fileId ?? null,
           items: orderItemsPayload,
-        }),
+        }) };
+        saveCheckoutAttempt(orderAttempt.current);
+      }
+      const attempt = orderAttempt.current;
+      setOrderPending(true);
+      const submittedBody = JSON.parse(attempt.body) as {
+        items?: Array<{ product_id: string; quantity: number }>;
+        paymentScreenshotFileId?: string | null;
+      };
+      devLog.info("Checkout order submission", {
+        retried: isRetry, idempotencyReused: isRetry,
+        items: submittedBody.items?.map(item => ({ productId: item.product_id, requestedQuantity: item.quantity })),
+        proofReady: Boolean(submittedBody.paymentScreenshotFileId),
+      });
+      const orderResponse = await fetch("/api/checkout/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": attempt.key,
+          ...authorizationHeader,
+        },
+        body: attempt.body,
       });
       const orderResult = (await orderResponse.json()) as { data?: unknown; error?: string };
       const savedOrderData = orderResult.data;
@@ -517,7 +609,13 @@ function CheckoutPageContent() {
       if (!orderResponse.ok || orderError || !savedOrder) {
         const orderMessage = getOrderErrorMessage(orderError);
 
-        await deleteUploadedPaymentScreenshot(paymentScreenshotFileId);
+        // A structured client rejection cannot have committed this order.
+        // An ambiguous response (network/5xx/timeout) must retry the same attempt.
+        if (orderError && [400, 404, 409, 413, 415, 422].includes(orderResponse.status)) {
+          orderAttempt.current = null;
+          setOrderPending(false);
+          saveCheckoutAttempt(null);
+        }
 
         // Log error for debugging and show user-friendly message
         devLog.error("Order creation failed:", orderError);
@@ -527,6 +625,7 @@ function CheckoutPageContent() {
       }
 
       const order = savedOrder as PlacedOrder;
+      orderCompleted.current = true;
 
       // The Firestore place-order route returns order_items directly.
       const trustedOrderItems = (order as unknown as { order_items?: SavedOrderItem[] }).order_items || [];
@@ -544,26 +643,32 @@ function CheckoutPageContent() {
             ...headers,
           },
           body: JSON.stringify({ orderId: order.id }),
-        }).catch((emailError) => {
-          devLog.error("Order email notification failed:", emailError);
         });
+      }).catch(() => {
+        devLog.error("Order email notification failed.");
       });
 
       // NOTE: Admin notifications are created by the server-side order flow
       // This prevents duplicate notifications from frontend + backend sources
 
       // Save to localStorage as backup
-      const localOrders = JSON.parse(localStorage.getItem("gosh_orders") || "[]");
-      localStorage.setItem(
-        "gosh_orders",
-        JSON.stringify([
-          {
-            ...order,
-            order_items: savedOrderItems,
-          },
-          ...localOrders,
-        ])
-      );
+      try {
+        const backup = JSON.parse(localStorage.getItem("gosh_orders") || "[]");
+        const localOrders = Array.isArray(backup) ? backup : [];
+        localStorage.setItem(
+          "gosh_orders",
+          JSON.stringify([
+            {
+              ...order,
+              order_items: savedOrderItems,
+            },
+            ...localOrders,
+          ])
+        );
+      } catch {
+        // The server order is already committed; browser storage is only a backup.
+        devLog.warn("Order saved; browser order backup is unavailable.");
+      }
 
       setShowPaymentModal(false);
       setSuccessOrder({
@@ -575,17 +680,25 @@ function CheckoutPageContent() {
       });
       setShowSuccessModal(true);
       clearCart();
+      orderAttempt.current = null;
+      uploadedProof.current = null;
+      setOrderPending(false);
+      saveCheckoutAttempt(null);
 
-    } catch (error) {
-      devLog.error("Checkout submit unexpected error:", error);
-      setSubmitError("Could not place order. Please try again.");
+    } catch {
+      devLog.error("Checkout request failed", { pendingOrder: orderAttempt.current !== null });
+      setSubmitError(orderAttempt.current
+        ? "Could not confirm your order. Please retry to check the same order."
+        : "Could not upload payment proof or place order. Please try again.");
       setSubmittingOrder(false);
     } finally {
+      submitInFlight.current = false;
       setSubmittingOrder(false);
     }
   };
 
   const updateCartItemQuantity = (id: string | number, selectedSize: string | undefined, newQuantity: number) => {
+    if (submitInFlight.current || orderAttempt.current) return;
     if (newQuantity === 0) {
       setCartItems(items => items.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
     } else {
@@ -608,6 +721,7 @@ function CheckoutPageContent() {
   };
 
   const handlePaymentScreenshotUpload = (paymentId: string, file: File | null) => {
+    if (submitInFlight.current || orderAttempt.current) return;
     setPaymentScreenshots((prev) => ({
       ...prev,
       [paymentId]: file,
@@ -794,7 +908,8 @@ function CheckoutPageContent() {
                 {availablePaymentMethods.map((method, index) => {
                 const isSelected = selectedPayment === method.id;
                 return <motion.button key={method.id} type="button" aria-pressed={isSelected}
-                  onClick={() => { setSelectedPayment(method.id); setShowPaymentModal(true); }}
+                  disabled={checkoutLocked && !isSelected}
+                  onClick={() => { if (!submitInFlight.current && !orderAttempt.current) setSelectedPayment(method.id); setShowPaymentModal(true); }}
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: .18, delay: index * .025 }} whileHover={{ y: -2 }}
                   className={"studio-payment-choice " + (isSelected ? "is-selected" : "")}>
@@ -1125,6 +1240,7 @@ function CheckoutPageContent() {
                       id={`payment-screenshot-${selectedPayment}`}
                       name={`paymentScreenshot_${selectedPayment}`}
                       type="file"
+                      disabled={checkoutLocked}
                       accept="image/png,image/jpeg,image/jpg,image/webp"
                       className="hidden"
                       onChange={(event) => {
@@ -1142,6 +1258,7 @@ function CheckoutPageContent() {
                         </p>
                         <button
                           type="button"
+                          disabled={checkoutLocked}
                           onClick={() => handlePaymentScreenshotUpload(selectedPayment, null)}
                           className="text-xs text-destructive hover:text-destructive font-medium whitespace-nowrap"
                         >
@@ -1197,9 +1314,9 @@ function CheckoutPageContent() {
 
                 const isPaymentReady =
                   Boolean(selectedPayment) &&
-                  cartItems.length > 0 &&
-                  (!requiresScreenshot || Boolean(selectedPaymentScreenshot)) &&
-                  !isBelowMinimumOrder &&
+                  (orderPending || (cartItems.length > 0 &&
+                    (!requiresScreenshot || Boolean(selectedPaymentScreenshot)) &&
+                    !isBelowMinimumOrder)) &&
                   settings.enable_checkout &&
                   // Delivery-information fields are only required when the
                   // delivery form is visible. When hidden (guest checkout), the

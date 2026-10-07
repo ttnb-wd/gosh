@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test:security": "node --test scripts/auth.test.cjs scripts/security.test.cjs",
+    "test:security": "node --test scripts/auth.test.cjs scripts/security.test.cjs scripts/checkout.test.cjs",
     "test:headers": "node scripts/test-security-headers.js",
     "test:rules": "node --test scripts/firestore-rules.test.cjs",
     "audit:secrets": "node scripts/audit-secrets.cjs --history --bundles"
