@@ -1,9 +1,15 @@
 @import "tailwindcss";
 @import "./design-system.css";
 @custom-variant dark (&:where(.dark, .dark *));
-html, body { min-height: 100%; width: 100%; background: var(--site-bg); color: var(--ink); font-family: var(--studio-body); }
+:root { --browser-chrome-bg: #fffefb; --browser-safe-top: env(safe-area-inset-top, 0px); }
+:root.dark { --browser-chrome-bg: #191316; }
+html, body { min-height: 100%; width: 100%; background: var(--browser-chrome-bg); color: var(--ink); font-family: var(--studio-body); }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: auto; scroll-padding-top: 130px; }
-body { margin: 0; }
+body { margin: 0; padding-top: var(--browser-safe-top); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+/* Only the device's top safe area is neutral; the existing page artwork stays below it. */
+html::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--browser-safe-top); background: var(--browser-chrome-bg); z-index: 2147483647; pointer-events: none; }
+.studio-navbar, .home-brand-strip { margin-top: var(--browser-safe-top); margin-left: env(safe-area-inset-left, 0px); margin-right: env(safe-area-inset-right, 0px); }
+dialog.studio-mobile-menu { padding-top: calc(24px + var(--browser-safe-top)); padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
 * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 :where(main,section,article,aside,header,footer,nav,div,form,fieldset) { min-width: 0; }
 :where(h1,h2,h3) { text-wrap: balance; }

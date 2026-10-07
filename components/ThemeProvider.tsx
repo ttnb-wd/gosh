@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 type Theme = "light" | "dark";
 
@@ -16,6 +17,7 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
+  const pathname = usePathname();
 
   useEffect(() => {
     // The pre-paint script restores the saved choice before hydration.
@@ -23,6 +25,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(root.classList.contains("dark") ? "dark" : "light");
     root.setAttribute("data-theme-ready", "true");
   }, []);
+
+  useEffect(() => {
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--browser-chrome-bg").trim();
+    if (!color) return;
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+      meta.setAttribute("content", color);
+    });
+  }, [theme, pathname]);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";

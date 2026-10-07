@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./globals-datepicker.css";
@@ -29,6 +29,12 @@ const geistMono = Geist_Mono({
   preload: false,
   fallback: ["ui-monospace", "Courier New", "monospace"],
 });
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  // ThemeInit restores the saved site theme before paint; the default is light.
+  themeColor: "#fffefb",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://goshperfume.com'),
