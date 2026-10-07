@@ -68,13 +68,20 @@ interface ProductQuickViewNotes {
 }
 
 const normalizeNotesArray = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined;
-  const notes = value
+  // The admin uses commas to separate notes; accept that format on older documents too.
+  const values = typeof value === "string" ? value.split(",") : value;
+  if (!Array.isArray(values)) return undefined;
+  const notes = values
     .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
+    .map((item) => item.trim().replace(/\s+/g, " "))
     .filter(Boolean);
   return notes.length > 0 ? notes : undefined;
 };
+
+const getNoteDisplayLabel = (note: string): string =>
+  note === note.toLowerCase() || note === note.toUpperCase()
+    ? note.toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase())
+    : note;
 
 const normalizeQuickViewNotes = (value: unknown): ProductQuickViewNotes | undefined => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -568,7 +575,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, s
       if (category === "accessories" || category === "accessory") return;
       getProductNotes(product).forEach((note) => {
         const value = note.toLowerCase();
-        if (!availableNotes.has(value)) availableNotes.set(value, note);
+        if (!availableNotes.has(value)) availableNotes.set(value, getNoteDisplayLabel(note));
       });
     });
     return [
@@ -577,13 +584,10 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, s
         .sort((a, b) => a.label.localeCompare(b.label)),
     ];
   }, [products]);
-  const normalizedSelectedNote = selectedNote.trim().toLowerCase();
-
-  useEffect(() => {
-    if (!loading && normalizedSelectedNote && !noteOptions.some((option) => option.value === normalizedSelectedNote)) {
-      onNoteSelect?.("");
-    }
-  }, [loading, normalizedSelectedNote, noteOptions, onNoteSelect]);
+  const normalizedSelectedNote = selectedNote.trim().replace(/\s+/g, " ").toLowerCase();
+  // Keep a removed note visible as the selection, without retaining it as an available option.
+  const selectedNoteLabel = noteOptions.find((option) => option.value === normalizedSelectedNote)?.label
+    || getNoteDisplayLabel(normalizedSelectedNote);
 
   const filteredProducts = safeProducts.filter((product) => {
     // Normalize category for comparison
@@ -716,7 +720,7 @@ export default function ProductSection({ selectedBrand = "All", onBrandSelect, s
         <div className={`grid w-full min-w-0 gap-2 ${selectedCategory === "Accessories" ? "sm:w-56" : "sm:w-[28.5rem] sm:grid-cols-2"}`}>
           {onBrandSelect && brands.length > 1 && <StudioSelect value={selectedBrand} placeholder="Choose brand" ariaLabel="Filter by brand"
             options={brands.map(brand => ({ value: brand.id, label: brand.id === "All" ? "All brands" : brand.name || "Unbranded" }))} onChange={onBrandSelect} />}
-          {onNoteSelect && selectedCategory !== "Accessories" && <StudioSelect value={selectedNote} placeholder="All notes" ariaLabel="Filter by notes"
+          {onNoteSelect && selectedCategory !== "Accessories" && <StudioSelect value={normalizedSelectedNote} placeholder={selectedNoteLabel || "All notes"} ariaLabel="Filter by notes"
             options={noteOptions} onChange={onNoteSelect} />}
         </div>
       </div>
